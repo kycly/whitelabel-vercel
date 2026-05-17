@@ -12,10 +12,6 @@ export type SessionClaims = VerifiedIdentityClaims & {
   canAccess: boolean;
 };
 
-function shouldLogAuthDebug(): boolean {
-  return env.public.appEnv !== "production";
-}
-
 export class PartnerDemoAccessError extends Error {
   statusCode: number;
   code: string;
@@ -78,13 +74,9 @@ export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<Se
   }
 
   if (response.status === 403 || response.status === 404) {
-    if (shouldLogAuthDebug()) {
+    if (env.public.appEnv === "local") {
       console.info("[auth/session] partner demo access unresolved", {
-        endpoint,
         status: response.status,
-        contentType: response.headers.get("content-type"),
-        server: response.headers.get("server"),
-        cfRay: response.headers.get("cf-ray"),
         body,
       });
     }
@@ -118,13 +110,9 @@ export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<Se
       ? demoAccount.id
       : null;
 
-  if (shouldLogAuthDebug()) {
+  if (env.public.appEnv === "local") {
     console.info("[auth/session] partner demo access resolved", {
-      endpoint,
       status: response.status,
-      contentType: response.headers.get("content-type"),
-      server: response.headers.get("server"),
-      cfRay: response.headers.get("cf-ray"),
       demoAccountId,
     });
   }
