@@ -27,12 +27,8 @@ jobs:
       NEXT_PUBLIC_APP_ENV: ci
       NEXT_PUBLIC_AWS_REGION: eu-west-1
       NEXT_PUBLIC_COGNITO_APP_CLIENT_ID: ci-cognito-client-id
-      NEXT_PUBLIC_COGNITO_DOMAIN: https://ci.auth.eu-west-1.amazoncognito.com
-      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN: https://preview.example.com/auth/callback
-      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT: https://preview.example.com/login
       NEXT_PUBLIC_COGNITO_USER_POOL_ID: eu-west-1_ci
       APP_SESSION_SECRET: ci-session-secret-not-for-runtime
-      COGNITO_CLIENT_SECRET: ci-cognito-client-secret
       KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
       DEMO_ACCOUNT_KEY_MAP: '{"demo_acme":"ck_demo_ci"}'
       DEFAULT_KYCLINK_THEME: kycly-light

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, History, LogOut, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgeCheck, History, ShieldCheck } from "lucide-react";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { SurfacePanel } from "@/components/ui/surface-panel";
 
@@ -23,15 +24,7 @@ export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) 
             </p>
           </div>
 
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
-            >
-              <LogOut className="size-4" />
-              Se deconnecter
-            </button>
-          </form>
+          <LogoutButton className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950 disabled:opacity-70" />
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">

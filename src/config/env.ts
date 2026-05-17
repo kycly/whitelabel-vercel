@@ -30,18 +30,10 @@ export const env = {
     appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? "local",
     awsRegion: process.env.NEXT_PUBLIC_AWS_REGION ?? "eu-west-1",
     cognitoAppClientId: process.env.NEXT_PUBLIC_COGNITO_APP_CLIENT_ID ?? "local-dev-client",
-    cognitoDomain: normalizeBaseUrl(
-      process.env.NEXT_PUBLIC_COGNITO_DOMAIN ?? "https://example.auth.eu-west-1.amazoncognito.com",
-    ),
-    cognitoRedirectSignIn:
-      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN ?? "http://localhost:3000/auth/callback",
-    cognitoRedirectSignOut:
-      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT ?? "http://localhost:3000/login",
     cognitoUserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "eu-west-1_local",
   },
   server: {
     sessionSecret: process.env.APP_SESSION_SECRET ?? "local-dev-session-secret-change-me",
-    cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET,
     kyclyApiBaseUrl: normalizeBaseUrl(process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn"),
     demoAccountKeyMap: parseDemoAccountKeyMap(process.env.DEMO_ACCOUNT_KEY_MAP),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",

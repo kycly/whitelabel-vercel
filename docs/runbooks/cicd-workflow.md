@@ -243,15 +243,11 @@ Les variables doivent etre separees par environnement Vercel.
 - `NEXT_PUBLIC_APP_ENV`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 
 ### Variables serveur minimales
 
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si le client Cognito l'exige
 - `KYCLY_API_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si override necessaire
@@ -272,30 +268,17 @@ Pour `Preview` comme pour `Production`:
 
 ---
 
-## Cognito et URLs de callback
+## Contrat Cognito retenu
 
-La configuration Cognito doit etre compatible avec les deux environnements Vercel.
+Le flux J1 repose sur un login Cognito direct dans l'application.
 
-### Sign-in callback
+La configuration Cognito a garder coherente entre CI, Vercel et le user pool est donc:
 
-Les URLs de callback autorisees doivent couvrir:
+- `NEXT_PUBLIC_AWS_REGION`
+- `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
+- `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 
-- l'URL preview active de l'application
-- le domaine canonique de production
-
-### Sign-out callback
-
-Les URLs de logout autorisees doivent couvrir:
-
-- l'URL preview active de l'application
-- le domaine canonique de production
-
-### Regle retenue
-
-Les variables suivantes doivent etre definies de facon coherente par environnement:
-
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+La CI doit verifier que ces trois valeurs suffisent a restaurer le login direct et la creation de session applicative.
 
 ---
 
@@ -342,7 +325,7 @@ Le deploiement preview est automatique.
 
 Objectif:
 
-- valider rapidement l'UX, le login, les callbacks Cognito et les integrations de session dans un environnement proche du runtime final
+- valider rapidement l'UX, le login Cognito direct et les integrations de session dans un environnement proche du runtime final
 
 ### Production
 
@@ -371,8 +354,8 @@ Objectif:
 Verifier apres deploy:
 
 1. page `LOGIN`
-2. redirection Cognito
-3. callback `/auth/callback`
+2. login Cognito direct
+3. creation de session applicative via `POST /api/auth/session`
 4. ecran `WELCOME`
 5. creation de session `/api/kyc/session`
 6. lecture resultat `/api/kyc/session/:sessionId/result`
@@ -404,7 +387,7 @@ Quand la chaine CI/CD evolue, mettre a jour en meme temps:
 - [ ] configurer la branche de production Vercel sur `production`
 - [ ] configurer les variables `Preview`
 - [ ] configurer les variables `Production`
-- [ ] verifier les callbacks Cognito preview et production
+- [ ] verifier la coherence region / user pool / app client id
 - [ ] creer les GitHub Environments `vercel-preview` et `vercel-production`
 - [ ] ajouter `.github/workflows/ci.yml`
 - [ ] rendre la CI obligatoire sur `main` et `production`

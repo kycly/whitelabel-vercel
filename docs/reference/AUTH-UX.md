@@ -7,21 +7,23 @@ La regle produit est simple:
 - la connexion existe comme vraie page
 - elle n'est pas remplacee par un ecran technique de chargement
 - elle ouvre l'authentification Cognito sans exposer de details IAM inutiles
+- elle collecte email et mot de passe directement dans l'app, comme partner-node
 
 ## Role de la page
 
-La page `LOGIN` a trois objectifs:
+La page `LOGIN` a quatre objectifs:
 
 - expliquer clairement a quoi sert l'application
 - indiquer qu'un compte demo actif est requis
 - lancer la connexion Cognito de maniere simple
+- permettre le nouveau mot de passe et le reset sans sortir de l'app
 
 ## Position dans le parcours
 
 ```text
 Utilisateur non connecte
   -> LOGIN
-  -> Cognito Hosted UI
+  -> formulaire Cognito direct
   -> AUTH_LOADING
   -> WELCOME ou ACCESS_DENIED
 ```
@@ -39,7 +41,7 @@ La page reste volontairement legere.
 
 - rappel court: `Votre acces depend d'un compte demo deja active.`
 - CTA principal: `Se connecter`
-- aide secondaire: `Vous serez redirige vers la connexion securisee.`
+- aide secondaire: `La session Cognito est validee cote serveur avant ouverture de l'espace demo.`
 
 ### Bloc confiance
 
@@ -49,9 +51,8 @@ La page reste volontairement legere.
 
 ## Ce qu'on ne fait pas au J1
 
-- pas de formulaire local email / mot de passe
 - pas d'inscription libre
-- pas de reset password dans cette app si Cognito hosted UI le gere deja
+- pas de details IAM, JWT ou claims sur la page de connexion
 - pas de murs de texte sur la securite
 
 ## Microcopy recommandee
@@ -68,9 +69,11 @@ La page reste volontairement legere.
 
 - `Se connecter`
 
-### Message si retour d'erreur d'auth
+### Message si erreur d'auth
 
 - `La connexion n'a pas pu etre finalisee. Reessayez.`
+- `Identifiant ou mot de passe invalide.`
+- `Votre compte exige la definition d'un nouveau mot de passe.`
 
 ## Regles UX
 
@@ -83,43 +86,44 @@ La page reste volontairement legere.
 ## Etats a prevoir
 
 - etat neutre
-- etat de redirection vers Cognito
+- etat de verification d'une session Cognito existante
 - etat d'erreur de retour d'auth
+- etat `NEW_PASSWORD_REQUIRED`
+- etat `FORGOT_PASSWORD`
 
 ## Decision technique J1
 
-Au retour de Cognito Hosted UI, l'app etablit une session locale via cookie HTTP-only securise.
+L'app authentifie directement l'utilisateur contre Cognito depuis le navigateur, puis envoie l'id token a une route serveur qui verifie le JWT et etablit une session locale via cookie HTTP-only securise.
 
 Implications UX:
 
-- aucun token brut n'est affiche ni manipule dans le navigateur
-- la reconnexion doit paraitre immediate apres callback
-- la deconnexion supprime d'abord la session locale puis termine le logout Cognito
+- aucun token brut n'est affiche a l'utilisateur
+- la reconnexion doit paraitre immediate si une session Cognito existe deja cote navigateur
+- la deconnexion efface la session Cognito locale puis la session applicative
 
 ## Comportement recommande
 
 ### Cas normal
 
 1. l'utilisateur arrive sur `LOGIN`
-2. il clique sur `Se connecter`
-3. l'app redirige vers Cognito hosted UI
-4. au retour, l'app passe en `AUTH_LOADING`
+2. il saisit ses identifiants Cognito
+3. l'app verifie l'id token cote serveur
+4. l'app passe en `AUTH_LOADING`
 
 ## Variables de configuration minimales
 
 Le contrat J1 suppose au minimum:
 
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
+- `NEXT_PUBLIC_AWS_REGION`
 
 Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 
 ### Cas deja connecte
 
-- si une session valide existe deja, la route `LOGIN` peut rediriger directement vers `AUTH_LOADING`
+- si une session applicative valide existe deja, la route `LOGIN` redirige vers `AUTH_LOADING`
+- si seule une session Cognito locale existe, la page tente de la restaurer puis bascule vers `AUTH_LOADING`
 
 ### Cas non autorise
 
@@ -152,4 +156,4 @@ Ne pas afficher:
 
 ## Decision UX retenue
 
-La page de connexion du J1 est une page simple, rassurante et orientee action, avec un seul CTA vers Cognito hosted UI. Elle existe comme surface produit a part entiere, distincte de `AUTH_LOADING`.
+La page de connexion du J1 est une page simple, rassurante et orientee action, avec un formulaire Cognito direct et des flux annexes limites a `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD`. Elle existe comme surface produit a part entiere, distincte de `AUTH_LOADING`.

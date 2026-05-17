@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { SurfacePanel } from "@/components/ui/surface-panel";
 
@@ -43,14 +44,10 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
             Revenir au contexte guide
           </Link>
 
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-            >
-              Se deconnecter
-            </button>
-          </form>
+          <LogoutButton
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950 disabled:opacity-70"
+            showIcon={false}
+          />
         </div>
       </SurfacePanel>
     </PageShell>

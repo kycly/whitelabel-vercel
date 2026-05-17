@@ -42,6 +42,8 @@ L'ecran `SESSION_CONTEXT` est decoupe en 4 zones.
 3. Notifications
 4. Options avancees
 
+Le header de cet ecran conserve aussi une action de deconnexion visible et immediate, placee en haut a droite, pour permettre de quitter la session demo sans casser le flux guide du formulaire.
+
 ## 1. Scenario
 
 Le scenario est un choix par cartes.

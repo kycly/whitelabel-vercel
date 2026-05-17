@@ -127,6 +127,13 @@ src/
 - formulation orientee confiance et accompagnement
 - densite adaptee mobile avant desktop
 
+Pour l'authentification J1, cette logique s'applique aussi au formulaire de connexion direct:
+
+- carte unique et centree
+- etats inline pour login, nouveau mot de passe et reset
+- message de restauration de session visible avant l'affichage complet du formulaire
+- action secondaire de deconnexion gardee sobre sur les ecrans proteges
+
 ## Regles d'implementation
 
 - les styles doivent etre redefinis localement dans whitelabel-vercel

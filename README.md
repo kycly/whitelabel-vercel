@@ -48,8 +48,8 @@ Le J1 vise un flux minimal:
 Le socle applicatif minimal est maintenant present dans ce dossier:
 
 - app Next.js App Router
-- login Cognito Hosted UI avec callback serveur et cookie HTTP-only
-- routes `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/sessions`
+- login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
+- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/sessions`
 - pages `LOGIN`, `WELCOME`, `ACCESS_DENIED`, `VERIFY`, `SESSIONS`
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
 - proxy serveur de creation et de lecture des sessions KYC avec resolution `DEMO_ACCOUNT_KEY_MAP`
@@ -78,15 +78,12 @@ Commandes utiles:
 Variables publiques:
 
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+- `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 
 Variables serveur:
 
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si le client Cognito en a besoin
 - `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node`
 - `DEMO_ACCOUNT_KEY_MAP`
 

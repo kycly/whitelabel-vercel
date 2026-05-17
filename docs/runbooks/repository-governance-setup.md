@@ -57,7 +57,7 @@ Les elements suivants doivent etre regles dans GitHub et Vercel:
 - root directory Vercel
 - variables Vercel `Preview` et `Production`
 - branche de production Vercel
-- callbacks Cognito autorises
+- configuration du client Cognito dedie
 
 Note de contexte:
 
@@ -219,12 +219,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_APP_ENV=preview`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
@@ -234,12 +230,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_APP_ENV=production`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
@@ -255,16 +247,9 @@ Invariant obligatoire:
 
 Dans l'app client Cognito dediee a `whitelabel-vercel`, verifier:
 
-- URL de callback preview autorisee
-- URL de callback production autorisee
-- URL de logout preview autorisee
-- URL de logout production autorisee
-
-Verifier aussi la coherence entre:
-
-- les URLs declarees dans Cognito
-- les valeurs Vercel `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- les valeurs Vercel `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+- l'association au bon user pool
+- l'activation du flux d'authentification retenu pour le login direct
+- la coherence entre region, user pool et app client id diffuses a Vercel
 
 ---
 

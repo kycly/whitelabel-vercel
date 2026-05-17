@@ -4,7 +4,8 @@ import { FormEvent, useMemo, useState } from "react";
 import { KycLink } from "@kycly/link/react";
 import type { KycLinkErrorPayload, KycLinkStep } from "@kycly/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, BadgeCheck, ChevronDown, LoaderCircle, LogOut, Plus, Shield, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowRight, BadgeCheck, ChevronDown, LoaderCircle, Plus, Shield, Trash2 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/logout-button";
 import {
   MAX_CUSTOM_CONTEXT_ENTRIES,
   COUNTRY_OPTIONS,
@@ -214,15 +215,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
               </p>
             </div>
 
-            <form action="/auth/logout" method="post">
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
-              >
-                <LogOut className="size-4" />
-                Deconnexion
-              </button>
-            </form>
+            <LogoutButton className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950 disabled:opacity-70" label="Deconnexion" />
           </div>
 
           <div className="grid gap-4 rounded-3xl bg-slate-50 p-5 text-sm text-slate-600 sm:grid-cols-2">

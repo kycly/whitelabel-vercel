@@ -35,21 +35,22 @@ Conséquences:
 
 ## D2 — Contrat d'authentification
 
-Le J1 utilise Cognito Hosted UI.
+Le J1 utilise un login Cognito direct dans l'application.
 
 Flux retenu:
 
 1. page `LOGIN`
-2. redirection vers Cognito Hosted UI
-3. retour sur `GET /auth/callback`
-4. etablissement de la session applicative
+2. saisie email / mot de passe dans l'app
+3. recuperation de l'id token Cognito dans le navigateur
+4. envoi vers `POST /api/auth/session`
+5. etablissement de la session applicative
 5. passage vers `AUTH_LOADING`
 
 Conséquence:
 
-- pas de formulaire local email / mot de passe
 - pas d'inscription libre dans l'app
-- la config doit inclure domaine et URLs de redirect
+- pas de callbacks OAuth a configurer
+- la config doit inclure seulement region, user pool et app client id
 
 ## D2bis — Format de session applicative apres callback
 
@@ -68,7 +69,7 @@ Contenu attendu:
 - identite minimale utilisateur
 - claims d'acces utiles
 - `demo_account_id`
-- jetons necessaires si le flux retenu les exige, mais jamais exposes au JavaScript client
+- aucun token Cognito brut persiste dans la session applicative cote navigateur
 
 Conséquence:
 
@@ -79,8 +80,8 @@ Conséquence:
 
 Routes J1 retenues:
 
-- `GET /auth/login`
-- `GET /auth/callback`
+- `POST /api/auth/session`
+- `GET /auth/logout`
 - `POST /auth/logout`
 - `GET /api/me`
 - `POST /api/kyc/session`
@@ -90,14 +91,14 @@ Routes J1 retenues:
 Le logout J1 suit exactement la meme logique sur preview et production:
 
 1. suppression de la session applicative locale
-2. redirection vers le logout Cognito Hosted UI
-3. retour vers l'URL de sign-out de l'environnement courant
+2. suppression de la session Cognito locale dans le navigateur
+3. retour vers `LOGIN`
 
 Regles:
 
-- preview -> utiliser `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers l'URL preview active
-- production -> utiliser `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers le domaine canonique de production
-- pas de comportement different par produit hors l'URL de retour
+- preview et production suivent la meme logique locale
+- pas d'URL de sign-out Cognito a configurer
+- pas de comportement different par produit
 
 ## D4 — Regle `Reference client` -> `externalId`
 

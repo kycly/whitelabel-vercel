@@ -269,20 +269,15 @@ Saisir au minimum:
 - `NEXT_PUBLIC_APP_ENV=preview`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
 - `KYCLY_API_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Controles obligatoires avant sauvegarde:
 
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN` pointe vers l'URL preview attendue suivie de `/auth/callback`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers l'URL preview attendue suivie de `/login`
+- `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 
@@ -308,12 +303,8 @@ Saisir au minimum:
 - `NEXT_PUBLIC_APP_ENV=production`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
 - `KYCLY_API_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
@@ -321,8 +312,7 @@ Saisir au minimum:
 Controles obligatoires avant sauvegarde:
 
 - `APP_SESSION_SECRET` doit etre different de celui de `Preview`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN` pointe vers le domaine canonique suivi de `/auth/callback`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers le domaine canonique suivi de `/login`
+- `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
 - `KYCLY_API_BASE_URL` pointe encore vers `partner-node sandbox`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 

@@ -25,7 +25,7 @@ Construire une application web de demonstration / whitelabel pour @kycly/link, i
 
 ```text
 Utilisateur
-  -> Login Cognito Hosted UI
+  -> Login Cognito direct
   -> whitelabel-vercel frontend
   -> whitelabel-vercel backend
   -> partner-node sandbox /kyclink/create via ck_demo_*
@@ -99,16 +99,10 @@ Variables publiques:
 - NEXT_PUBLIC_AWS_REGION
 - NEXT_PUBLIC_COGNITO_USER_POOL_ID
 - NEXT_PUBLIC_COGNITO_APP_CLIENT_ID
-- NEXT_PUBLIC_COGNITO_DOMAIN
-- NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN
-- NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT
 - NEXT_PUBLIC_APP_ENV
 
 Variables serveur:
 
-- COGNITO_JWKS_URL
-- COGNITO_ISSUER
-- COGNITO_CLIENT_SECRET si le flux retenu en a besoin
 - KYCLY_API_BASE_URL
 - DEMO_ACCOUNT_KEY_MAP
 - DEFAULT_KYCLINK_THEME
@@ -166,8 +160,8 @@ whitelabel-vercel/
 
 ## Endpoints backend minimaux
 
-- GET /auth/login
-- GET /auth/callback
+- POST /api/auth/session
+- GET /auth/logout
 - POST /auth/logout
 - GET /api/me
 - POST /api/kyc/session
@@ -176,10 +170,9 @@ whitelabel-vercel/
 
 Responsabilites:
 
-- GET /auth/login redirige vers Cognito Hosted UI
-- GET /auth/callback recupere le retour Cognito et etablit la session applicative via cookie serveur
-- POST /auth/logout termine la session applicative puis declenche le logout Cognito avec l'URL de retour de l'environnement courant
-- GET /api/me valide le JWT et expose l'identite autorisee minimale
+- POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
+- GET /auth/logout et POST /auth/logout terminent la session applicative locale
+- GET /api/me lit la session applicative et expose l'identite autorisee minimale
 - POST /api/kyc/session valide le JWT, determine le compte demo, derive `externalId`, selectionne la bonne ck_demo_*, cree la session via partner-node et renvoie la charge utile necessaire au frontend
 - GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire

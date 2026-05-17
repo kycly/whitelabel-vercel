@@ -1,4 +1,5 @@
-import { Lock, LogOut } from "lucide-react";
+import { Lock } from "lucide-react";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { PageShell } from "@/components/layout/page-shell";
 import { SurfacePanel } from "@/components/ui/surface-panel";
 
@@ -18,15 +19,7 @@ export function AccessDeniedScreen({ userLabel }: { userLabel: string }) {
           <p className="text-sm text-slate-500">Compte courant : {userLabel}</p>
         </div>
 
-        <form action="/auth/logout" method="post" className="mt-8">
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-          >
-            <LogOut className="size-4" />
-            Se deconnecter
-          </button>
-        </form>
+        <LogoutButton className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950 disabled:opacity-70" />
       </SurfacePanel>
     </PageShell>
   );

@@ -109,11 +109,11 @@ Page de connexion explicite, premiere surface visible pour un utilisateur non au
 
 - details techniques Cognito
 - informations de tenant ou de claims
-- formulaire local email/mot de passe si l'auth passe par Cognito hosted UI
+- details sur les tokens ou la session serveur
 
 ### Sorties possibles
 
-- vers `AUTH_LOADING` apres retour Cognito
+- vers `AUTH_LOADING` apres validation de la session Cognito
 
 ### Reference detaillee
 
