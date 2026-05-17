@@ -80,7 +80,11 @@ export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<Se
   if (response.status === 403 || response.status === 404) {
     if (shouldLogAuthDebug()) {
       console.info("[auth/session] partner demo access unresolved", {
+        endpoint,
         status: response.status,
+        contentType: response.headers.get("content-type"),
+        server: response.headers.get("server"),
+        cfRay: response.headers.get("cf-ray"),
         body,
       });
     }
@@ -116,7 +120,11 @@ export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<Se
 
   if (shouldLogAuthDebug()) {
     console.info("[auth/session] partner demo access resolved", {
+      endpoint,
       status: response.status,
+      contentType: response.headers.get("content-type"),
+      server: response.headers.get("server"),
+      cfRay: response.headers.get("cf-ray"),
       demoAccountId,
     });
   }
