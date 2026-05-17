@@ -35,6 +35,9 @@ export const env = {
   server: {
     sessionSecret: process.env.APP_SESSION_SECRET ?? "local-dev-session-secret-change-me",
     kyclyApiBaseUrl: normalizeBaseUrl(process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn"),
+    kyclyMeBaseUrl: normalizeBaseUrl(
+      process.env.KYCLY_ME_BASE_URL ?? process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
+    ),
     demoAccountKeyMap: parseDemoAccountKeyMap(process.env.DEMO_ACCOUNT_KEY_MAP),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
   },

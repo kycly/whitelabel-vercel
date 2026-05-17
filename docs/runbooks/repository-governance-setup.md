@@ -221,7 +221,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox`
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
@@ -232,7 +233,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox`
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
@@ -275,7 +277,8 @@ Dans l'app client Cognito dediee a `whitelabel-vercel`, verifier:
 - [ ] activer les previews Vercel
 - [ ] charger toutes les variables `Preview`
 - [ ] charger toutes les variables `Production`
-- [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox`
+- [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox` pour `/kyclink/*`
+- [ ] verifier que `KYCLY_ME_BASE_URL` pointe sur l'hote exposant `/demo/me`
 - [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 
 ---

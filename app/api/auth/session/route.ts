@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyCognitoIdToken } from "@/auth/cognito";
+import { PartnerDemoAccessError, resolvePartnerDemoAccess, verifyCognitoIdToken } from "@/auth/cognito";
 import { writeSessionCookie } from "@/auth/session";
+import { env } from "@/config/env";
 
 const createSessionSchema = z.object({
   idToken: z.string().min(1),
@@ -23,7 +24,22 @@ export async function POST(request: Request) {
   }
 
   try {
-    const claims = await verifyCognitoIdToken(parsed.data.idToken);
+    const identity = await verifyCognitoIdToken(parsed.data.idToken);
+    const access = await resolvePartnerDemoAccess(parsed.data.idToken);
+    const claims = {
+      ...identity,
+      ...access,
+    };
+
+    if (env.public.appEnv === "local") {
+      console.info("[auth/session] verified Cognito claims", {
+        sub: claims.sub,
+        email: claims.email,
+        demoAccountId: claims.demoAccountId,
+        canAccess: claims.canAccess,
+      });
+    }
+
     const response = NextResponse.json({
       authenticated: true,
       user: claims,
@@ -32,7 +48,17 @@ export async function POST(request: Request) {
     await writeSessionCookie(response, claims);
 
     return response;
-  } catch {
+  } catch (error) {
+    if (error instanceof PartnerDemoAccessError) {
+      return NextResponse.json(
+        {
+          message: error.message,
+          code: error.code,
+        },
+        { status: error.statusCode },
+      );
+    }
+
     return NextResponse.json(
       {
         message: "Invalid Cognito session.",

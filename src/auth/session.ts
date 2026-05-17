@@ -21,6 +21,10 @@ export type AppSession = z.infer<typeof sessionSchema>;
 
 type SessionInput = Omit<AppSession, "iat" | "exp">;
 
+function shouldUseSecureSessionCookie(): boolean {
+  return env.public.appEnv !== "local";
+}
+
 function getSessionSecret(): Uint8Array {
   return new TextEncoder().encode(env.server.sessionSecret);
 }
@@ -59,7 +63,7 @@ export async function writeSessionCookie(response: NextResponse, input: SessionI
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: shouldUseSecureSessionCookie(),
     path: "/",
     maxAge: SESSION_TTL_SECONDS,
   });
@@ -71,7 +75,7 @@ export function clearSessionCookie(response: NextResponse): void {
     value: "",
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: shouldUseSecureSessionCookie(),
     path: "/",
     expires: new Date(0),
   });

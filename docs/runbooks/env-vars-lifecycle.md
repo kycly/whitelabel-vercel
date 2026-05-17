@@ -118,7 +118,8 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | Variable | Description |
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
-| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur |
+| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `/kyclink/*` |
+| `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
 | `DEMO_ACCOUNT_KEY_MAP` | map `demo_account_id -> ck_demo_*` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 
@@ -168,7 +169,7 @@ Regles retenues:
 
 Role:
 
-- URL du backend KYC appele par les route handlers Next.js
+- URL du backend KYC appele par les route handlers Next.js pour `/kyclink/*`
 
 Regle J1 retenue:
 
@@ -176,6 +177,19 @@ Regle J1 retenue:
 - `Production` -> runtime `partner-node sandbox`
 
 Cette variable ne doit pas pointer vers `partner-node production` tant qu'une decision explicite ne modifie pas le blueprint du projet.
+
+### `KYCLY_ME_BASE_URL`
+
+Role:
+
+- URL du host appele par les route handlers Next.js pour resoudre `/demo/me`
+
+Regle J1 retenue:
+
+- `Preview` -> host exposant `/demo/me`
+- `Production` -> host exposant `/demo/me`
+
+Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe `/demo/me` du reste des routes `partner-node`.
 
 ### `DEMO_ACCOUNT_KEY_MAP`
 
@@ -239,6 +253,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME`
 
@@ -250,6 +265,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL` -> sandbox
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
 - `DEFAULT_KYCLINK_THEME`
 
@@ -261,6 +277,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL` -> sandbox
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
 - `DEFAULT_KYCLINK_THEME`
 
@@ -278,6 +295,7 @@ Variables minimales retenues dans la CI:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET` de validation
 - `KYCLY_API_BASE_URL` de validation
+- `KYCLY_ME_BASE_URL` de validation
 - `DEMO_ACCOUNT_KEY_MAP` de validation avec une `ck_demo_*` factice
 
 Secrets CI retenus:
@@ -319,6 +337,14 @@ Procedure retenue:
 2. redeployer
 3. verifier creation et lecture de session
 
+### `KYCLY_ME_BASE_URL`
+
+Procedure retenue:
+
+1. mettre a jour la variable dans Vercel
+2. redeployer
+3. verifier login et resolution du scope demo
+
 ---
 
 ## Verification apres changement de variables
@@ -342,6 +368,7 @@ Apres tout changement sur les variables structurantes, verifier:
 - [ ] charger `GH_PACKAGES_TOKEN` dans GitHub Actions
 - [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 - [ ] verifier que `KYCLY_API_BASE_URL` cible `partner-node sandbox`
+- [ ] verifier que `KYCLY_ME_BASE_URL` cible l'hote exposant `/demo/me`
 
 ---
 

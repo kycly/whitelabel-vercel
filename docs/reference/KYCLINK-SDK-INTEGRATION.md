@@ -123,7 +123,9 @@ Contraintes utiles:
 
 ### 2.2 — Instance backend actuelle
 
-Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node`.
+Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour les routes `/kyclink/*`.
+
+La resolution du scope demo via `/demo/me` peut pointer vers un host distinct, configure dans `KYCLY_ME_BASE_URL`.
 
 Pour l'usage interne actuel, l'instance de reference est:
 

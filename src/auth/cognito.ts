@@ -1,13 +1,27 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { env } from "@/config/env";
 
-export type SessionClaims = {
+export type VerifiedIdentityClaims = {
   sub: string;
   email: string | null;
   name: string | null;
+};
+
+export type SessionClaims = VerifiedIdentityClaims & {
   demoAccountId: string | null;
   canAccess: boolean;
 };
+
+export class PartnerDemoAccessError extends Error {
+  statusCode: number;
+  code: string;
+
+  constructor(message: string, statusCode: number, code: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
 
 let cachedJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
@@ -28,7 +42,7 @@ function getCognitoJwks() {
   return cachedJwks;
 }
 
-export function claimsFromIdTokenPayload(payload: JWTPayload): SessionClaims {
+export function identityFromIdTokenPayload(payload: JWTPayload): VerifiedIdentityClaims {
   const sub = typeof payload.sub === "string" ? payload.sub : null;
 
   if (!sub) {
@@ -39,15 +53,77 @@ export function claimsFromIdTokenPayload(payload: JWTPayload): SessionClaims {
     sub,
     email: typeof payload.email === "string" ? payload.email : null,
     name: typeof payload.name === "string" ? payload.name : null,
-    demoAccountId:
-      typeof payload["custom:demo_account_id"] === "string"
-        ? String(payload["custom:demo_account_id"])
-        : null,
-    canAccess: String(payload["custom:kyc_demo_access"] ?? "false") === "true",
   };
 }
 
-export async function verifyCognitoIdToken(idToken: string): Promise<SessionClaims> {
+export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<SessionClaims, "demoAccountId" | "canAccess">> {
+  const endpoint = new URL("/demo/me", `${env.server.kyclyMeBaseUrl}/`).toString();
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    cache: "no-store",
+  });
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (response.status === 403 || response.status === 404) {
+    if (env.public.appEnv === "local") {
+      console.info("[auth/session] partner demo access unresolved", {
+        status: response.status,
+        body,
+      });
+    }
+
+    return {
+      demoAccountId: null,
+      canAccess: false,
+    };
+  }
+
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "Partner demo access resolution failed";
+    const code =
+      body && typeof body === "object" && "code" in body && typeof body.code === "string"
+        ? body.code
+        : "PARTNER_DEMO_ACCESS_FAILED";
+
+    throw new PartnerDemoAccessError(message, response.status, code);
+  }
+
+  const demoAccount =
+    body && typeof body === "object" && "demo_account" in body && body.demo_account && typeof body.demo_account === "object"
+      ? body.demo_account
+      : null;
+
+  const demoAccountId =
+    demoAccount && "id" in demoAccount && typeof demoAccount.id === "string"
+      ? demoAccount.id
+      : null;
+
+  if (env.public.appEnv === "local") {
+    console.info("[auth/session] partner demo access resolved", {
+      status: response.status,
+      demoAccountId,
+    });
+  }
+
+  return {
+    demoAccountId,
+    canAccess: demoAccountId !== null,
+  };
+}
+
+export async function verifyCognitoIdToken(idToken: string): Promise<VerifiedIdentityClaims> {
   const { payload } = await jwtVerify(idToken, getCognitoJwks(), {
     issuer: getCognitoIssuer(),
     audience: env.public.cognitoAppClientId,
@@ -57,5 +133,5 @@ export async function verifyCognitoIdToken(idToken: string): Promise<SessionClai
     throw new Error("Unexpected Cognito token type");
   }
 
-  return claimsFromIdTokenPayload(payload);
+  return identityFromIdTokenPayload(payload);
 }

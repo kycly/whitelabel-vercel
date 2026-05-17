@@ -108,7 +108,8 @@ Implications UX:
 1. l'utilisateur arrive sur `LOGIN`
 2. il saisit ses identifiants Cognito
 3. l'app verifie l'id token cote serveur
-4. l'app passe en `AUTH_LOADING`
+4. l'app resout le scope demo via `partner-node /demo/me`
+5. l'app passe en `AUTH_LOADING`
 
 ## Variables de configuration minimales
 
@@ -127,7 +128,7 @@ Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 
 ### Cas non autorise
 
-- apres auth valide mais sans claim adequat, le parcours va vers `ACCESS_DENIED`
+- apres auth valide mais sans scope demo resolu par partner-node, le parcours va vers `ACCESS_DENIED`
 
 ## Structure d'interface recommandee
 
@@ -157,3 +158,5 @@ Ne pas afficher:
 ## Decision UX retenue
 
 La page de connexion du J1 est une page simple, rassurante et orientee action, avec un formulaire Cognito direct et des flux annexes limites a `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD`. Elle existe comme surface produit a part entiere, distincte de `AUTH_LOADING`.
+
+Apres verification serveur de l'id token, l'app resout le scope demo via partner-node avant d'ouvrir l'espace protege.

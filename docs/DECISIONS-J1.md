@@ -67,7 +67,7 @@ Format retenu:
 Contenu attendu:
 
 - identite minimale utilisateur
-- claims d'acces utiles
+- resultat de resolution du scope demo via `partner-node /demo/me`
 - `demo_account_id`
 - aucun token Cognito brut persiste dans la session applicative cote navigateur
 
@@ -170,13 +170,14 @@ Regles:
 Le backend de whitelabel-vercel doit, dans cet ordre:
 
 1. valider la session utilisateur
-2. verifier l'acces applicatif
-3. resoudre `demo_account_id`
-4. deriver `externalId`
-5. construire `metadata`
-6. resoudre `ck_demo_*`
-7. appeler `partner-node /kyclink/create`
-8. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
+2. resoudre le scope demo via `partner-node /demo/me`
+3. verifier l'acces applicatif
+4. resoudre `demo_account_id`
+5. deriver `externalId`
+6. construire `metadata`
+7. resoudre `ck_demo_*`
+8. appeler `partner-node /kyclink/create`
+9. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 

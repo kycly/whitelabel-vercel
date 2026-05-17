@@ -40,7 +40,7 @@ Utilisateur
 4. Le frontend recupere un JWT Cognito.
 5. Le frontend appelle le backend de whitelabel-vercel avec ce JWT.
 6. Le backend valide le JWT.
-7. Le backend lit les claims utiles, notamment le droit d'acces a l'app et le compte demo cible.
+7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
 9. Le backend resout la bonne cle ck_demo_* a utiliser.
 10. Le backend appelle `partner-node` pour creer la session.
@@ -51,33 +51,23 @@ Utilisateur
 
 ## Contrat d'autorisation minimal
 
-Le token Cognito doit transporter assez d'information pour autoriser l'acces sans appel runtime a partner-node.
+Le token Cognito doit permettre d'etablir l'identite utilisateur.
 
-Claims minimum recommandes:
+La resolution du droit d'acces demo et du `demo_account_id` se fait ensuite via `partner-node /demo/me`, qui derive le scope sandbox a partir du `sub` Cognito et de la liaison locale vers un compte demo.
+
+Claims minimum attendus:
 
 - sub
 - email
-- custom:kyc_demo_access
-- custom:demo_account_id
-
-Exemple logique:
-
-```json
-{
-  "sub": "2a9e1d6f-xxxx-xxxx-xxxx-6e0f0f3e1e10",
-  "email": "demo.user@example.com",
-  "custom:kyc_demo_access": "true",
-  "custom:demo_account_id": "demo_acme"
-}
-```
 
 ## Regles de securite
 
 - le frontend ne voit jamais de ck_demo_*
 - le JWT Cognito sert a authentifier l'utilisateur, pas a remplacer la credential serveur
-- le backend verifie l'acces avant toute creation de session
+- le backend verifie l'acces via `partner-node /demo/me` avant toute creation de session
 - le backend choisit la ck_demo_* a partir du compte demo autorise
-- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node
+- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` doit cibler l'hote exposant `/demo/me`
 - l'app n'utilise ni la base ni le backend runtime de partner-node
 
 ## Canon UI/UX local
@@ -104,6 +94,7 @@ Variables publiques:
 Variables serveur:
 
 - KYCLY_API_BASE_URL
+- KYCLY_ME_BASE_URL
 - DEMO_ACCOUNT_KEY_MAP
 - DEFAULT_KYCLINK_THEME
 
@@ -182,7 +173,6 @@ Le contrat cible de cette future route est detaille dans [reference/KYC-SESSIONS
 ## Ce qu'on ne fait pas au J1
 
 - aucune base de donnees dediee
-- aucun appel runtime a partner-node pour resoudre les droits
 - aucun stockage local avance des sessions
 - aucun backoffice
 - aucun deploiement par tenant
@@ -192,7 +182,7 @@ Le contrat cible de cette future route est detaille dans [reference/KYC-SESSIONS
 Ajouter une persistance dediee seulement si l'un des besoins suivants devient reel:
 
 - audit local des sessions creees
-- mapping user -> demo_account hors claims Cognito
+- mapping user -> demo_account hors partner-node
 - branding fort par tenant
 - analytics ou parcours applicatifs persistants
 - backoffice propre a l'app

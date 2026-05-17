@@ -40,7 +40,8 @@ Preparer les informations suivantes:
 - les valeurs Cognito publiques de `whitelabel-vercel`
 - une valeur `APP_SESSION_SECRET` pour `Preview`
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
-- `KYCLY_API_BASE_URL` du runtime `partner-node sandbox`
+- `KYCLY_API_BASE_URL` du runtime `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` du host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` contenant uniquement des `ck_demo_*`
 - le theme par defaut si override necessaire
 
@@ -272,6 +273,7 @@ Saisir au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
@@ -279,6 +281,7 @@ Controles obligatoires avant sauvegarde:
 
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox`
+- `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 
 Verification attendue:
@@ -306,6 +309,7 @@ Saisir au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
@@ -314,6 +318,7 @@ Controles obligatoires avant sauvegarde:
 - `APP_SESSION_SECRET` doit etre different de celui de `Preview`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
 - `KYCLY_API_BASE_URL` pointe encore vers `partner-node sandbox`
+- `KYCLY_ME_BASE_URL` pointe encore vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 
 Verification attendue:
@@ -386,6 +391,7 @@ Bloquer la mise en place si vous observez l'un de ces symptomes:
 - Vercel propose `main` comme branche de production et la valeur n'est pas corrigee
 - l'URL Cognito preview ou production ne correspond pas aux variables Vercel
 - `KYCLY_API_BASE_URL` vise autre chose que `partner-node sandbox`
+- `KYCLY_ME_BASE_URL` ne vise pas l'hote expose pour `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` contient une `ck_live_*`
 
 ---

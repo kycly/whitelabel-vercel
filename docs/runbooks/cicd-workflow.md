@@ -249,6 +249,7 @@ Les variables doivent etre separees par environnement Vercel.
 
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si override necessaire
 
@@ -256,14 +257,16 @@ Les variables doivent etre separees par environnement Vercel.
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
 - `DEMO_ACCOUNT_KEY_MAP` reste strictement cote serveur
-- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `Preview` et `Production`
+- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `/kyclink/*` en `Preview` et `Production`
+- `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me` en `Preview` et `Production`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 
 ### Invariant J1
 
 Pour `Preview` comme pour `Production`:
 
-- `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node`
+- `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node` pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` -> seulement des cles `ck_demo_*`
 
 ---

@@ -37,7 +37,7 @@ Le J1 vise un flux minimal:
 
 1. login utilisateur via Cognito
 2. verification serveur du JWT
-3. resolution du tenant demo a partir des claims Cognito
+3. resolution du tenant demo via partner-node a partir du JWT Cognito
 4. derivation de `externalId` a partir de la reference client
 5. selection de la bonne ck_demo_* cote serveur
 6. creation de session KYC via partner-node
@@ -84,7 +84,8 @@ Variables publiques:
 Variables serveur:
 
 - `APP_SESSION_SECRET`
-- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node`
+- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour `/kyclink/*`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`, par exemple `https://me.kycly.sn`
 - `DEMO_ACCOUNT_KEY_MAP`
 
 ## Note d'implementation
