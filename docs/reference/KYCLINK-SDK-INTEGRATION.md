@@ -233,12 +233,16 @@ type CreateKycLinkSessionResponse = {
 
 export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
+  apiKey: string,
+  baseUrl = process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
-  const response = await fetch("https://api.kycly.sn/kyclink/create", {
+  const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.KYCLY_CLIENT_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(input),
   });
@@ -250,6 +254,15 @@ export async function createKycLinkSession(
   return (await response.json()) as CreateKycLinkSessionResponse;
 }
 ```
+
+Dans `whitelabel-vercel`, cette fonction n'utilise pas une variable unique de type `KYCLY_CLIENT_API_KEY`.
+Le flux retenu est le suivant:
+
+1. verifier le JWT Cognito cote serveur
+2. appeler `GET /demo/me` sur `KYCLY_ME_BASE_URL`
+3. recuperer le `demoAccountId` courant
+4. resoudre la `ck_demo_*` correspondante via `DEMO_ACCOUNT_KEY_MAP`
+5. appeler `POST /kyclink/create` sur `KYCLY_API_BASE_URL`
 
 ### 3.3 — Route a exposer dans votre propre backend
 
@@ -265,10 +278,12 @@ Exemple Express minimal:
 
 ```ts
 app.post("/api/kyc/session", async (req, res) => {
+  const apiKey = resolveDemoApiKeyForCurrentUser(req);
+
   const session = await createKycLinkSession({
     externalId: req.body.externalId,
     metadata: req.body.metadata,
-  });
+  }, apiKey);
 
   res.status(201).json(session);
 });
