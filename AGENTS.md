@@ -11,10 +11,13 @@ Ordre de lecture recommande:
 3. [docs/DECISIONS-J1.md](docs/DECISIONS-J1.md)
 4. [docs/PARCOURS-J1.md](docs/PARCOURS-J1.md)
 5. [docs/runbooks/cicd-workflow.md](docs/runbooks/cicd-workflow.md)
-6. [docs/reference/AUTH-UX.md](docs/reference/AUTH-UX.md)
-7. [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
-8. [docs/reference/UI-ESTHETIC-CANON.md](docs/reference/UI-ESTHETIC-CANON.md)
-9. [docs/reference/KYCLINK-SDK-INTEGRATION.md](docs/reference/KYCLINK-SDK-INTEGRATION.md)
+6. [docs/runbooks/env-vars-lifecycle.md](docs/runbooks/env-vars-lifecycle.md)
+7. [docs/runbooks/repository-governance-setup.md](docs/runbooks/repository-governance-setup.md)
+8. [docs/runbooks/remote-setup-clickpath.md](docs/runbooks/remote-setup-clickpath.md)
+9. [docs/reference/AUTH-UX.md](docs/reference/AUTH-UX.md)
+10. [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
+11. [docs/reference/UI-ESTHETIC-CANON.md](docs/reference/UI-ESTHETIC-CANON.md)
+12. [docs/reference/KYCLINK-SDK-INTEGRATION.md](docs/reference/KYCLINK-SDK-INTEGRATION.md)
 
 ## Invariants a respecter
 
@@ -61,6 +64,9 @@ Le projet fournit une application simple permettant a un utilisateur deja provis
 - GitHub Environments dedies
 - secrets dedies a cette app
 - workflow de reference documente dans [docs/runbooks/cicd-workflow.md](docs/runbooks/cicd-workflow.md)
+- cycle de vie des variables documente dans [docs/runbooks/env-vars-lifecycle.md](docs/runbooks/env-vars-lifecycle.md)
+- protections de branches et configuration distante documentees dans [docs/runbooks/repository-governance-setup.md](docs/runbooks/repository-governance-setup.md)
+- procedure d'execution ecran par ecran documentee dans [docs/runbooks/remote-setup-clickpath.md](docs/runbooks/remote-setup-clickpath.md)
 - ces environnements de deploiement ne changent pas la portee metier retenue: l'app reste branchee sur le runtime sandbox de partner-node tant qu'une decision explicite n'ouvre pas un mode prod distinct
 
 ## Si vous modifiez ce scaffold

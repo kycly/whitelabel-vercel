@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+echo "[pre-push] Checking canonical docs drift..."
+pnpm -s docs:check
+
+echo "[pre-push] Guard sandbox-only manifests..."
+pnpm -s guard:sandbox-only
+
+echo "[pre-push] Running lint..."
+pnpm -s lint
+
+echo "[pre-push] Running typecheck..."
+pnpm -s typecheck
+
+echo "[pre-push] Running full test suite..."
+pnpm -s test
+
+echo "[pre-push] Running build..."
+pnpm -s build

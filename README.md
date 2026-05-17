@@ -21,6 +21,9 @@ Documentation de cadrage:
 - decisions fermees J1: [docs/DECISIONS-J1.md](docs/DECISIONS-J1.md)
 - parcours J1: [docs/PARCOURS-J1.md](docs/PARCOURS-J1.md)
 - runbook CI/CD Vercel: [docs/runbooks/cicd-workflow.md](docs/runbooks/cicd-workflow.md)
+- cycle de vie des variables: [docs/runbooks/env-vars-lifecycle.md](docs/runbooks/env-vars-lifecycle.md)
+- gouvernance GitHub et configuration Vercel: [docs/runbooks/repository-governance-setup.md](docs/runbooks/repository-governance-setup.md)
+- procedure ecran par ecran GitHub et Vercel: [docs/runbooks/remote-setup-clickpath.md](docs/runbooks/remote-setup-clickpath.md)
 - contrat futur de liste des verifications: [docs/reference/KYC-SESSIONS-LIST-CONTRACT.md](docs/reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - UX page de connexion: [docs/reference/AUTH-UX.md](docs/reference/AUTH-UX.md)
 - UX metadata de session: [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
@@ -58,12 +61,17 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
+`pnpm install` reconfigure aussi les hooks Git locaux via `pnpm prepare`. Si besoin, relancer `pnpm prepare` pour reappliquer `.githooks/`.
+
 Commandes utiles:
 
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test`
 - `pnpm build`
+- `pnpm docs:check`
+- `pnpm guard:sandbox-only`
+- `pnpm prepare`
 
 ## Variables minimales
 

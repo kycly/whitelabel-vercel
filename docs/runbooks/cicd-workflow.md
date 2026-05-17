@@ -129,15 +129,48 @@ Ordre des etapes retenu:
 2. setup pnpm
 3. setup Node.js
 4. `pnpm install --frozen-lockfile`
-5. `pnpm test`
-6. `pnpm typecheck`
-7. `pnpm lint`
-8. `pnpm build`
+5. `pnpm docs:check`
+6. `pnpm guard:sandbox-only`
+7. `pnpm test`
+8. `pnpm typecheck`
+9. `pnpm lint`
+10. `pnpm build`
 
 Ordre de severite retenu:
 
+- la coherence documentaire canonique doit etre validee avant le reste du gate
+- le garde-fou sandbox-only doit bloquer toute introduction de `ck_live_*`
 - les tests executables passent avant les controles purement statiques
 - le build reste obligatoire pour verifier le runtime Next/Vercel
+
+## Hooks locaux retenus
+
+Le repository doit porter un gate local aligne sur la CI.
+
+Implementation retenue:
+
+- hooks Git versionnes dans `.githooks/`
+- activation locale via `git config core.hooksPath .githooks`
+- installation automatique via `pnpm prepare`
+
+Pre-commit retenu:
+
+- `lint-staged`
+- `pnpm test`
+
+Pre-push retenu:
+
+- `pnpm docs:check`
+- `pnpm guard:sandbox-only`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm build`
+
+Conclusion operatoire:
+
+- `pnpm install` doit reconfigurer les hooks localement
+- un push est bloque si la doc canonique n'est pas alignee ou si un marqueur `ck_live_*` apparait dans les surfaces applicatives
 
 Artefacts recommandés:
 
@@ -354,6 +387,9 @@ La documentation doit rester alignee avec la realite operatoire.
 Quand la chaine CI/CD evolue, mettre a jour en meme temps:
 
 - ce runbook
+- [env-vars-lifecycle.md](env-vars-lifecycle.md)
+- [repository-governance-setup.md](repository-governance-setup.md)
+- [remote-setup-clickpath.md](remote-setup-clickpath.md)
 - `README.md`
 - `AGENTS.md`
 - toute doc de variables d'environnement ou de blueprint impactee

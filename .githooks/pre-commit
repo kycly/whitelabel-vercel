@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+echo "[pre-commit] Running lint-staged..."
+pnpm exec lint-staged
+
+echo "[pre-commit] Running tests..."
+pnpm -s test
