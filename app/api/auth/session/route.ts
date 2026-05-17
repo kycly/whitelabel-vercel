@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       ...access,
     };
 
-    if (env.public.appEnv === "local") {
+    if (env.public.appEnv !== "production") {
       console.info("[auth/session] verified Cognito claims", {
         sub: claims.sub,
         email: claims.email,
