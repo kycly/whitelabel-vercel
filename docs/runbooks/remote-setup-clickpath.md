@@ -37,6 +37,7 @@ Preparer les informations suivantes:
 
 - le repository GitHub cible
 - un `GH_PACKAGES_TOKEN` avec scope `read:packages`
+- un `NODE_AUTH_TOKEN` valable pour GitHub Packages cote Vercel
 - les valeurs Cognito publiques de `whitelabel-vercel`
 - une valeur `APP_SESSION_SECRET` pour `Preview`
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
@@ -272,6 +273,7 @@ Saisir au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
@@ -280,6 +282,7 @@ Saisir au minimum:
 Controles obligatoires avant sauvegarde:
 
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
+- `NODE_AUTH_TOKEN` est present pour permettre l'installation de `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox`
 - `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
@@ -308,6 +311,7 @@ Saisir au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
@@ -317,6 +321,7 @@ Controles obligatoires avant sauvegarde:
 
 - `APP_SESSION_SECRET` doit etre different de celui de `Preview`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID` et `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` correspondent bien au client Cognito dedie
+- `NODE_AUTH_TOKEN` est present pour permettre l'installation de `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` pointe encore vers `partner-node sandbox`
 - `KYCLY_ME_BASE_URL` pointe encore vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`

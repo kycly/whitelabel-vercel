@@ -248,6 +248,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Variables serveur minimales
 
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN` pour le build Vercel si `@kycly/link` est installe depuis GitHub Packages
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
@@ -256,6 +257,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Politique retenue
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
+- `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
 - `DEMO_ACCOUNT_KEY_MAP` reste strictement cote serveur
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `/kyclink/*` en `Preview` et `Production`
 - `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me` en `Preview` et `Production`

@@ -22,6 +22,11 @@ Repartition retenue:
 - Vercel Preview: variables de runtime preview
 - Vercel Production: variables de runtime production
 
+Distinction importante:
+
+- `GH_PACKAGES_TOKEN` est un secret GitHub Actions pour la CI
+- `NODE_AUTH_TOKEN` est un secret Vercel requis au build si `.npmrc` installe `@kycly/link` depuis GitHub Packages
+
 Regle structurante:
 
 - les variables Vercel `Preview` et `Production` decrivent deux stades de deploiement de `whitelabel-vercel`
@@ -118,6 +123,7 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | Variable | Description |
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
+| `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
 | `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `/kyclink/*` |
 | `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
 | `DEMO_ACCOUNT_KEY_MAP` | map `demo_account_id -> ck_demo_*` |
@@ -163,6 +169,18 @@ Regles retenues:
 
 - valeur longue, aleatoire, dedicatee a `whitelabel-vercel`
 - valeur differente entre `Preview` et `Production`
+- ne jamais exposer cette valeur dans le client
+
+### `NODE_AUTH_TOKEN`
+
+Role:
+
+- permettre a `pnpm install` d'acceder a `@kycly/link` sur GitHub Packages via `.npmrc`
+
+Regles retenues:
+
+- requis dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
+- ne pas confondre avec `GH_PACKAGES_TOKEN`, qui sert a la CI GitHub Actions
 - ne jamais exposer cette valeur dans le client
 
 ### `KYCLY_API_BASE_URL`
@@ -252,6 +270,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN` si l'installation locale doit resoudre `@kycly/link`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
 - `DEMO_ACCOUNT_KEY_MAP`
@@ -264,6 +283,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
@@ -276,6 +296,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement

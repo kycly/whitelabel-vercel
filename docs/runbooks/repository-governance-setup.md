@@ -161,6 +161,11 @@ Regle retenue:
 
 - utiliser un PAT lecture seule avec scope `read:packages`
 
+Important:
+
+- `GH_PACKAGES_TOKEN` couvre la CI GitHub Actions
+- `NODE_AUTH_TOKEN` reste requis dans Vercel `Preview` et `Production` pour installer `@kycly/link` pendant le build
+
 ---
 
 ## Configuration du projet Vercel
@@ -221,6 +226,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
@@ -233,6 +239,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
