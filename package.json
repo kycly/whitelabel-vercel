@@ -10,7 +10,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:check": "node scripts/check-doc-drift.mjs",
+    "guard:sandbox-only": "node scripts/check-sandbox-only.mjs",
+    "prepare": "node scripts/install-githooks.mjs"
   },
   "dependencies": {
     "@kycly/link": "^1.0.0",
@@ -30,6 +33,7 @@
     "@types/react-dom": "^19.1.5",
     "eslint": "^9.27.0",
     "eslint-config-next": "^16.2.3",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "vitest": "^4.1.6"

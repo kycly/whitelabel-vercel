@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+      - production
+  pull_request:
+    branches:
+      - main
+      - production
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event_name == 'pull_request' && 'vercel-preview' || (github.ref_name == 'production' && 'vercel-production' || 'vercel-preview') }}
+    env:
+      NEXT_PUBLIC_APP_ENV: ci
+      NEXT_PUBLIC_AWS_REGION: eu-west-1
+      NEXT_PUBLIC_COGNITO_APP_CLIENT_ID: ci-cognito-client-id
+      NEXT_PUBLIC_COGNITO_DOMAIN: https://ci.auth.eu-west-1.amazoncognito.com
+      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN: https://preview.example.com/auth/callback
+      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT: https://preview.example.com/login
+      NEXT_PUBLIC_COGNITO_USER_POOL_ID: eu-west-1_ci
+      APP_SESSION_SECRET: ci-session-secret-not-for-runtime
+      COGNITO_CLIENT_SECRET: ci-cognito-client-secret
+      KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
+      DEMO_ACCOUNT_KEY_MAP: '{"demo_acme":"ck_demo_ci"}'
+      DEFAULT_KYCLINK_THEME: kycly-light
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Check docs drift
+        run: pnpm docs:check
+
+      - name: Guard sandbox-only
+        run: pnpm guard:sandbox-only
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
