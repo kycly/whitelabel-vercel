@@ -169,6 +169,8 @@ Regles retenues:
 
 - valeur longue, aleatoire, dedicatee a `whitelabel-vercel`
 - valeur differente entre `Preview` et `Production`
+- une valeur placeholder comme `replace-with-a-long-random-secret` ne doit jamais etre reutilisee hors local
+- hors environnement `local`, l'application doit echouer au demarrage si `APP_SESSION_SECRET` est absent ou reste sur un placeholder
 - ne jamais exposer cette valeur dans le client
 
 ### `NODE_AUTH_TOKEN`
