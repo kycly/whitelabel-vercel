@@ -109,11 +109,11 @@ Page de connexion explicite, premiere surface visible pour un utilisateur non au
 
 - details techniques Cognito
 - informations de tenant ou de claims
-- formulaire local email/mot de passe si l'auth passe par Cognito hosted UI
+- details sur les tokens ou la session serveur
 
 ### Sorties possibles
 
-- vers `AUTH_LOADING` apres retour Cognito
+- vers `AUTH_LOADING` apres validation de la session Cognito
 
 ### Reference detaillee
 
@@ -137,7 +137,7 @@ Premier ecran technique, tres court, qui etablit l'etat d'authentification.
 - token valide
 - claim d'acces a l'app present
 - `demo_account_id` resolu
-- mapping `demo_account_id -> ck_demo_*` resolvable cote serveur
+- session applicative avec id token Cognito stocke cote serveur
 
 ### Sorties possibles
 
@@ -217,7 +217,7 @@ L'ecran est compose de 3 niveaux:
 
 1. un choix de scenario rapide
 2. un petit formulaire guide
-3. une section avancee repliable
+3. des ajouts optionnels inline, a la demande
 
 ### Scenarios rapides
 
@@ -234,23 +234,19 @@ Le scenario choisi pre-remplit les champs et determine le ton du formulaire.
 
 Blocs recommandes:
 
-- `Contexte de verification`
-- `Notifications`
-- `Informations complementaires`
+- `Noyau minimal`
+- `Ajouts a la demande`
 
 Champs concrets:
 
 | Bloc | Champ visible | Statut | Destination metadata |
 |---|---|---|---|
-| Contexte de verification | Type de verification | obligatoire | `routingContext.journey` |
-| Contexte de verification | Reference client | obligatoire | `businessContext.customerId` |
-| Contexte de verification | Pays | recommande | `businessContext.country` |
-| Notifications | Email | optionnel | `notificationContext.email` |
-| Notifications | Telephone | optionnel | `notificationContext.phone` |
-| Notifications | Canal prefere | optionnel | `notificationContext.preferredChannel` |
-| Informations complementaires | Produit | optionnel | `businessContext.product` |
-| Informations complementaires | Segment | optionnel | `businessContext.segment` |
-| Informations complementaires | Priorite | optionnel | `routingContext.priority` |
+| Noyau minimal | External ID | obligatoire | `businessContext.customerId` |
+| Noyau minimal | Notification SMS | optionnel | `notificationContext.phone` + `preferredChannel = sms` |
+| Ajouts a la demande | Contexte metier | optionnel | `businessContext.*` |
+| Ajouts a la demande | Contexte routage | optionnel | `routingContext.*` |
+| Ajouts a la demande | Email | optionnel | `notificationContext.email` + `preferredChannel = email` |
+| Ajouts a la demande | Contexte libre | optionnel | `customContext.*` |
 
 ### Ce qu'on n'expose pas au J1
 
@@ -259,28 +255,30 @@ Champs concrets:
 - taxonomie technique des contexts
 - liste libre de dizaines de champs
 
-### Section avancee
+### Ajouts a la demande
 
-La section avancee reste fermee par defaut.
+Les ajouts restent masques par defaut et s'activent depuis une checklist `Besoins optionnels`.
 
-Elle permet uniquement:
+Les groupes exposes sont alignes sur les categories `partner-node`:
 
-- d'ajouter quelques paires cle/valeur supplementaires
-- de visualiser un apercu JSON en lecture seule
+- `Contexte metier`
+- `Contexte routage`
+- `Email`
+- `Contexte libre`
 
-Les paires additionnelles sont mappees vers `customContext`.
+Une fois un groupe active, son panneau apparait inline dans le formulaire et peut etre referme via une action de suppression discrete.
 
 ### Validation UX
 
 - valider en direct les champs email et telephone
 - bloquer les cles interdites dans la section avancee
 - garder des messages de validation metier, pas techniques
-- empecher l'envoi si `Reference client` ou `Type de verification` sont absents
-- limiter `Reference client` a 128 caracteres
+- empecher l'envoi si `External ID` est absent
+- limiter `External ID` a 128 caracteres
 
 ### CTA
 
-- primaire: `Continuer`
+- primaire: `Creer la session`
 - secondaire: `Retour`
 
 ### Sorties possibles
@@ -305,7 +303,8 @@ Etat intermediaire pendant lequel le backend cree la session KYC.
 - le backend verifie le JWT
 - le backend determine le `demo_account_id`
 - le backend derive `externalId` a partir de la reference client
-- le backend choisit la bonne `ck_demo_*`
+- le backend derive `parentOrigin` depuis la requete HTTP
+- le backend reutilise l'id token Cognito stocke dans la session serveur
 - le backend appelle `partner-node` pour creer la session
 
 ### UX attendue
@@ -353,30 +352,20 @@ Ecran principal du produit au J1.
 
 ### Role
 
-Ecran final de confirmation.
+Ecran de resultat et de sortie positive du parcours iframe.
 
 ### Objectif UX
 
 - confirmer que le parcours KYC a ete termine
-- expliquer sobrement que la verification a bien ete transmise ou terminee dans le flux
-- proposer la sortie naturelle du parcours
+- expliquer sobrement que la lecture backend peut encore etre en cours
+- proposer des suites courtes et cohérentes: actualiser, relire l'historique, relancer une verification, revenir a l'accueil
 
 ### Contenu minimal
 
-- message de succes
-- rappel du `sessionId` seulement si utile
-- CTA `Terminer`
-- optionnel: `Demarrer une nouvelle verification`
-
-### Ce qu'on n'affiche pas au J1
-
-- verdict metier detaille
-- timeline d'analyse
-- historique complet des sessions
-
-### Role
-
-Ecran de sortie positive du parcours iframe, distinct de la decision metier finale.
+- un etat de progression avant le premier poll
+- un resume lisible de la reference, du statut, de la decision et de la date de finalisation quand disponibles
+- des actions utilitaires compactes, principalement en icones
+- un retour accueil explicite quand une sortie positive est disponible
 
 ### Principe
 
@@ -387,6 +376,7 @@ L'ecran `COMPLETE` doit donc:
 - confirmer la fin du parcours iframe
 - attendre au moins 10 secondes avant le premier poll backend
 - interroger ensuite `/api/kyc/session/:sessionId/result`
+- replier cote serveur sur `GET /kyclink/sessions` si la route detail upstream repond `404`
 - afficher `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
 - arreter le polling quand `completed = true` ou quand la limite de tentatives est atteinte
 - utiliser un backoff progressif entre les polls suivants plutot qu'un intervalle fixe
@@ -403,8 +393,10 @@ L'ecran `COMPLETE` doit donc:
 
 ### CTA
 
-- `Relancer la lecture backend`
-- `Nouvelle session`
+- `Actualiser`
+- `Mes verifications`
+- `Nouvelle verification`
+- `Retour accueil`
 
 ## 9. FAILURE
 

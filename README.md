@@ -37,7 +37,7 @@ Le J1 vise un flux minimal:
 
 1. login utilisateur via Cognito
 2. verification serveur du JWT
-3. resolution du tenant demo a partir des claims Cognito
+3. resolution du tenant demo via partner-node a partir du JWT Cognito
 4. derivation de `externalId` a partir de la reference client
 5. selection de la bonne ck_demo_* cote serveur
 6. creation de session KYC via partner-node
@@ -48,16 +48,17 @@ Le J1 vise un flux minimal:
 Le socle applicatif minimal est maintenant present dans ce dossier:
 
 - app Next.js App Router
-- login Cognito Hosted UI avec callback serveur et cookie HTTP-only
-- routes `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/sessions`
-- pages `LOGIN`, `WELCOME`, `ACCESS_DENIED`, `VERIFY`, `SESSIONS`
+- login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
+- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId/result`, `GET /api/kyc/sessions`
+- pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `COMPLETE`, `FAILURE`, `SESSIONS`
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
-- proxy serveur de creation et de lecture des sessions KYC avec resolution `DEMO_ACCOUNT_KEY_MAP`
+- proxy serveur de creation, de lecture resultat et de liste des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
+- fallback serveur sur la page resultat: si `GET /kyclink/:sessionId/result` remonte un `404`, l'app reconstruit un etat minimal depuis l'index `GET /kyclink/sessions`
 
 ## Demarrage local
 
 1. copier `.env.example` vers `.env.local`
-2. renseigner les variables Cognito et la map `DEMO_ACCOUNT_KEY_MAP`
+2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `KYCLY_API_BASE_URL`, `KYCLY_SESSION_BASE_URL` si la liste de sessions passe par un host distinct, et `KYCLY_ME_BASE_URL`
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
@@ -68,27 +69,36 @@ Commandes utiles:
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test`
+- `pnpm test:e2e`
 - `pnpm build`
 - `pnpm docs:check`
 - `pnpm guard:sandbox-only`
 - `pnpm prepare`
+
+Smokes Playwright cibles:
+
+- `e2e/whitelabel-smoke.spec.ts` pour le tunnel principal mocke
+- `e2e/auth-fallback-logout.spec.ts` pour le fallback retour -> logout -> login
+- `e2e/whitelabel-mobile-auth.spec.ts` pour les ecrans proteges mobiles et la stabilite des proportions
+
+Apres un changement UI, lancer au moins une validation e2e sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter de conclure a tort sur un `.next` stale.
 
 ## Variables minimales
 
 Variables publiques:
 
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+- `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 
 Variables serveur:
 
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si le client Cognito en a besoin
-- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node`
-- `DEMO_ACCOUNT_KEY_MAP`
+- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour la creation de session et les lectures detaillees `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`; si vide, l'app replie sur `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`, par exemple `https://me.kycly.sn`
+
+La session applicative conserve aussi l'id token Cognito cote serveur, dans le cookie HTTP-only signe, pour authentifier les appels `partner-node /kyclink/*` sans exposer ce token au frontend.
 
 ## Note d'implementation
 

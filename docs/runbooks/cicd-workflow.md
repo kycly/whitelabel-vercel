@@ -135,6 +135,8 @@ Ordre des etapes retenu:
 8. `pnpm typecheck`
 9. `pnpm lint`
 10. `pnpm build`
+11. `pnpm exec playwright install --with-deps chromium`
+12. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
 
 Ordre de severite retenu:
 
@@ -142,6 +144,12 @@ Ordre de severite retenu:
 - le garde-fou sandbox-only doit bloquer toute introduction de `ck_live_*`
 - les tests executables passent avant les controles purement statiques
 - le build reste obligatoire pour verifier le runtime Next/Vercel
+- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit
+
+Note locale:
+
+- `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e` est reserve a la CI apres `pnpm build`
+- apres une modification UI locale, relancer au moins une fois `pnpm test:e2e` sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter un `.next` stale
 
 ## Hooks locaux retenus
 
@@ -243,59 +251,48 @@ Les variables doivent etre separees par environnement Vercel.
 - `NEXT_PUBLIC_APP_ENV`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 
 ### Variables serveur minimales
 
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si le client Cognito l'exige
+- `NODE_AUTH_TOKEN` pour le build Vercel si `@kycly/link` est installe depuis GitHub Packages
 - `KYCLY_API_BASE_URL`
-- `DEMO_ACCOUNT_KEY_MAP`
+- `KYCLY_SESSION_BASE_URL`
+- `KYCLY_ME_BASE_URL`
 - `DEFAULT_KYCLINK_THEME` si override necessaire
 
 ### Politique retenue
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
-- `DEMO_ACCOUNT_KEY_MAP` reste strictement cote serveur
-- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `Preview` et `Production`
-- `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
+- `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
+- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` en `Preview` et `Production`
+- `KYCLY_SESSION_BASE_URL` pointe vers le host exposant `GET /kyclink/sessions` en `Preview` et `Production`, ou reste vide pour replier sur `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me` en `Preview` et `Production`
+- l'id token Cognito reste strictement cote serveur dans la session HTTP-only
 
 ### Invariant J1
 
 Pour `Preview` comme pour `Production`:
 
-- `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node`
-- `DEMO_ACCOUNT_KEY_MAP` -> seulement des cles `ck_demo_*`
+- `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node` pour `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` -> host exposant `GET /kyclink/sessions`, ou vide pour reutiliser `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
+- aucune `ck_live_*`
 
 ---
 
-## Cognito et URLs de callback
+## Contrat Cognito retenu
 
-La configuration Cognito doit etre compatible avec les deux environnements Vercel.
+Le flux J1 repose sur un login Cognito direct dans l'application.
 
-### Sign-in callback
+La configuration Cognito a garder coherente entre CI, Vercel et le user pool est donc:
 
-Les URLs de callback autorisees doivent couvrir:
+- `NEXT_PUBLIC_AWS_REGION`
+- `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
+- `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 
-- l'URL preview active de l'application
-- le domaine canonique de production
-
-### Sign-out callback
-
-Les URLs de logout autorisees doivent couvrir:
-
-- l'URL preview active de l'application
-- le domaine canonique de production
-
-### Regle retenue
-
-Les variables suivantes doivent etre definies de facon coherente par environnement:
-
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+La CI doit verifier que ces trois valeurs suffisent a restaurer le login direct et la creation de session applicative.
 
 ---
 
@@ -342,7 +339,7 @@ Le deploiement preview est automatique.
 
 Objectif:
 
-- valider rapidement l'UX, le login, les callbacks Cognito et les integrations de session dans un environnement proche du runtime final
+- valider rapidement l'UX, le login Cognito direct et les integrations de session dans un environnement proche du runtime final
 
 ### Production
 
@@ -371,8 +368,8 @@ Objectif:
 Verifier apres deploy:
 
 1. page `LOGIN`
-2. redirection Cognito
-3. callback `/auth/callback`
+2. login Cognito direct
+3. creation de session applicative via `POST /api/auth/session`
 4. ecran `WELCOME`
 5. creation de session `/api/kyc/session`
 6. lecture resultat `/api/kyc/session/:sessionId/result`
@@ -404,7 +401,7 @@ Quand la chaine CI/CD evolue, mettre a jour en meme temps:
 - [ ] configurer la branche de production Vercel sur `production`
 - [ ] configurer les variables `Preview`
 - [ ] configurer les variables `Production`
-- [ ] verifier les callbacks Cognito preview et production
+- [ ] verifier la coherence region / user pool / app client id
 - [ ] creer les GitHub Environments `vercel-preview` et `vercel-production`
 - [ ] ajouter `.github/workflows/ci.yml`
 - [ ] rendre la CI obligatoire sur `main` et `production`

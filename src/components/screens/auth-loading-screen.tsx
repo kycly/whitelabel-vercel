@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { LoaderCircle, ShieldCheck } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { PageShell } from "@/components/layout/page-shell";
-import { SurfacePanel } from "@/components/ui/surface-panel";
+import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
 
 export function AuthLoadingScreen({ target }: { target: string }) {
   const router = useRouter();
@@ -14,25 +14,21 @@ export function AuthLoadingScreen({ target }: { target: string }) {
   }, [router, target]);
 
   return (
-    <PageShell className="flex items-center" maxWidthClassName="max-w-3xl">
-      <SurfacePanel className="animate-scale-in w-full text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-600 shadow-[var(--shadow-card)]">
-          <ShieldCheck className="size-7" />
+    <ProtectedScreenShell
+      backHref="/auth/logout"
+      title="Redirection"
+      showLogout={false}
+      maxWidthClassName="max-w-3xl"
+      panelClassName="flex flex-1 flex-col justify-center text-center"
+    >
+      <div className="flex flex-1 items-center justify-center">
+        <div className={[surfaceInfoCardClassName, "animate-scale-in"].join(" ")}>
+          <div className="inline-flex items-center gap-3">
+            <LoaderCircle className="size-4 animate-spin text-brand" />
+            Redirection en cours...
+          </div>
         </div>
-
-        <div className="mt-6 space-y-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">AUTH_LOADING</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Ouverture de votre espace demo securise.</h1>
-          <p className="text-sm leading-7 text-slate-600">
-            Nous verifions votre session et preparons l&apos;ecran de bienvenue avant de poursuivre le parcours.
-          </p>
-        </div>
-
-        <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-5 py-3 text-sm text-slate-600 shadow-[var(--shadow-card)]">
-          <LoaderCircle className="size-4 animate-spin text-blue-600" />
-          Redirection en cours...
-        </div>
-      </SurfacePanel>
-    </PageShell>
+      </div>
+    </ProtectedScreenShell>
   );
 }

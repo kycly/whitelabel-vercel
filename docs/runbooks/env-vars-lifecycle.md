@@ -22,6 +22,11 @@ Repartition retenue:
 - Vercel Preview: variables de runtime preview
 - Vercel Production: variables de runtime production
 
+Distinction importante:
+
+- `GH_PACKAGES_TOKEN` est un secret GitHub Actions pour la CI
+- `NODE_AUTH_TOKEN` est un secret Vercel requis au build si `.npmrc` installe `@kycly/link` depuis GitHub Packages
+
 Regle structurante:
 
 - les variables Vercel `Preview` et `Production` decrivent deux stades de deploiement de `whitelabel-vercel`
@@ -56,7 +61,7 @@ Usage local retenu:
 Objectif:
 
 - developpement local
-- validation manuelle des ecrans et callbacks Cognito
+- validation manuelle des ecrans et du login Cognito direct
 
 Source des variables:
 
@@ -109,9 +114,6 @@ Ces variables peuvent etre lues par le code client Next.js.
 | `NEXT_PUBLIC_APP_ENV` | etiquette d'environnement de l'app |
 | `NEXT_PUBLIC_AWS_REGION` | region AWS exposee au frontend si necessaire |
 | `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID` | app client Cognito dedie a `whitelabel-vercel` |
-| `NEXT_PUBLIC_COGNITO_DOMAIN` | domaine Hosted UI Cognito |
-| `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN` | URL de callback login |
-| `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` | URL de retour logout |
 | `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | user pool Cognito |
 
 ### Variables serveur
@@ -121,9 +123,10 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | Variable | Description |
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
-| `COGNITO_CLIENT_SECRET` | secret du client Cognito si le client l'exige |
-| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur |
-| `DEMO_ACCOUNT_KEY_MAP` | map `demo_account_id -> ck_demo_*` |
+| `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
+| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` |
+| `KYCLY_SESSION_BASE_URL` | URL du host `partner-node` appele cote serveur pour `GET /kyclink/sessions`; replie sur `KYCLY_API_BASE_URL` si vide |
+| `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 
 ---
@@ -147,16 +150,14 @@ Role:
 Variables concernees:
 
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
+- `NEXT_PUBLIC_AWS_REGION`
 
 Regles retenues:
 
 - meme user pool Cognito que `partner-node`
 - app client dedie a `whitelabel-vercel`
-- callbacks distincts et coherents entre `Preview` et `Production`
+- aucune URL de callback ou de logout a maintenir pour l'authentification
 
 ### `APP_SESSION_SECRET`
 
@@ -170,22 +171,23 @@ Regles retenues:
 - valeur differente entre `Preview` et `Production`
 - ne jamais exposer cette valeur dans le client
 
-### `COGNITO_CLIENT_SECRET`
+### `NODE_AUTH_TOKEN`
 
 Role:
 
-- permettre l'echange de code OAuth quand l'app client Cognito a un secret
+- permettre a `pnpm install` d'acceder a `@kycly/link` sur GitHub Packages via `.npmrc`
 
 Regles retenues:
 
-- vide si l'app client n'en demande pas
-- definie uniquement cote serveur si necessaire
+- requis dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
+- ne pas confondre avec `GH_PACKAGES_TOKEN`, qui sert a la CI GitHub Actions
+- ne jamais exposer cette valeur dans le client
 
 ### `KYCLY_API_BASE_URL`
 
 Role:
 
-- URL du backend KYC appele par les route handlers Next.js
+- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 
 Regle J1 retenue:
 
@@ -194,27 +196,33 @@ Regle J1 retenue:
 
 Cette variable ne doit pas pointer vers `partner-node production` tant qu'une decision explicite ne modifie pas le blueprint du projet.
 
-### `DEMO_ACCOUNT_KEY_MAP`
+### `KYCLY_SESSION_BASE_URL`
 
 Role:
 
-- mapper un `demo_account_id` Cognito vers une cle `ck_demo_*`
+- URL du host appele par les route handlers Next.js pour `GET /kyclink/sessions`
 
-Format retenu:
+Regle J1 retenue:
 
-```json
-{
-  "demo_acme": "ck_demo_xxx"
-}
-```
+- `Preview` -> host exposant `GET /kyclink/sessions`
+- `Production` -> host exposant `GET /kyclink/sessions`
 
-Regles retenues:
+Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe la liste de sessions du reste des routes `partner-node`.
 
-- JSON objet strictement cote serveur
-- seulement des `ck_demo_*`
-- jamais de `ck_live_*`
-- absence de mapping -> erreur serveur explicite
-- pas de fallback silencieux
+Si elle est vide, l'application replie explicitement sur `KYCLY_API_BASE_URL`.
+
+### `KYCLY_ME_BASE_URL`
+
+Role:
+
+- URL du host appele par les route handlers Next.js pour resoudre `/demo/me`
+
+Regle J1 retenue:
+
+- `Preview` -> host exposant `/demo/me`
+- `Production` -> host exposant `/demo/me`
+
+Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe `/demo/me` du reste des routes `partner-node`.
 
 ### `DEFAULT_KYCLINK_THEME`
 
@@ -235,14 +243,13 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 ### Ce qui change entre `Preview` et `Production`
 
 - le domaine public de l'application
-- les URLs Cognito de sign-in et sign-out
 - le secret de session applicative
-- eventuellement la map des comptes demo si une segregation est voulue
+- eventuellement les hosts `KYCLY_*` si l'exposition reseau evolue
 
 ### Ce qui ne change pas au J1
 
 - la cible `partner-node sandbox`
-- l'usage exclusif de `ck_demo_*`
+- l'usage d'un id token Cognito cote serveur pour `/kyclink/*`
 - l'absence de toute `ck_live_*`
 
 ---
@@ -254,14 +261,11 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_APP_ENV=local`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN=http://localhost:3000/auth/callback`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT=http://localhost:3000/login`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
+- `NODE_AUTH_TOKEN` si l'installation locale doit resoudre `@kycly/link`
 - `KYCLY_API_BASE_URL`
-- `DEMO_ACCOUNT_KEY_MAP`
+- `KYCLY_ME_BASE_URL`
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Preview
@@ -269,14 +273,11 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_APP_ENV=preview`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN` -> URL preview active `/auth/callback`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` -> URL preview active `/login`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
-- `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Production
@@ -284,14 +285,11 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_APP_ENV=production`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN` -> domaine canonique `/auth/callback`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` -> domaine canonique `/login`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
+- `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
-- `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
+- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME`
 
 ---
@@ -303,11 +301,13 @@ Le workflow CI GitHub doit injecter des valeurs non sensibles minimales pour gar
 Variables minimales retenues dans la CI:
 
 - `NEXT_PUBLIC_APP_ENV=ci`
-- placeholders Cognito publics de validation
+- `NEXT_PUBLIC_AWS_REGION`
+- `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
+- `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET` de validation
-- `COGNITO_CLIENT_SECRET` de validation
 - `KYCLY_API_BASE_URL` de validation
-- `DEMO_ACCOUNT_KEY_MAP` de validation avec une `ck_demo_*` factice
+- `KYCLY_SESSION_BASE_URL` de validation
+- `KYCLY_ME_BASE_URL` de validation
 
 Secrets CI retenus:
 
@@ -324,30 +324,11 @@ Procedure retenue:
 1. generer une nouvelle valeur aleatoire
 2. mettre a jour l'environnement Vercel cible
 3. redeployer l'application
-4. verifier la connexion et le callback `/auth/callback`
+4. verifier la connexion et la creation de session applicative
 
 Effet attendu:
 
 - les sessions applicatives precedentes deviennent invalides
-
-### `COGNITO_CLIENT_SECRET`
-
-Procedure retenue:
-
-1. mettre a jour le secret cote Cognito
-2. mettre a jour la variable Vercel correspondante
-3. redeployer
-4. verifier le login Hosted UI et le callback
-
-### `DEMO_ACCOUNT_KEY_MAP`
-
-Procedure retenue:
-
-1. mettre a jour les cles `ck_demo_*` dans la source secrete retenue
-2. mettre a jour `DEMO_ACCOUNT_KEY_MAP` dans Vercel
-3. redeployer
-4. verifier `POST /api/kyc/session`
-5. verifier `GET /api/kyc/sessions`
 
 ### `KYCLY_API_BASE_URL`
 
@@ -356,6 +337,14 @@ Procedure retenue:
 1. mettre a jour la variable dans Vercel
 2. redeployer
 3. verifier creation et lecture de session
+
+### `KYCLY_ME_BASE_URL`
+
+Procedure retenue:
+
+1. mettre a jour la variable dans Vercel
+2. redeployer
+3. verifier login et resolution du scope demo
 
 ---
 
@@ -368,7 +357,7 @@ Apres tout changement sur les variables structurantes, verifier:
 3. `POST /api/kyc/session`
 4. `GET /api/kyc/session/:sessionId/result`
 5. `GET /api/kyc/sessions`
-6. logout Cognito
+6. logout applicatif
 
 ---
 
@@ -376,11 +365,10 @@ Apres tout changement sur les variables structurantes, verifier:
 
 - [ ] renseigner `Preview` dans Vercel
 - [ ] renseigner `Production` dans Vercel
-- [ ] verifier les callbacks Cognito preview
-- [ ] verifier les callbacks Cognito production
+- [ ] verifier la coherence region / user pool / app client id
 - [ ] charger `GH_PACKAGES_TOKEN` dans GitHub Actions
-- [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 - [ ] verifier que `KYCLY_API_BASE_URL` cible `partner-node sandbox`
+- [ ] verifier que `KYCLY_ME_BASE_URL` cible l'hote exposant `/demo/me`
 
 ---
 
@@ -392,7 +380,7 @@ La gestion des variables de `whitelabel-vercel` repose donc sur:
 - des variables runtime gouvernees par Vercel
 - une separation `Preview` / `Production` au niveau applicatif
 - une cible metier unique `partner-node sandbox`
-- des cles `ck_demo_*` uniquement
+- un id token Cognito conserve cote serveur pour `/kyclink/*`
 - une CI GitHub avec placeholders non sensibles et secret GitHub Packages dedie
 
 Ce document est la reference ops a suivre pour la suite.
