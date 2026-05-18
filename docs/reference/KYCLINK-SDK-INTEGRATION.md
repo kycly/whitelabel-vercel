@@ -123,7 +123,9 @@ Contraintes utiles:
 
 ### 2.2 — Instance backend actuelle
 
-Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour les routes `/kyclink/*`.
+Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`.
+
+La lecture de liste `GET /kyclink/sessions` peut pointer vers un host distinct, configure dans `KYCLY_SESSION_BASE_URL`. Si cette variable reste vide, l'app replie sur `KYCLY_API_BASE_URL`.
 
 La resolution du scope demo via `/demo/me` peut pointer vers un host distinct, configure dans `KYCLY_ME_BASE_URL`.
 
@@ -172,11 +174,12 @@ Payload attendu:
 ```ts
 {
   externalId: string;
+  parentOrigin: string;
   metadata?: SessionMetadata;
 }
 ```
 
-Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend.
+Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend. `parentOrigin` est egalement derivee cote backend depuis l'origin de la requete HTTP, puis forwardee vers `partner-node`.
 
 Reponse succes:
 
@@ -229,10 +232,15 @@ type CreateKycLinkSessionResponse = {
 
 export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
+  parentOrigin: string,
   cognitoIdToken: string,
   baseUrl = process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
   const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
+  const payload = {
+    ...input,
+    parentOrigin,
+  };
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -240,7 +248,7 @@ export async function createKycLinkSession(
       "Content-Type": "application/json",
       Authorization: `Bearer ${cognitoIdToken}`,
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -415,8 +423,9 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 2. l'ecran `COMPLETE` attend au moins 10 secondes
 3. le frontend appelle ensuite `/api/kyc/session/:sessionId/result`
 4. le backend applicatif appelle `partner-node /kyclink/:sessionId/result`
-5. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
-6. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
+5. si cette route detail repond `404`, le backend replie sur `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat
+6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+7. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.
 

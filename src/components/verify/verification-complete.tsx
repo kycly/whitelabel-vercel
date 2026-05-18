@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, LoaderCircle, RefreshCcw } from "lucide-react";
-import { PageShell } from "@/components/layout/page-shell";
-import { SurfacePanel } from "@/components/ui/surface-panel";
+import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
+import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import {
+  errorAlertClassName,
+  infoAlertClassName,
+  primaryIconButtonClassName,
+  secondaryIconButtonClassName,
+  surfaceInfoCardClassName,
+  successIconButtonClassName,
+  warningAlertClassName,
+} from "@/components/ui/fixed-action-layout";
 
 type KycSessionResult = {
   sessionId: string;
@@ -280,20 +288,13 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
   const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
 
   return (
-    <PageShell maxWidthClassName="max-w-4xl">
-      <SurfacePanel className="space-y-6">
-        <div className="space-y-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">RESULT</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Resultat</h1>
-          <p className="text-sm text-slate-600">Suivi du resultat de verification.</p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+    <ProtectedScreenShell backHref="/sessions" title="Résultat" maxWidthClassName="max-w-4xl" panelClassName="space-y-5 pt-4">
+        <div className={surfaceInfoCardClassName}>
           <p>{currentStatus}</p>
         </div>
 
         {state.countdownSeconds > 0 ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-800">
+          <div className={infoAlertClassName}>
             <Clock3 className="mt-0.5 size-5 shrink-0" />
             <div>
               <p>{pollingMessage(state.countdownSeconds, state.attemptCount)}</p>
@@ -302,20 +303,20 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.isPolling ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
+          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
             <LoaderCircle className="size-4 animate-spin" />
             Lecture du resultat en cours.
           </div>
         ) : null}
 
         {state.error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          <div className={errorAlertClassName}>
             {state.error}
           </div>
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-3xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
             <p className="font-semibold">{decisionTitle(state.data.validationStatus)}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
@@ -339,7 +340,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {reachedPollingLimit ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+          <div className={warningAlertClassName}>
             Aucun statut final n&apos;a encore ete confirme.
           </div>
         ) : null}
@@ -359,36 +360,46 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
               }));
               setPollGeneration((current) => current + 1);
             }}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+            aria-label="Actualiser"
+            title="Actualiser"
+            className={secondaryIconButtonClassName}
           >
             <RefreshCcw className="size-4" />
-            Actualiser
+            <span className="sr-only">Actualiser</span>
           </button>
 
           <Link
             href="/sessions"
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+            aria-label="Mes vérifications"
+            title="Mes vérifications"
+            className={secondaryIconButtonClassName}
           >
-            Mes verifications
+            <History className="size-4" />
+            <span className="sr-only">Mes vérifications</span>
           </Link>
 
           <Link
             href="/verify"
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
+            aria-label="Nouvelle vérification"
+            title="Nouvelle vérification"
+            className={primaryIconButtonClassName}
           >
-            Nouvelle verification
+            <Plus className="size-4" />
+            <span className="sr-only">Nouvelle vérification</span>
           </Link>
 
           {approvedExitHref ? (
             <Link
               href={approvedExitHref}
-              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 px-4 py-3 text-sm font-medium text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+              aria-label="Retour accueil"
+              title="Retour accueil"
+              className={successIconButtonClassName}
             >
-              Retour accueil
+              <Home className="size-4" />
+              <span className="sr-only">Retour accueil</span>
             </Link>
           ) : null}
         </div>
-      </SurfacePanel>
-    </PageShell>
+    </ProtectedScreenShell>
   );
 }

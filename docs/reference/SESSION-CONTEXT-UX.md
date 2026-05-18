@@ -32,14 +32,16 @@ Flux retenu:
 2. `SESSION_CONTEXT`
 3. `SESSION_PREPARE`
 4. `KYC_LINK`
-5. `RESULT`
+5. `COMPLETE`
 
 Regles:
 
 - `SESSION_CONTEXT` collecte uniquement les informations utiles
 - `SESSION_PREPARE` cree la session cote serveur dans une page intermediaire dediee
 - `KYC_LINK` affiche uniquement l'iframe et les actions minimales associees
-- `RESULT` relit le backend pour recuperer le resultat final sans recharger le formulaire
+- `COMPLETE` relit le backend pour recuperer le resultat final sans recharger le formulaire
+- chaque etape expose une icone retour unique en haut a gauche avec repli explicite
+- les ecrans proteges du parcours conservent la deconnexion en haut a droite
 
 ## Pourquoi cette approche
 
@@ -54,25 +56,37 @@ Donc:
 
 ## Structure de l'ecran
 
-L'ecran `SESSION_CONTEXT` est decoupe en 4 zones.
+L'ecran `SESSION_CONTEXT` reste un bloc principal unique, mais son premier niveau est volontairement reduit au minimum.
 
-1. Scenario
-2. Contexte de verification
-3. Notifications
-4. Options avancees
+Premier niveau visible:
 
-Le header de cet ecran conserve aussi une action de deconnexion visible et immediate, placee en haut a droite, pour permettre de quitter la session demo sans casser le flux guide du formulaire.
+1. `External ID`
+2. `Notification SMS`
+
+Second niveau sur action explicite de l'utilisateur:
+
+- `Contexte metier`
+- `Contexte routage`
+- `Email`
+- `Contexte libre`
 
 Contraintes de densite:
 
 - la page reste un bloc principal unique
+- aucune entete editoriale longue n'est affichee au-dessus du formulaire
+- aucune action secondaire envahissante n'entre en concurrence avec le CTA principal
 - les informations de compte demo ou de session ne sont pas dupliquees dans un panneau lateral
-- l'interface montre d'abord `Scenario`, `Reference client` et `Pays`
-- `Notifications` et `Options avancees` restent repliees tant qu'elles ne sont pas utiles
+- tous les champs hors `External ID` et `Notification SMS` sont masques par defaut
+- les ajouts se font par groupes de contexte alignes sur `partner-node`
+- l'activation passe par une checklist `Besoins optionnels`, pas par un lien ou un accordeon editorial
+- les champs additionnels apparaissent inline dans le meme bloc, uniquement apres activation d'un groupe
+- chaque groupe ouvert peut etre retire via une action de suppression discrete
+- le vocabulaire visuel reprend integration-node: hero centre, carte `surface-light`, champs hauts et CTA plein bleu
+- l'icone retour de `SESSION_CONTEXT` renvoie vers `WELCOME` si l'historique n'est pas exploitable
 
 ## 1. Scenario
 
-Le scenario est un choix par cartes.
+Le scenario ne fait plus partie du premier niveau. Il peut etre ajoute explicitement par l'utilisateur si le cas le demande.
 
 Options recommandees:
 
@@ -99,18 +113,37 @@ Options recommandees:
 
 ## 2. Contexte de verification
 
-Ce bloc porte les questions centrales du parcours.
+Le noyau du parcours ne montre plus qu'un identifiant et un canal SMS. Le reste du contexte est extensible a la demande.
 
 ### Champs retenus
 
+#### Champs visibles par defaut
+
 | Libelle UX | Type | Regle | Mapping |
 |---|---|---|---|
-| `Type de verification` | select | obligatoire | `routingContext.journey` |
-| `Reference client` | text | obligatoire | `businessContext.customerId` |
+| `External ID` | text | obligatoire | `businessContext.customerId` |
+| `Notification SMS` | text | optionnel | `notificationContext.phone` + `preferredChannel = sms` |
+
+#### Groupes ajoutables a la demande
+
+| Groupe UX | Contenu | Mapping |
+|---|---|---|
+| `Contexte metier` | `Pays`, `Produit`, `Segment` | `businessContext.*` |
+| `Contexte routage` | `Scenario`, `Priorite` | `routingContext.*` |
+| `Email` | `Email` | `notificationContext.email` + `preferredChannel = email` |
+| `Contexte libre` | paires cle / valeur | `customContext.*` |
+
+#### Champs additionnels
+
+| Libelle UX | Type | Regle | Mapping |
+|---|---|---|---|
+| `Scenario` | select | optionnel | `routingContext.journey` |
 | `Pays` | select | recommande | `businessContext.country` |
 | `Produit` | select ou text court | optionnel | `businessContext.product` |
 | `Segment` | select | optionnel | `businessContext.segment` |
 | `Priorite` | select | optionnel | `routingContext.priority` |
+| `Email` | text | optionnel | `notificationContext.email` + `preferredChannel = email` |
+| `Contexte libre` | paires cle / valeur | optionnel | `customContext.*` |
 
 #### Produit concerne
 
@@ -143,8 +176,8 @@ Les listes ci-dessous sont figees pour le J1.
 
 Regle produit:
 
-- si un scenario a deja ete choisi dans les cartes du haut, ce select est pre-rempli avec la meme valeur
-- `Onboarding` est la valeur par defaut recommandee si aucun contexte meilleur n'est connu
+- `Onboarding` reste la valeur active par defaut tant que le groupe `Contexte routage` n'a pas ete personnalise
+- le select ne doit jamais supposer l'existence de cartes ou d'un choix amont qui n'existent plus dans l'ecran
 
 #### Pays
 
@@ -206,17 +239,21 @@ Regle produit:
 
 ### Libelles recommandes
 
-- `Type de verification`
-- `Reference client`
+- `External ID`
+- `Notification SMS`
+- `Scenario`
 - `Pays`
 - `Produit concerne`
 - `Segment`
 - `Priorite de traitement`
+- `Email`
+- `Contexte libre`
 
 ### Pourquoi ces champs
 
-- `Type de verification` donne le contexte de routage le plus important
-- `Reference client` remplace une saisie trop technique de `externalId`
+- `External ID` est la seule information metier obligatoire pour ouvrir un parcours minimal
+- `Notification SMS` reste visible car c'est le seul canal de notification privilegie au premier niveau
+- `Contexte metier` et `Contexte routage` restent disponibles, mais n'interrompent plus les cas simples
 - `Pays` et `Produit` donnent un contexte suffisant pour la plupart des demos
 - `Priorite` reste utile sans faire entrer l'utilisateur dans la logique de compliance
 
@@ -446,9 +483,9 @@ Au J1, la saisie utilisateur de `Reference client` est limitee a 128 caracteres 
 
 ## Proposition de CTA
 
-- primaire: `Continuer`
+- primaire: `Creer la session`
 - secondaire: `Retour`
-- section avancee: `Afficher les options avancees`
+- section libre: `Ajouter une paire`
 
 ## Decision UX retenue
 

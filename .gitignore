@@ -8,3 +8,5 @@ out
 .env.*.local
 .env
 .vercel
+test-results
+playwright-report

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, KeyRound, LoaderCircle } from "lucide-react";
+import { ArrowRight, KeyRound, LoaderCircle, ShieldCheck } from "lucide-react";
 import {
   cognitoCompleteNewPassword,
   cognitoConfirmForgotPassword,
@@ -12,9 +12,28 @@ import {
   getExistingSession,
 } from "@/auth/cognito-client";
 import { PageShell } from "@/components/layout/page-shell";
+import { BackIconButton } from "@/components/navigation/back-icon-button";
+import {
+  errorAlertClassName,
+  formFieldClassName,
+  primaryCtaClassName,
+  successAlertClassName,
+} from "@/components/ui/fixed-action-layout";
 import { SurfacePanel } from "@/components/ui/surface-panel";
 
 type LoginStep = "login" | "new-password" | "forgot-password-request" | "forgot-password-confirm";
+
+function loginStepTitle(step: LoginStep): string {
+  if (step === "new-password") {
+    return "Mot de passe";
+  }
+
+  if (step === "forgot-password-request" || step === "forgot-password-confirm") {
+    return "Réinitialisation";
+  }
+
+  return "Connexion";
+}
 
 function mapAuthError(error: unknown): string {
   const message = error instanceof Error ? error.message : "Echec de l'authentification.";
@@ -266,70 +285,105 @@ export function LoginScreen() {
     }
   }
 
+  function handleBackNavigation() {
+    if (step === "forgot-password-confirm") {
+      setStep("forgot-password-request");
+      setError(null);
+      setMessage(null);
+      return;
+    }
+
+    if (step !== "login") {
+      setStep("login");
+      setError(null);
+      setMessage(null);
+      return;
+    }
+
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/login");
+  }
+
   return (
-    <PageShell className="flex items-center" maxWidthClassName="max-w-4xl">
-        <SurfacePanel className="animate-slide-up w-full">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
-                <KeyRound className="size-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">LOGIN</p>
-                <h1 className="text-2xl font-semibold text-slate-950">Connectez-vous</h1>
-              </div>
+    <PageShell maxWidthClassName="max-w-4xl">
+        <SurfacePanel className="px-5 pb-6 pt-8">
+          <div className="flex h-full flex-col">
+            <div className="mb-6 flex items-center justify-between">
+              {step === "login" ? (
+                <span className="w-9" />
+              ) : (
+                <BackIconButton
+                  fallbackHref="/login"
+                  onClick={handleBackNavigation}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-light)] text-[var(--muted-foreground)] transition-all duration-150 hover:bg-[var(--border)] hover:text-[var(--foreground)]"
+                />
+              )}
+              <p className="text-sm font-semibold text-[var(--foreground)]">{loginStepTitle(step)}</p>
+              <span className="w-9" />
             </div>
 
-            <p className="text-sm text-slate-600">Compte demo requis.</p>
+            <div className="mb-6 flex animate-fade-in flex-col items-center justify-center text-center">
+              <div className="relative mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--surface-light)]">
+                <KeyRound className="h-10 w-10 text-brand" strokeWidth={1.7} aria-hidden="true" />
+                <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
+                  <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
+                </div>
+              </div>
+              <h1 className="mb-1 text-2xl font-bold text-brand">Connectez-vous</h1>
+              <p className="text-xs tracking-wide text-[var(--muted-foreground)]">Compte demo requis.</p>
+            </div>
+
+            <div className="animate-slide-up rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-4" style={{ animationDelay: "0.1s" }}>
 
             {bootstrapping ? (
-              <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-600">
+              <div className="mb-4 flex items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-5 py-4 text-sm font-medium text-[var(--muted-foreground)]">
                 <LoaderCircle className="size-4 animate-spin" />
                 Verification de la session...
               </div>
             ) : null}
 
             {error ?? urlError ? (
-              <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error ?? urlError}</p>
+              <p className={[errorAlertClassName, "mb-4 px-4 py-3"].join(" ")}>{error ?? urlError}</p>
             ) : null}
-            {message ? <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
+            {message ? <p className={[successAlertClassName, "mb-4"].join(" ")}>{message}</p> : null}
 
             {step === "login" ? (
               <form className="space-y-4" onSubmit={handleLoginSubmit}>
-                <div className="space-y-2">
-                  <label htmlFor="username" className="text-sm font-medium text-slate-700">
-                    Identifiant Cognito
-                  </label>
+                <div>
                   <input
                     id="username"
                     type="text"
                     autoComplete="username"
+                    aria-label="Identifiant de connexion"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     placeholder="email@example.com"
                     disabled={submitting || bootstrapping}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                    Mot de passe
-                  </label>
+                <div>
                   <input
                     id="password"
                     type="password"
                     autoComplete="current-password"
+                    aria-label="Secret de connexion"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
+                    placeholder="••••••••"
                     disabled={submitting || bootstrapping}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className={primaryCtaClassName}
                   disabled={submitting || bootstrapping}
                 >
                   {submitting ? "Connexion..." : "Se connecter"}
@@ -338,7 +392,7 @@ export function LoginScreen() {
 
                 <button
                   type="button"
-                  className="w-full text-sm font-medium text-slate-600 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:text-slate-400"
+                  className="w-full text-sm font-medium text-[var(--muted-foreground)] transition hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:text-slate-400"
                   onClick={() => {
                     setStep("forgot-password-request");
                     setError(null);
@@ -353,10 +407,10 @@ export function LoginScreen() {
 
             {step === "new-password" ? (
               <form className="space-y-4" onSubmit={handleNewPasswordSubmit}>
-                <p className="text-sm text-slate-600">Definissez un nouveau mot de passe.</p>
+                <p className="text-sm text-[var(--muted-foreground)]">Définissez un nouveau mot de passe.</p>
 
                 <div className="space-y-2">
-                  <label htmlFor="new-password" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="new-password" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Nouveau mot de passe
                   </label>
                   <input
@@ -365,13 +419,13 @@ export function LoginScreen() {
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={(event) => setNewPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     disabled={submitting}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="confirm-new-password" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="confirm-new-password" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Confirmer le mot de passe
                   </label>
                   <input
@@ -380,14 +434,14 @@ export function LoginScreen() {
                     autoComplete="new-password"
                     value={confirmNewPassword}
                     onChange={(event) => setConfirmNewPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     disabled={submitting}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className={primaryCtaClassName}
                   disabled={submitting}
                 >
                   {submitting ? "Validation..." : "Valider le nouveau mot de passe"}
@@ -397,10 +451,10 @@ export function LoginScreen() {
 
             {step === "forgot-password-request" ? (
               <form className="space-y-4" onSubmit={handleForgotPasswordRequestSubmit}>
-                <p className="text-sm text-slate-600">Demandez un code de reinitialisation.</p>
+                <p className="text-sm text-[var(--muted-foreground)]">Demandez un code de reinitialisation.</p>
 
                 <div className="space-y-2">
-                  <label htmlFor="forgot-username" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="forgot-username" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Identifiant Cognito
                   </label>
                   <input
@@ -409,7 +463,7 @@ export function LoginScreen() {
                     autoComplete="username"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     placeholder="email@example.com"
                     disabled={submitting}
                   />
@@ -417,35 +471,22 @@ export function LoginScreen() {
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className={primaryCtaClassName}
                   disabled={submitting}
                 >
                   {submitting ? "Demande en cours..." : "Demander un code"}
-                </button>
-
-                <button
-                  type="button"
-                  className="w-full text-sm font-medium text-slate-600 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:text-slate-400"
-                  onClick={() => {
-                    setStep("login");
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  disabled={submitting}
-                >
-                  Retour a la connexion
                 </button>
               </form>
             ) : null}
 
             {step === "forgot-password-confirm" ? (
               <form className="space-y-4" onSubmit={handleForgotPasswordConfirmSubmit}>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-[var(--muted-foreground)]">
                   Saisissez le code recu {resetDestination ? `sur ${resetDestination}` : "depuis Cognito"}.
                 </p>
 
                 <div className="space-y-2">
-                  <label htmlFor="reset-code" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="reset-code" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Code de verification
                   </label>
                   <input
@@ -453,13 +494,13 @@ export function LoginScreen() {
                     type="text"
                     value={resetCode}
                     onChange={(event) => setResetCode(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     disabled={submitting}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="forgot-new-password" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="forgot-new-password" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Nouveau mot de passe
                   </label>
                   <input
@@ -468,13 +509,13 @@ export function LoginScreen() {
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={(event) => setNewPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     disabled={submitting}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="forgot-confirm-new-password" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="forgot-confirm-new-password" className="block text-sm font-medium text-[var(--muted-foreground)]">
                     Confirmer le mot de passe
                   </label>
                   <input
@@ -483,33 +524,22 @@ export function LoginScreen() {
                     autoComplete="new-password"
                     value={confirmNewPassword}
                     onChange={(event) => setConfirmNewPassword(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500"
+                    className={formFieldClassName()}
                     disabled={submitting}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className={primaryCtaClassName}
                   disabled={submitting}
                 >
                   {submitting ? "Validation..." : "Confirmer le nouveau mot de passe"}
                 </button>
-
-                <button
-                  type="button"
-                  className="w-full text-sm font-medium text-slate-600 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:text-slate-400"
-                  onClick={() => {
-                    setStep("login");
-                    setError(null);
-                  }}
-                  disabled={submitting}
-                >
-                  Retour a la connexion
-                </button>
               </form>
             ) : null}
 
+            </div>
           </div>
         </SurfacePanel>
     </PageShell>

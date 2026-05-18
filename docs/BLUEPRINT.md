@@ -42,11 +42,12 @@ Utilisateur
 7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
 9. Le backend reutilise l'id token Cognito stocke dans la session HTTP-only.
-10. Le backend appelle `partner-node` pour creer la session.
+10. Le backend derive aussi `parentOrigin` depuis la requete HTTP puis appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
 13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
 14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `validationStatus`.
+15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `COMPLETE`.
 
 ## Contrat d'autorisation minimal
 
@@ -64,7 +65,8 @@ Claims minimum attendus:
 - le frontend ne voit jamais le JWT Cognito brut une fois la session applicative etablie
 - le backend verifie l'acces via `partner-node /demo/me` avant toute creation de session
 - le backend reutilise l'id token Cognito verifie pour authentifier les appels `partner-node /kyclink/*`
-- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour `/kyclink/*`
+- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour la creation de session et les lectures detaillees `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` peut cibler un host distinct pour `GET /kyclink/sessions`; si absente, l'app replie sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` doit cibler l'hote exposant `/demo/me`
 - l'app n'utilise ni la base ni le backend runtime de partner-node
 
@@ -92,6 +94,7 @@ Variables publiques:
 Variables serveur:
 
 - KYCLY_API_BASE_URL
+- KYCLY_SESSION_BASE_URL
 - KYCLY_ME_BASE_URL
 - DEFAULT_KYCLINK_THEME
 
@@ -132,8 +135,16 @@ whitelabel-vercel/
   docs/
     BLUEPRINT.md
   app/
+    access-denied/
+    auth-loading/
+    complete/
+    failure/
     login/
+    sessions/
     verify/
+      prepare/
+      session/
+    welcome/
     api/
       auth/
       kyc/
@@ -160,11 +171,11 @@ Responsabilites:
 - POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
-- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
-- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
+- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, derive aussi l'origin parent a partir de la requete HTTP, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
+- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend, avec repli sur l'index des sessions si la route detail upstream repond `404`
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 
-Le contrat cible de cette future route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+Le contrat de cette route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## Ce qu'on ne fait pas au J1
 
@@ -189,15 +200,15 @@ Avant toute persistance locale, l'evolution deja retenue est:
 2. consommer `partner-node sandbox /kyclink/sessions`
 3. conserver `partner-node` comme source canonique des sessions demo
 
-## Prochaine etape recommandee
+## Etat implemente a date
 
-Implementer le scaffold applicatif minimal avec:
+Le projet couvre maintenant ce socle executable:
 
-1. Next.js App Router
-2. integration Cognito pour login utilisateur
-3. verification serveur des JWT
-4. route POST /api/kyc/session
-5. page verify qui initialise @kycly/link a partir d'une session creee cote serveur
+1. login Cognito direct et session applicative HTTP-only
+2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> COMPLETE`
+3. historique `SESSIONS` scope au `demo_account_id` courant
+4. lecture resultat robuste avec fallback serveur sur l'index des sessions
+5. smokes Playwright sur tunnel principal, fallback logout et parcours mobile protege
 
 ## Documentation de reference
 

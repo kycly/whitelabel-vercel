@@ -28,6 +28,8 @@ Utilisateur non connecte
   -> WELCOME ou ACCESS_DENIED
 ```
 
+Les ecrans `AUTH_LOADING` et `ACCESS_DENIED` doivent rester aussi sobres que `LOGIN`.
+
 ## Contenu recommande
 
 La page reste volontairement legere.
@@ -82,6 +84,9 @@ La page reste volontairement legere.
 - pas d'informations de compte tant que l'utilisateur n'est pas authentifie
 - conserver le meme langage visuel que le reste du scaffold
 - mobile-first, carte de connexion centree, contenu simple
+- reprendre le meme frame mobile et le meme hero que integration-node
+- afficher une icone retour unique en haut a gauche sur les ecrans d'auth transitoires et de sous-etapes, y compris sur `AUTH_LOADING`
+- la deconnexion reste reservee aux ecrans proteges, pas a `LOGIN`
 
 ## Etats a prevoir
 
@@ -90,6 +95,28 @@ La page reste volontairement legere.
 - etat d'erreur de retour d'auth
 - etat `NEW_PASSWORD_REQUIRED`
 - etat `FORGOT_PASSWORD`
+
+## Regles specifiques `AUTH_LOADING`
+
+- pas de sur-titre editorial de type `AUTH_LOADING`
+- pas de grand titre ni de texte explicatif long
+- un seul indicateur de progression visible
+- aucun detail technique sur la verification serveur ou le scope demo
+- l'icone retour quitte l'app via `GET /auth/logout` si aucun historique navigateur fiable n'existe
+
+## Regles specifiques `ACCESS_DENIED`
+
+- un message unique et direct
+- aucune explication technique sur les claims ou le scoping partner-node
+- une icone retour en haut a gauche, avec repli vers `GET /auth/logout`
+
+## Decision de navigation
+
+- l'etat initial de `LOGIN` n'affiche pas d'icone retour
+- les sous-etapes `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD` repliquent d'abord vers l'etape precedente du formulaire
+- `FORGOT_PASSWORD_CONFIRM` revient d'abord vers la demande de code
+- `AUTH_LOADING` quitte l'app via `GET /auth/logout` si l'utilisateur interrompt la transition sans historique fiable
+- les ecrans proteges racine ne replient jamais vers `LOGIN` pour eviter les boucles avec la restauration de session
 
 ## Decision technique J1
 
@@ -146,11 +173,18 @@ Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 
 ```text
 LOGIN PAGE
-  Header brand
-  Hero de confiance
-  Carte de connexion
-  Rappel securite / demo access
+  Frame mobile integration-node
+  Hero de confiance centre
+  Carte de connexion surface-light
+  CTA plein bleu en pied
 ```
+
+## Canon visuel
+
+- meme frame mobile que integration-node
+- meme hero centre avec icone principale et accent securite
+- meme vocabulaire de controles: champs hauts, arrondis, fond blanc, carte `surface-light`
+- meme CTA principal bleu plein, largeur totale, ombre legere
 
 ## Donnees affichees
 

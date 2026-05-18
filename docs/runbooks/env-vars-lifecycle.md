@@ -124,7 +124,8 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
-| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `/kyclink/*` |
+| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` |
+| `KYCLY_SESSION_BASE_URL` | URL du host `partner-node` appele cote serveur pour `GET /kyclink/sessions`; replie sur `KYCLY_API_BASE_URL` si vide |
 | `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 
@@ -186,7 +187,7 @@ Regles retenues:
 
 Role:
 
-- URL du backend KYC appele par les route handlers Next.js pour `/kyclink/*`
+- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 
 Regle J1 retenue:
 
@@ -194,6 +195,21 @@ Regle J1 retenue:
 - `Production` -> runtime `partner-node sandbox`
 
 Cette variable ne doit pas pointer vers `partner-node production` tant qu'une decision explicite ne modifie pas le blueprint du projet.
+
+### `KYCLY_SESSION_BASE_URL`
+
+Role:
+
+- URL du host appele par les route handlers Next.js pour `GET /kyclink/sessions`
+
+Regle J1 retenue:
+
+- `Preview` -> host exposant `GET /kyclink/sessions`
+- `Production` -> host exposant `GET /kyclink/sessions`
+
+Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe la liste de sessions du reste des routes `partner-node`.
+
+Si elle est vide, l'application replie explicitement sur `KYCLY_API_BASE_URL`.
 
 ### `KYCLY_ME_BASE_URL`
 
@@ -290,6 +306,7 @@ Variables minimales retenues dans la CI:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET` de validation
 - `KYCLY_API_BASE_URL` de validation
+- `KYCLY_SESSION_BASE_URL` de validation
 - `KYCLY_ME_BASE_URL` de validation
 
 Secrets CI retenus:

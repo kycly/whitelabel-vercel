@@ -168,14 +168,15 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 3. verifier l'acces applicatif
 4. resoudre `demo_account_id`
 5. deriver `externalId`
-6. construire `metadata`
-7. reutiliser l'id token Cognito conserve cote serveur
-8. appeler `partner-node /kyclink/create`
-9. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
+6. deriver `parentOrigin` depuis la requete HTTP
+7. construire `metadata`
+8. reutiliser l'id token Cognito conserve cote serveur
+9. appeler `partner-node /kyclink/create`
+10. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 
-- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur
+- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur, puis replie sur l'index `GET /kyclink/sessions` si la route detail repond `404`
 - `GET /api/kyc/sessions` appelle `partner-node /kyclink/sessions` avec la meme contrainte de scope demo
 
 ## D7bis — Contrat de la liste `Mes verifications`
@@ -193,6 +194,7 @@ Champs cibles par item:
 - `completedAt`
 - `expiresAt`
 - `createdAt`
+- `validationStatus`
 
 Champs explicitement exclus:
 
@@ -203,14 +205,17 @@ Champs explicitement exclus:
 - `metadata`
 - `updated_at`
 
-Pagination cible:
+Pagination et meta cibles:
 
 - `limit` par defaut `20`
 - `limit` max `50`
 - `offset` par defaut `0`
-- pas de `total` ni de `hasMore` au premier jet
+- `total` expose apres filtres et avant pagination
+- ordre canonique `createdAt DESC`
+- pas de `hasMore` ni de `nextOffset` au premier jet
+- `statusCounts` et `decisionCounts` exposes pour alimenter l'UI
 
-La specification detaillee a suivre avant implementation se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+La specification detaillee de la route se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## D8 — Etat des trous restants
 

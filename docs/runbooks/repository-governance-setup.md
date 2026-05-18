@@ -41,7 +41,7 @@ Le repo porte maintenant les elements GitHub suivants:
 
 Role retenu:
 
-- `ci.yml` fournit le quality gate obligatoire
+- `ci.yml` fournit le quality gate obligatoire, y compris le smoke navigateur Playwright
 - `PULL_REQUEST_TEMPLATE.md` impose une hygiene minimale de revue, de verification et de promotion
 
 ---
@@ -227,7 +227,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
@@ -239,7 +240,8 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 

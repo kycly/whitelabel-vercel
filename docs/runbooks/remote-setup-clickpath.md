@@ -41,7 +41,8 @@ Preparer les informations suivantes:
 - les valeurs Cognito publiques de `whitelabel-vercel`
 - une valeur `APP_SESSION_SECRET` pour `Preview`
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
-- `KYCLY_API_BASE_URL` du runtime `partner-node sandbox` pour `/kyclink/*`
+- `KYCLY_API_BASE_URL` du runtime `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_SESSION_BASE_URL` du host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` du host exposant `/demo/me`
 - le theme par defaut si override necessaire
 

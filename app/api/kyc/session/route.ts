@@ -41,9 +41,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const requestOrigin = request.headers.get("origin") ?? new URL(request.url).origin;
     const created = await createKycSession({
       cognitoIdToken: session.cognitoIdToken,
       input: parsed.data,
+      parentOrigin: requestOrigin,
     });
 
     return NextResponse.json(created, { status: 201 });

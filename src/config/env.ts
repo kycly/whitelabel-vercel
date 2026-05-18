@@ -2,6 +2,11 @@ function normalizeBaseUrl(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
+function resolveBaseUrl(...values: Array<string | undefined>): string {
+  const selected = values.find((value) => typeof value === "string" && value.trim().length > 0);
+  return normalizeBaseUrl(selected ?? "https://api.kycly.sn");
+}
+
 export const env = {
   public: {
     appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? "local",
@@ -11,9 +16,16 @@ export const env = {
   },
   server: {
     sessionSecret: process.env.APP_SESSION_SECRET ?? "local-dev-session-secret-change-me",
-    kyclyApiBaseUrl: normalizeBaseUrl(process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn"),
-    kyclyMeBaseUrl: normalizeBaseUrl(
-      process.env.KYCLY_ME_BASE_URL ?? process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
+    kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
+    kyclySessionBaseUrl: resolveBaseUrl(
+      process.env.KYCLY_SESSION_BASE_URL,
+      process.env.KYCLY_API_BASE_URL,
+      "https://api.kycly.sn",
+    ),
+    kyclyMeBaseUrl: resolveBaseUrl(
+      process.env.KYCLY_ME_BASE_URL,
+      process.env.KYCLY_API_BASE_URL,
+      "https://api.kycly.sn",
     ),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
   },

@@ -49,15 +49,16 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 
 - app Next.js App Router
 - login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
-- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/sessions`
-- pages `LOGIN`, `WELCOME`, `ACCESS_DENIED`, `VERIFY`, `SESSIONS`
+- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId/result`, `GET /api/kyc/sessions`
+- pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `COMPLETE`, `FAILURE`, `SESSIONS`
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
-- proxy serveur de creation et de lecture des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
+- proxy serveur de creation, de lecture resultat et de liste des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
+- fallback serveur sur la page resultat: si `GET /kyclink/:sessionId/result` remonte un `404`, l'app reconstruit un etat minimal depuis l'index `GET /kyclink/sessions`
 
 ## Demarrage local
 
 1. copier `.env.example` vers `.env.local`
-2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `KYCLY_API_BASE_URL` et `KYCLY_ME_BASE_URL`
+2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `KYCLY_API_BASE_URL`, `KYCLY_SESSION_BASE_URL` si la liste de sessions passe par un host distinct, et `KYCLY_ME_BASE_URL`
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
@@ -68,10 +69,19 @@ Commandes utiles:
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test`
+- `pnpm test:e2e`
 - `pnpm build`
 - `pnpm docs:check`
 - `pnpm guard:sandbox-only`
 - `pnpm prepare`
+
+Smokes Playwright cibles:
+
+- `e2e/whitelabel-smoke.spec.ts` pour le tunnel principal mocke
+- `e2e/auth-fallback-logout.spec.ts` pour le fallback retour -> logout -> login
+- `e2e/whitelabel-mobile-auth.spec.ts` pour les ecrans proteges mobiles et la stabilite des proportions
+
+Apres un changement UI, lancer au moins une validation e2e sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter de conclure a tort sur un `.next` stale.
 
 ## Variables minimales
 
@@ -84,7 +94,8 @@ Variables publiques:
 Variables serveur:
 
 - `APP_SESSION_SECRET`
-- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour `/kyclink/*`
+- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour la creation de session et les lectures detaillees `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`; si vide, l'app replie sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`, par exemple `https://me.kycly.sn`
 
 La session applicative conserve aussi l'id token Cognito cote serveur, dans le cookie HTTP-only signe, pour authentifier les appels `partner-node /kyclink/*` sans exposer ce token au frontend.

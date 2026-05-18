@@ -8,6 +8,8 @@ Le but est simple: permettre a un utilisateur identifie de lister ses verificati
 
 La source canonique reste `partner-node` sandbox via `GET /kyclink/sessions`.
 
+`whitelabel-vercel` cible cette lecture via `KYCLY_SESSION_BASE_URL`. Si la variable est vide, le proxy replie sur `KYCLY_API_BASE_URL`.
+
 `whitelabel-vercel` ne fait qu'un proxy serveur borne au `demo_account_id` courant.
 
 Consequences:

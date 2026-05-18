@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, LoaderCircle, RefreshCcw } from "lucide-react";
-import { PageShell } from "@/components/layout/page-shell";
-import { SurfacePanel } from "@/components/ui/surface-panel";
+import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
+import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import {
+  errorAlertClassName,
+  featureActionCardClassName,
+  formFieldClassName,
+  inlinePrimaryButtonClassName,
+  metricCardClassName,
+  primaryIconButtonClassName,
+  secondaryIconButtonClassName,
+  surfaceInfoPanelClassName,
+} from "@/components/ui/fixed-action-layout";
 
 type SessionStatus = "pending" | "processing" | "completed";
 type DecisionStatus = "APPROVED" | "REJECTED" | "REVIEW";
@@ -229,173 +238,238 @@ export function VerificationSessions() {
   const isFilterEmpty = !state.isLoading && !state.error && state.data.length === 0 && hasActiveFilter;
   const isInitialEmpty = !state.isLoading && !state.error && state.data.length === 0 && !hasActiveFilter;
 
+  function resetFilters() {
+    setStatus("all");
+    setDecisionStatus("all");
+    setOffset(0);
+  }
+
   return (
-    <PageShell maxWidthClassName="max-w-5xl">
-      <SurfacePanel className="space-y-6">
+    <ProtectedScreenShell backHref="/welcome" title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">SESSIONS</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Mes verifications</h1>
-            <p className="text-sm text-slate-600">Consultez les sessions de votre compte demo.</p>
+          <div className="flex h-11 items-center">
+            <p className="text-sm font-medium text-[var(--foreground)]">Mes vérifications</p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => {
                 setReloadKey((current) => current + 1);
               }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+              aria-label="Actualiser"
+              title="Actualiser"
+              className={secondaryIconButtonClassName}
             >
               <RefreshCcw className="size-4" />
-              Rafraichir
+              <span className="sr-only">Actualiser</span>
             </button>
 
-            <Link
-              href="/welcome"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-            >
-              <ArrowLeft className="size-4" />
-              Accueil
-            </Link>
+            {hasActiveFilter ? (
+              <button
+                type="button"
+                onClick={resetFilters}
+                aria-label="Réinitialiser les filtres"
+                title="Réinitialiser les filtres"
+                className={secondaryIconButtonClassName}
+              >
+                <FilterX className="size-4" />
+                <span className="sr-only">Réinitialiser les filtres</span>
+              </button>
+            ) : null}
 
             <Link
               href="/verify"
-              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
+              aria-label="Nouvelle vérification"
+              title="Nouvelle vérification"
+              className={primaryIconButtonClassName}
             >
-              Nouvelle verification
-              <ArrowRight className="size-4" />
+              <Plus className="size-4" />
+              <span className="sr-only">Nouvelle vérification</span>
             </Link>
           </div>
         </div>
 
-        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
-          <label className="space-y-2 text-sm text-slate-700">
-            <span className="font-medium">Statut</span>
-            <select
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as SessionStatus | "all");
-                setOffset(0);
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({state.meta.statusCounts[option.value]})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2 text-sm text-slate-700">
-            <span className="font-medium">Decision</span>
-            <select
-              value={decisionStatus}
-              onChange={(event) => {
-                setDecisionStatus(event.target.value as DecisionStatus | "all");
-                setOffset(0);
-              }}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {DECISION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({state.meta.decisionCounts[option.value]})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {state.isLoading ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
-            <LoaderCircle className="size-4 animate-spin" />
-            Lecture des verifications en cours.
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className={metricCardClassName}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.all}</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <History className="size-4" />
+              </div>
+            </div>
           </div>
-        ) : null}
 
-        {state.error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{state.error}</div>
-        ) : null}
-
-        {isInitialEmpty ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-sm text-slate-600">
-            <p className="font-medium text-slate-950">Aucune verification.</p>
+          <div className={metricCardClassName}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.pending + state.meta.statusCounts.processing}</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <Clock3 className="size-4" />
+              </div>
+            </div>
           </div>
-        ) : null}
 
-        {isFilterEmpty ? (
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-sm text-slate-600">
-            <p className="font-medium text-slate-950">Aucune verification pour ce filtre.</p>
-          </div>
-        ) : null}
-
-        {state.data.length > 0 ? (
-          <div className="grid gap-4">
-            {state.data.map((item) => {
-              return (
-                <article key={item.sessionId} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)]">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <h2 className="text-lg font-semibold text-slate-950">{item.externalId ?? item.sessionId}</h2>
-                      <p className="text-sm text-slate-500">{formatDate(item.createdAt)}</p>
-                    </div>
-
-                    <Link
-                      href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-                    >
-                        Voir
-                        <ArrowRight className="size-4" />
-                    </Link>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em]">
-                    <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
-                      {item.status}
-                    </span>
-                    <span className={`inline-flex items-center rounded-full border px-3 py-1 ${decisionTone(item.validationStatus)}`}>
-                      {decisionLabel(item)}
-                    </span>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          <p>
-            Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={!canGoBack}
-              onClick={() => {
-                setOffset((current) => Math.max(current - PAGE_SIZE, 0));
-              }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ArrowLeft className="size-4" />
-              Precedent
-            </button>
-
-            <button
-              type="button"
-              disabled={!canGoNext}
-              onClick={() => {
-                setOffset((current) => current + PAGE_SIZE);
-              }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Suivant
-              <ArrowRight className="size-4" />
-            </button>
+          <div className={metricCardClassName}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.completed}</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <CheckCircle2 className="size-4" />
+              </div>
+            </div>
           </div>
         </div>
-      </SurfacePanel>
-    </PageShell>
+      </div>
+
+      <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:grid-cols-2">
+        <label className="block">
+          <select
+            aria-label="Filtrer par statut"
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as SessionStatus | "all");
+              setOffset(0);
+            }}
+            className={formFieldClassName({ compact: true })}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} ({state.meta.statusCounts[option.value]})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <select
+            aria-label="Filtrer par décision"
+            value={decisionStatus}
+            onChange={(event) => {
+              setDecisionStatus(event.target.value as DecisionStatus | "all");
+              setOffset(0);
+            }}
+            className={formFieldClassName({ compact: true })}
+          >
+            {DECISION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} ({state.meta.decisionCounts[option.value]})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {state.isLoading ? (
+        <div className={[surfaceInfoPanelClassName, "flex items-center gap-3"].join(" ")}>
+          <LoaderCircle className="size-4 animate-spin" />
+          Lecture des verifications en cours.
+        </div>
+      ) : null}
+
+      {state.error ? (
+        <div className={errorAlertClassName}>{state.error}</div>
+      ) : null}
+
+      {isInitialEmpty ? (
+        <div className={[surfaceInfoPanelClassName, "px-6 py-8"].join(" ")}>
+          <p className="font-medium text-[var(--foreground)]">Aucune verification.</p>
+          <Link
+            href="/verify"
+            className={[inlinePrimaryButtonClassName, "mt-4"].join(" ")}
+          >
+            Nouvelle vérification
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      ) : null}
+
+      {isFilterEmpty ? (
+        <div className={[surfaceInfoPanelClassName, "flex items-center justify-between gap-4 px-6 py-6"].join(" ")}>
+          <p className="font-medium text-[var(--foreground)]">Aucune verification pour ce filtre.</p>
+          <button
+            type="button"
+            onClick={resetFilters}
+            aria-label="Réinitialiser les filtres"
+            title="Réinitialiser les filtres"
+            className={secondaryIconButtonClassName}
+          >
+            <FilterX className="size-4" />
+            <span className="sr-only">Réinitialiser les filtres</span>
+          </button>
+        </div>
+      ) : null}
+
+      {state.data.length > 0 ? (
+        <div className="grid gap-4">
+          {state.data.map((item) => {
+            return (
+              <article key={item.sessionId} className="rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 space-y-1">
+                    <h2 className="truncate text-base font-semibold text-[var(--foreground)]">{item.externalId ?? item.sessionId}</h2>
+                    <p className="text-xs text-[var(--muted-foreground)]">{formatDate(item.createdAt)}</p>
+                  </div>
+
+                  <Link
+                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
+                    aria-label={`Voir la session ${item.externalId ?? item.sessionId}`}
+                    title="Voir la session"
+                    className={secondaryIconButtonClassName}
+                  >
+                    <ArrowUpRight className="size-4" />
+                    <span className="sr-only">Voir la session</span>
+                  </Link>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]">
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
+                    {item.status}
+                  </span>
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${decisionTone(item.validationStatus)}`}>
+                    {decisionLabel(item)}
+                  </span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
+        <p>
+          Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
+        </p>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!canGoBack}
+            onClick={() => {
+              setOffset((current) => Math.max(current - PAGE_SIZE, 0));
+            }}
+            aria-label="Page précédente"
+            title="Page précédente"
+            className={secondaryIconButtonClassName}
+          >
+            <ArrowLeft className="size-4" />
+            <span className="sr-only">Page précédente</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!canGoNext}
+            onClick={() => {
+              setOffset((current) => current + PAGE_SIZE);
+            }}
+            aria-label="Page suivante"
+            title="Page suivante"
+            className={secondaryIconButtonClassName}
+          >
+            <ArrowRight className="size-4" />
+            <span className="sr-only">Page suivante</span>
+          </button>
+        </div>
+      </div>
+    </ProtectedScreenShell>
   );
 }

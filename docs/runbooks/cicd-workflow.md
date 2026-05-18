@@ -135,6 +135,8 @@ Ordre des etapes retenu:
 8. `pnpm typecheck`
 9. `pnpm lint`
 10. `pnpm build`
+11. `pnpm exec playwright install --with-deps chromium`
+12. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
 
 Ordre de severite retenu:
 
@@ -142,6 +144,12 @@ Ordre de severite retenu:
 - le garde-fou sandbox-only doit bloquer toute introduction de `ck_live_*`
 - les tests executables passent avant les controles purement statiques
 - le build reste obligatoire pour verifier le runtime Next/Vercel
+- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit
+
+Note locale:
+
+- `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e` est reserve a la CI apres `pnpm build`
+- apres une modification UI locale, relancer au moins une fois `pnpm test:e2e` sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter un `.next` stale
 
 ## Hooks locaux retenus
 
@@ -250,6 +258,7 @@ Les variables doivent etre separees par environnement Vercel.
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` pour le build Vercel si `@kycly/link` est installe depuis GitHub Packages
 - `KYCLY_API_BASE_URL`
+- `KYCLY_SESSION_BASE_URL`
 - `KYCLY_ME_BASE_URL`
 - `DEFAULT_KYCLINK_THEME` si override necessaire
 
@@ -257,7 +266,8 @@ Les variables doivent etre separees par environnement Vercel.
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
 - `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
-- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `/kyclink/*` en `Preview` et `Production`
+- `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` en `Preview` et `Production`
+- `KYCLY_SESSION_BASE_URL` pointe vers le host exposant `GET /kyclink/sessions` en `Preview` et `Production`, ou reste vide pour replier sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me` en `Preview` et `Production`
 - l'id token Cognito reste strictement cote serveur dans la session HTTP-only
 
@@ -266,6 +276,7 @@ Les variables doivent etre separees par environnement Vercel.
 Pour `Preview` comme pour `Production`:
 
 - `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node` pour `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` -> host exposant `GET /kyclink/sessions`, ou vide pour reutiliser `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - aucune `ck_live_*`
 

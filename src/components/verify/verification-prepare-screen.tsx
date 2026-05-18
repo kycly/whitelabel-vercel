@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { LoaderCircle } from "lucide-react";
-import { PageShell } from "@/components/layout/page-shell";
-import { SurfacePanel } from "@/components/ui/surface-panel";
+import { LoaderCircle, ShieldCheck } from "lucide-react";
+import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
 import { saveActiveVerificationSession } from "@/lib/active-verification-session";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
 
@@ -83,19 +83,16 @@ export function VerificationPrepareScreen() {
   }, []);
 
   return (
-    <PageShell maxWidthClassName="max-w-4xl">
-      <SurfacePanel className="space-y-6">
-        <div className="space-y-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">SESSION_PREPARE</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Preparation</h1>
-          <p className="text-sm text-slate-600">Creation securisee de votre session.</p>
+    <ProtectedScreenShell backHref="/verify" title="Session" maxWidthClassName="max-w-2xl" panelClassName="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface-light)]">
+          <LoaderCircle className="h-9 w-9 animate-spin text-brand" />
+          <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
+            <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
+          </div>
         </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
-          <LoaderCircle className="size-4 animate-spin" />
-          Creation de la session en cours.
+        <div className={surfaceInfoCardClassName}>
+          Préparation de votre session
         </div>
-      </SurfacePanel>
-    </PageShell>
+    </ProtectedScreenShell>
   );
 }

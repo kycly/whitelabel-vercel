@@ -30,6 +30,7 @@ jobs:
       NEXT_PUBLIC_COGNITO_USER_POOL_ID: eu-west-1_ci
       APP_SESSION_SECRET: ci-session-secret-not-for-runtime
       KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
+      KYCLY_SESSION_BASE_URL: https://sandbox.partner-node.example.com
       KYCLY_ME_BASE_URL: https://me.partner-node.example.com
       DEFAULT_KYCLINK_THEME: kycly-light
 
@@ -72,3 +73,11 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser smoke
+        env:
+          PLAYWRIGHT_SKIP_BUILD: "1"
+        run: pnpm test:e2e
