@@ -216,6 +216,6 @@ Le projet couvre maintenant ce socle executable:
 - parcours J1: [PARCOURS-J1.md](PARCOURS-J1.md)
 - UX page de connexion: [reference/AUTH-UX.md](reference/AUTH-UX.md)
 - UX metadata de session: [reference/SESSION-CONTEXT-UX.md](reference/SESSION-CONTEXT-UX.md)
-- contrat futur de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
+- contrat de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)

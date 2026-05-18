@@ -86,7 +86,7 @@ Alternative persistante pour une machine locale: stocker le token dans `~/.npmrc
 
 ```ini
 @kycly:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=ghp_xxxxxxxxxxxxxxxxxxxx
+//npm.pkg.github.com/:_authToken=<github_packages_token>
 ```
 
 Dans ce cas, le `.npmrc` du repo peut rester tel quel et vous n'avez plus besoin d'exporter `NODE_AUTH_TOKEN` a chaque shell.

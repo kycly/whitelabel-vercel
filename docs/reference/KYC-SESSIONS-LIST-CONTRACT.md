@@ -21,7 +21,7 @@ Consequences:
 
 ## Regles d'acces
 
-La route future devra:
+La route actuelle doit:
 
 1. verifier la session applicative
 2. verifier `canAccess = true`
