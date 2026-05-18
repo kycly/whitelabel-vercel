@@ -19,6 +19,13 @@ Le projet conserve une interface de confiance, legere et claire:
 - animations courtes et sobres
 - densite mobile-first, parcours guide et rassurant
 
+Principe de sobriete a conserver:
+
+- une page de parcours = un bloc principal
+- un bloc principal = une intention unique
+- une action principale visible par ecran
+- pas de panneaux lateraux persistants pour rappeler des informations deja connues
+
 ## Tokens visuels
 
 Ces tokens doivent exister localement dans la feuille de style globale du projet.
@@ -127,6 +134,21 @@ src/
 - formulation orientee confiance et accompagnement
 - densite adaptee mobile avant desktop
 
+Pour les ecrans proteges du parcours KYC, la sequence cible est maintenant:
+
+1. `WELCOME`
+2. `SESSION_CONTEXT`
+3. `SESSION_PREPARE`
+4. `KYC_LINK`
+5. `RESULT`
+6. `SESSIONS`
+
+Regles specifiques:
+
+- l'iframe KycLink vit sur une page dediee, jamais sur l'ecran de collecte
+- l'ecran de preparation technique reste minimal et transitoire
+- les ecrans `RESULT` et `SESSIONS` exposent seulement le statut, la reference utile et les actions de suite
+
 Pour l'authentification J1, cette logique s'applique aussi au formulaire de connexion direct:
 
 - carte unique et centree
@@ -155,3 +177,5 @@ Pour l'authentification J1, cette logique s'applique aussi au formulaire de conn
 - les layouts de parcours gardent la meme logique de guidage que integration-node
 - aucune dependance cross-project n'est introduite pour les styles ou composants
 - les ecrans principaux restent visuellement dans la meme famille que integration-node
+- aucun ecran de parcours ne depasse un bloc principal concurrentiel
+- aucun ecran ne melange formulaire, creation de session et iframe dans la meme vue

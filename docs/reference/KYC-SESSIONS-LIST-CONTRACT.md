@@ -24,7 +24,7 @@ La route future devra:
 1. verifier la session applicative
 2. verifier `canAccess = true`
 3. verifier la presence de `demo_account_id`
-4. resoudre la `ck_demo_*` du compte courant via `DEMO_ACCOUNT_KEY_MAP`
+4. reutiliser l'id token Cognito conserve dans la session HTTP-only serveur
 5. appeler `partner-node sandbox /kyclink/sessions`
 
 Si l'un de ces prealables echoue, la route ne doit jamais tenter de fallback vers un autre compte ou un autre environnement.

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, KeyRound, LoaderCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, KeyRound, LoaderCircle } from "lucide-react";
 import {
   cognitoCompleteNewPassword,
   cognitoConfirmForgotPassword,
@@ -13,12 +13,6 @@ import {
 } from "@/auth/cognito-client";
 import { PageShell } from "@/components/layout/page-shell";
 import { SurfacePanel } from "@/components/ui/surface-panel";
-
-const trustPoints = [
-  "Connexion securisee via Cognito",
-  "Acces reserve aux comptes demo autorises",
-  "Aucun secret KYCLY expose dans le navigateur",
-];
 
 type LoginStep = "login" | "new-password" | "forgot-password-request" | "forgot-password-confirm";
 
@@ -273,56 +267,25 @@ export function LoginScreen() {
   }
 
   return (
-    <PageShell className="flex items-center" maxWidthClassName="max-w-6xl">
-      <div className="grid w-full gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <section className="animate-fade-in space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-[var(--shadow-card)] backdrop-blur-sm">
-            <Sparkles className="size-4 text-blue-600" />
-            Espace demo KYCLY
-          </div>
-
-          <div className="max-w-2xl space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">Verification guidee</p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              Connectez-vous pour ouvrir un parcours de verification rassurant.
-            </h1>
-            <p className="max-w-xl text-lg leading-8 text-slate-600">
-              Accedez a votre espace demo securise, retrouvez votre historique et lancez une session KYC en quelques etapes claires.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            {trustPoints.map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 text-sm leading-6 text-slate-600 shadow-[var(--shadow-card)] backdrop-blur-sm"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <SurfacePanel className="animate-slide-up">
+    <PageShell className="flex items-center" maxWidthClassName="max-w-4xl">
+        <SurfacePanel className="animate-slide-up w-full">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                 <KeyRound className="size-6" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-950">Connexion securisee</h2>
-                <p className="text-sm text-slate-500">Votre acces depend d&apos;un compte demo deja autorise.</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">LOGIN</p>
+                <h1 className="text-2xl font-semibold text-slate-950">Connectez-vous</h1>
               </div>
             </div>
 
-            <div className="rounded-3xl bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-              Utilisez directement vos identifiants Cognito. L&apos;application verifie ensuite le JWT cote serveur et ouvre la session HTTP-only deja consommee par le reste du parcours.
-            </div>
+            <p className="text-sm text-slate-600">Compte demo requis.</p>
 
             {bootstrapping ? (
               <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-600">
                 <LoaderCircle className="size-4 animate-spin" />
-                Verification d&apos;une session Cognito existante...
+                Verification de la session...
               </div>
             ) : null}
 
@@ -390,9 +353,7 @@ export function LoginScreen() {
 
             {step === "new-password" ? (
               <form className="space-y-4" onSubmit={handleNewPasswordSubmit}>
-                <p className="text-sm leading-6 text-slate-600">
-                  Votre compte demande un nouveau mot de passe avant de poursuivre.
-                </p>
+                <p className="text-sm text-slate-600">Definissez un nouveau mot de passe.</p>
 
                 <div className="space-y-2">
                   <label htmlFor="new-password" className="text-sm font-medium text-slate-700">
@@ -436,9 +397,7 @@ export function LoginScreen() {
 
             {step === "forgot-password-request" ? (
               <form className="space-y-4" onSubmit={handleForgotPasswordRequestSubmit}>
-                <p className="text-sm leading-6 text-slate-600">
-                  Saisissez votre identifiant Cognito pour demander un code de reinitialisation.
-                </p>
+                <p className="text-sm text-slate-600">Demandez un code de reinitialisation.</p>
 
                 <div className="space-y-2">
                   <label htmlFor="forgot-username" className="text-sm font-medium text-slate-700">
@@ -481,8 +440,8 @@ export function LoginScreen() {
 
             {step === "forgot-password-confirm" ? (
               <form className="space-y-4" onSubmit={handleForgotPasswordConfirmSubmit}>
-                <p className="text-sm leading-6 text-slate-600">
-                  Saisissez le code recu {resetDestination ? `sur ${resetDestination}` : "depuis Cognito"}, puis votre nouveau mot de passe.
+                <p className="text-sm text-slate-600">
+                  Saisissez le code recu {resetDestination ? `sur ${resetDestination}` : "depuis Cognito"}.
                 </p>
 
                 <div className="space-y-2">
@@ -551,20 +510,8 @@ export function LoginScreen() {
               </form>
             ) : null}
 
-            <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
-              <div className="flex items-center gap-2 font-medium text-slate-950">
-                <ShieldCheck className="size-4 text-blue-600" />
-                Controle d&apos;acces J1
-              </div>
-              <ul className="space-y-2">
-                <li>Le compte doit etre provisionne dans le meme user pool Cognito.</li>
-                <li>Le backend verifie le JWT Cognito avant toute creation de session.</li>
-                <li>La session applicative reste cote serveur via cookie HTTP-only.</li>
-              </ul>
-            </div>
           </div>
         </SurfacePanel>
-      </div>
     </PageShell>
   );
 }

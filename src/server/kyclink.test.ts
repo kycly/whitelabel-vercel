@@ -5,16 +5,9 @@ vi.mock("@/config/env", () => ({
     public: {},
     server: {
       sessionSecret: "test-secret",
-      cognitoClientSecret: undefined,
       kyclyApiBaseUrl: "https://api.kycly.test",
-      demoAccountKeyMap: {
-        demo_account_1: "ck_demo_123456",
-      },
       defaultKycLinkTheme: "kycly-light",
     },
-  },
-  getDemoAccountApiKey: (demoAccountId: string) => {
-    return demoAccountId === "demo_account_1" ? "ck_demo_123456" : null;
   },
 }));
 
@@ -47,7 +40,7 @@ describe("server/kyclink", () => {
     vi.unstubAllGlobals();
   });
 
-  it("authenticates session creation against the backend with the mapped demo API key", async () => {
+  it("authenticates session creation against the backend with the Cognito id token", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -60,7 +53,7 @@ describe("server/kyclink", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const created = await createKycSession({
-      demoAccountId: "demo_account_1",
+      cognitoIdToken: "cognito-id-token",
       input: baseInput,
     });
 
@@ -80,14 +73,14 @@ describe("server/kyclink", () => {
 
     expect(url).toBe("https://api.kycly.test/kyclink/create");
     expect(init.method).toBe("POST");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer ck_demo_123456");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
     expect(body.externalId).toBe("cust_0042");
     expect(body.metadata.routingContext.journey).toBe("onboarding");
     expect(body.metadata.notificationContext?.preferredChannel).toBe("email");
     expect(body.metadata.customContext).toEqual({ campaign: "spring_demo" });
   });
 
-  it("authenticates session result reads against the backend with the mapped demo API key", async () => {
+  it("authenticates session result reads against the backend with the Cognito id token", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -103,7 +96,7 @@ describe("server/kyclink", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchKycSessionResult({
-      demoAccountId: "demo_account_1",
+      cognitoIdToken: "cognito-id-token",
       sessionId: "sess_1",
     });
 
@@ -112,7 +105,7 @@ describe("server/kyclink", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.kycly.test/kyclink/sess_1/result");
     expect(init.method).toBe("GET");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer ck_demo_123456");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
   });
 
   it("uses the sessions list endpoint and result endpoint together to compute canonical filtered history", async () => {
@@ -161,7 +154,7 @@ describe("server/kyclink", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchKycSessions({
-      demoAccountId: "demo_account_1",
+      cognitoIdToken: "cognito-id-token",
       query: parseKycSessionsListQuery(new URLSearchParams("status=completed&decisionStatus=APPROVED")),
     });
 

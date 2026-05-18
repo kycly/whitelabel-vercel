@@ -16,8 +16,7 @@ Construire une application web de demonstration / whitelabel pour @kycly/link, i
 - base dediee au J1: non
 - acces direct a la base partner-node: non
 - dependance de service au backend partner-node sandbox pour creer et lire les sessions: oui
-- creation de session avec JWT Cognito seul: non
-- creation de session cote serveur avec ck_demo_*: oui
+- creation de session avec JWT Cognito cote serveur: oui
 - une app multi-tenant pour plusieurs demo testeurs: oui
 - meme canon esthetique UI/UX que integration-node, mais implemente localement dans whitelabel-vercel: oui
 
@@ -28,7 +27,7 @@ Utilisateur
   -> Login Cognito direct
   -> whitelabel-vercel frontend
   -> whitelabel-vercel backend
-  -> partner-node sandbox /kyclink/create via ck_demo_*
+  -> partner-node sandbox /kyclink/create via JWT Cognito serveur
   -> @kycly/link
 ```
 
@@ -42,7 +41,7 @@ Utilisateur
 6. Le backend valide le JWT.
 7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
-9. Le backend resout la bonne cle ck_demo_* a utiliser.
+9. Le backend reutilise l'id token Cognito stocke dans la session HTTP-only.
 10. Le backend appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
@@ -62,10 +61,9 @@ Claims minimum attendus:
 
 ## Regles de securite
 
-- le frontend ne voit jamais de ck_demo_*
-- le JWT Cognito sert a authentifier l'utilisateur, pas a remplacer la credential serveur
+- le frontend ne voit jamais le JWT Cognito brut une fois la session applicative etablie
 - le backend verifie l'acces via `partner-node /demo/me` avant toute creation de session
-- le backend choisit la ck_demo_* a partir du compte demo autorise
+- le backend reutilise l'id token Cognito verifie pour authentifier les appels `partner-node /kyclink/*`
 - `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` doit cibler l'hote exposant `/demo/me`
 - l'app n'utilise ni la base ni le backend runtime de partner-node
@@ -95,7 +93,6 @@ Variables serveur:
 
 - KYCLY_API_BASE_URL
 - KYCLY_ME_BASE_URL
-- DEMO_ACCOUNT_KEY_MAP
 - DEFAULT_KYCLINK_THEME
 
 Politique J1:
@@ -105,10 +102,9 @@ Politique J1:
 
 Notes:
 
-- DEMO_ACCOUNT_KEY_MAP designe une configuration serveur qui mappe un demo_account_id a une ck_demo_*.
-- Cette config doit rester cote serveur uniquement.
-- Format J1 recommande pour DEMO_ACCOUNT_KEY_MAP: JSON objet `{ "demo_account_id": "ck_demo_xxx" }`.
-- Absence de mapping pour un `demo_account_id` autorise: erreur serveur explicite, jamais de fallback silencieux.
+- l'id token Cognito est conserve uniquement cote serveur dans le cookie HTTP-only signe.
+- `partner-node` resout le scope demo a partir du `sub` Cognito et du contexte local.
+- aucune map locale `demo_account_id -> ck_demo_*` n'est maintenue dans whitelabel-vercel.
 
 ## Environnements de deploiement
 
@@ -164,7 +160,7 @@ Responsabilites:
 - POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
-- POST /api/kyc/session valide le JWT, determine le compte demo, derive `externalId`, selectionne la bonne ck_demo_*, cree la session via partner-node et renvoie la charge utile necessaire au frontend
+- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
 - GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 

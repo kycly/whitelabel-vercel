@@ -137,7 +137,7 @@ Premier ecran technique, tres court, qui etablit l'etat d'authentification.
 - token valide
 - claim d'acces a l'app present
 - `demo_account_id` resolu
-- mapping `demo_account_id -> ck_demo_*` resolvable cote serveur
+- session applicative avec id token Cognito stocke cote serveur
 
 ### Sorties possibles
 
@@ -305,7 +305,7 @@ Etat intermediaire pendant lequel le backend cree la session KYC.
 - le backend verifie le JWT
 - le backend determine le `demo_account_id`
 - le backend derive `externalId` a partir de la reference client
-- le backend choisit la bonne `ck_demo_*`
+- le backend reutilise l'id token Cognito stocke dans la session serveur
 - le backend appelle `partner-node` pour creer la session
 
 ### UX attendue

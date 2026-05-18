@@ -43,7 +43,6 @@ Preparer les informations suivantes:
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
 - `KYCLY_API_BASE_URL` du runtime `partner-node sandbox` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` du host exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` contenant uniquement des `ck_demo_*`
 - le theme par defaut si override necessaire
 
 Ne pas ouvrir Vercel avant d'avoir la liste de variables complete.
@@ -276,7 +275,6 @@ Saisir au minimum:
 - `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
-- `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Controles obligatoires avant sauvegarde:
@@ -285,7 +283,7 @@ Controles obligatoires avant sauvegarde:
 - `NODE_AUTH_TOKEN` est present pour permettre l'installation de `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox`
 - `KYCLY_ME_BASE_URL` pointe vers l'hote exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
+- aucune ancienne variable de mapping demo n'est definie
 
 Verification attendue:
 
@@ -314,7 +312,6 @@ Saisir au minimum:
 - `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
-- `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Controles obligatoires avant sauvegarde:
@@ -324,7 +321,7 @@ Controles obligatoires avant sauvegarde:
 - `NODE_AUTH_TOKEN` est present pour permettre l'installation de `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` pointe encore vers `partner-node sandbox`
 - `KYCLY_ME_BASE_URL` pointe encore vers l'hote exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
+- aucune ancienne variable de mapping demo n'est definie
 
 Verification attendue:
 
@@ -397,7 +394,7 @@ Bloquer la mise en place si vous observez l'un de ces symptomes:
 - l'URL Cognito preview ou production ne correspond pas aux variables Vercel
 - `KYCLY_API_BASE_URL` vise autre chose que `partner-node sandbox`
 - `KYCLY_ME_BASE_URL` ne vise pas l'hote expose pour `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` contient une `ck_live_*`
+- une ancienne variable de mapping demo est encore renseignee
 
 ---
 

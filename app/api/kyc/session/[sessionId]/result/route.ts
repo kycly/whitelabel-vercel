@@ -35,7 +35,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const result = await fetchKycSessionResult({
-      demoAccountId: session.demoAccountId,
+      cognitoIdToken: session.cognitoIdToken,
       sessionId,
     });
 

@@ -126,7 +126,6 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
 | `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `/kyclink/*` |
 | `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
-| `DEMO_ACCOUNT_KEY_MAP` | map `demo_account_id -> ck_demo_*` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 
 ---
@@ -209,28 +208,6 @@ Regle J1 retenue:
 
 Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe `/demo/me` du reste des routes `partner-node`.
 
-### `DEMO_ACCOUNT_KEY_MAP`
-
-Role:
-
-- mapper un `demo_account_id` Cognito vers une cle `ck_demo_*`
-
-Format retenu:
-
-```json
-{
-  "demo_acme": "ck_demo_xxx"
-}
-```
-
-Regles retenues:
-
-- JSON objet strictement cote serveur
-- seulement des `ck_demo_*`
-- jamais de `ck_live_*`
-- absence de mapping -> erreur serveur explicite
-- pas de fallback silencieux
-
 ### `DEFAULT_KYCLINK_THEME`
 
 Role:
@@ -251,12 +228,12 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 
 - le domaine public de l'application
 - le secret de session applicative
-- eventuellement la map des comptes demo si une segregation est voulue
+- eventuellement les hosts `KYCLY_*` si l'exposition reseau evolue
 
 ### Ce qui ne change pas au J1
 
 - la cible `partner-node sandbox`
-- l'usage exclusif de `ck_demo_*`
+- l'usage d'un id token Cognito cote serveur pour `/kyclink/*`
 - l'absence de toute `ck_live_*`
 
 ---
@@ -273,7 +250,6 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NODE_AUTH_TOKEN` si l'installation locale doit resoudre `@kycly/link`
 - `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL`
-- `DEMO_ACCOUNT_KEY_MAP`
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Preview
@@ -286,7 +262,6 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Production
@@ -299,7 +274,6 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NODE_AUTH_TOKEN`
 - `KYCLY_API_BASE_URL` -> sandbox
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` -> `ck_demo_*` uniquement
 - `DEFAULT_KYCLINK_THEME`
 
 ---
@@ -317,7 +291,6 @@ Variables minimales retenues dans la CI:
 - `APP_SESSION_SECRET` de validation
 - `KYCLY_API_BASE_URL` de validation
 - `KYCLY_ME_BASE_URL` de validation
-- `DEMO_ACCOUNT_KEY_MAP` de validation avec une `ck_demo_*` factice
 
 Secrets CI retenus:
 
@@ -339,16 +312,6 @@ Procedure retenue:
 Effet attendu:
 
 - les sessions applicatives precedentes deviennent invalides
-
-### `DEMO_ACCOUNT_KEY_MAP`
-
-Procedure retenue:
-
-1. mettre a jour les cles `ck_demo_*` dans la source secrete retenue
-2. mettre a jour `DEMO_ACCOUNT_KEY_MAP` dans Vercel
-3. redeployer
-4. verifier `POST /api/kyc/session`
-5. verifier `GET /api/kyc/sessions`
 
 ### `KYCLY_API_BASE_URL`
 
@@ -387,7 +350,6 @@ Apres tout changement sur les variables structurantes, verifier:
 - [ ] renseigner `Production` dans Vercel
 - [ ] verifier la coherence region / user pool / app client id
 - [ ] charger `GH_PACKAGES_TOKEN` dans GitHub Actions
-- [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
 - [ ] verifier que `KYCLY_API_BASE_URL` cible `partner-node sandbox`
 - [ ] verifier que `KYCLY_ME_BASE_URL` cible l'hote exposant `/demo/me`
 
@@ -401,7 +363,7 @@ La gestion des variables de `whitelabel-vercel` repose donc sur:
 - des variables runtime gouvernees par Vercel
 - une separation `Preview` / `Production` au niveau applicatif
 - une cible metier unique `partner-node sandbox`
-- des cles `ck_demo_*` uniquement
+- un id token Cognito conserve cote serveur pour `/kyclink/*`
 - une CI GitHub avec placeholders non sensibles et secret GitHub Packages dedie
 
 Ce document est la reference ops a suivre pour la suite.

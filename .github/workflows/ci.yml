@@ -31,7 +31,6 @@ jobs:
       APP_SESSION_SECRET: ci-session-secret-not-for-runtime
       KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
       KYCLY_ME_BASE_URL: https://me.partner-node.example.com
-      DEMO_ACCOUNT_KEY_MAP: '{"demo_acme":"ck_demo_ci"}'
       DEFAULT_KYCLINK_THEME: kycly-light
 
     steps:

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getDemoAccountApiKey, env } from "@/config/env";
+import { env } from "@/config/env";
 import {
   buildSessionMetadata,
   normalizeExternalId,
@@ -88,20 +88,6 @@ export class KycSessionError extends Error {
   }
 }
 
-function getDemoAccountApiKeyOrThrow(demoAccountId: string): string {
-  const apiKey = getDemoAccountApiKey(demoAccountId);
-
-  if (!apiKey) {
-    throw new KycSessionError(
-      `No ck_demo_* mapping configured for demo account '${demoAccountId}'.`,
-      500,
-      "DEMO_ACCOUNT_KEY_NOT_CONFIGURED",
-    );
-  }
-
-  return apiKey;
-}
-
 export function parseKycSessionsListQuery(input: URLSearchParams): KycSessionsListQuery {
   return kycSessionsListQuerySchema.parse({
     limit: input.get("limit") ?? undefined,
@@ -112,7 +98,7 @@ export function parseKycSessionsListQuery(input: URLSearchParams): KycSessionsLi
 }
 
 async function fetchUpstreamKycSessionsPage(params: {
-  apiKey: string;
+  cognitoIdToken: string;
   limit: number;
   offset: number;
 }): Promise<z.infer<typeof upstreamKycSessionSchema>[]> {
@@ -123,7 +109,7 @@ async function fetchUpstreamKycSessionsPage(params: {
   const response = await fetch(endpoint.toString(), {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${params.apiKey}`,
+      Authorization: `Bearer ${params.cognitoIdToken}`,
     },
     cache: "no-store",
   });
@@ -163,11 +149,9 @@ async function fetchUpstreamKycSessionsPage(params: {
 }
 
 export async function createKycSession(params: {
-  demoAccountId: string;
+  cognitoIdToken: string;
   input: SessionContextInput;
 }): Promise<CreatedKycSession> {
-  const apiKey = getDemoAccountApiKeyOrThrow(params.demoAccountId);
-
   const endpoint = new URL("/kyclink/create", `${env.server.kyclyApiBaseUrl}/`).toString();
   const payload = {
     externalId: normalizeExternalId(params.input.referenceClient),
@@ -178,7 +162,7 @@ export async function createKycSession(params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${params.cognitoIdToken}`,
     },
     body: JSON.stringify(payload),
     cache: "no-store",
@@ -208,16 +192,14 @@ export async function createKycSession(params: {
 }
 
 export async function fetchKycSessionResult(params: {
-  demoAccountId: string;
+  cognitoIdToken: string;
   sessionId: string;
 }): Promise<KycSessionResult> {
-  const apiKey = getDemoAccountApiKeyOrThrow(params.demoAccountId);
-
   const endpoint = new URL(`/kyclink/${params.sessionId}/result`, `${env.server.kyclyApiBaseUrl}/`).toString();
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${params.cognitoIdToken}`,
     },
     cache: "no-store",
   });
@@ -246,16 +228,15 @@ export async function fetchKycSessionResult(params: {
 }
 
 export async function fetchKycSessions(params: {
-  demoAccountId: string;
+  cognitoIdToken: string;
   query: KycSessionsListQuery;
 }): Promise<KycSessionsList> {
-  const apiKey = getDemoAccountApiKeyOrThrow(params.demoAccountId);
   const upstreamPageSize = 50;
   const upstreamRows: z.infer<typeof upstreamKycSessionSchema>[] = [];
 
   for (let upstreamOffset = 0; ; upstreamOffset += upstreamPageSize) {
     const page = await fetchUpstreamKycSessionsPage({
-      apiKey,
+      cognitoIdToken: params.cognitoIdToken,
       limit: upstreamPageSize,
       offset: upstreamOffset,
     });
@@ -275,7 +256,7 @@ export async function fetchKycSessions(params: {
       if (completed) {
         try {
           const result = await fetchKycSessionResult({
-            demoAccountId: params.demoAccountId,
+            cognitoIdToken: params.cognitoIdToken,
             sessionId: item.session_id,
           });
           validationStatus = result.validationStatus;

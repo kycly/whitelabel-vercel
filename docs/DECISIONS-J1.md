@@ -29,7 +29,7 @@ Cela reste vrai meme si l'app est deployee sur des environnements Vercel distinc
 Conséquences:
 
 - `preview` et `production` designent des stades de deploiement de l'app, pas des cibles metier `partner-node preview|production`
-- l'app ne manipule que des `ck_demo_*`
+- l'app whitelabel n'embarque aucune `ck_demo_*` locale
 - toute liste des verifications utilisateur doit lire `partner-node /kyclink/sessions` en sandbox, scope par `demo_account_id`
 - aucune persistance locale des sessions n'est justifiee tant que ce besoin est couvert par `partner-node`
 
@@ -69,12 +69,13 @@ Contenu attendu:
 - identite minimale utilisateur
 - resultat de resolution du scope demo via `partner-node /demo/me`
 - `demo_account_id`
-- aucun token Cognito brut persiste dans la session applicative cote navigateur
+- id token Cognito conserve uniquement cote serveur dans le cookie HTTP-only signe
 
 Conséquence:
 
 - `GET /api/me` lit cette session serveur
 - le frontend ne manipule pas directement les tokens Cognito bruts
+- le backend reutilise cet id token pour appeler `partner-node /kyclink/*`
 
 ## D3 — Contrat des routes internes minimales
 
@@ -147,23 +148,16 @@ Conséquence:
 
 - la phrase `pas de saisie de telephone` doit se lire comme `pas de saisie de telephone obligatoire`
 
-## D6 — Format de `DEMO_ACCOUNT_KEY_MAP`
+## D6 — Credential serveur pour `partner-node /kyclink/*`
 
-Le J1 retient un format JSON serveur unique:
-
-```json
-{
-  "demo_acme": "ck_demo_xxx",
-  "demo_beta": "ck_demo_yyy"
-}
-```
+Le J1 retient une authentification serveur-a-serveur par reutilisation de l'id token Cognito verifie lors de la creation de session applicative.
 
 Regles:
 
-- la map reste cote serveur uniquement
-- lookup strict par `demo_account_id`
-- aucun fallback silencieux
-- absence de mapping -> erreur serveur explicite
+- whitelabel-vercel ne maintient aucune map locale `demo_account_id -> ck_demo_*`
+- l'id token Cognito est conserve uniquement dans le cookie HTTP-only signe de la session applicative
+- `partner-node` reste responsable de resoudre dynamiquement le scope demo a partir du `sub`
+- aucun fallback vers une credential differente ou un autre compte demo
 
 ## D7 — Contrat de creation de session
 
@@ -175,13 +169,13 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 4. resoudre `demo_account_id`
 5. deriver `externalId`
 6. construire `metadata`
-7. resoudre `ck_demo_*`
+7. reutiliser l'id token Cognito conserve cote serveur
 8. appeler `partner-node /kyclink/create`
 9. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 
-- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec la `ck_demo_*` du compte courant
+- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur
 - `GET /api/kyc/sessions` appelle `partner-node /kyclink/sessions` avec la meme contrainte de scope demo
 
 ## D7bis — Contrat de la liste `Mes verifications`

@@ -13,6 +13,7 @@ const sessionSchema = z.object({
   name: z.string().min(1).nullable(),
   demoAccountId: z.string().min(1).nullable(),
   canAccess: z.boolean(),
+  cognitoIdToken: z.string().min(1),
   iat: z.number().optional(),
   exp: z.number().optional(),
 });

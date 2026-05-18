@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { KycLink } from "@kycly/link/react";
-import type { KycLinkErrorPayload, KycLinkStep } from "@kycly/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, BadgeCheck, ChevronDown, LoaderCircle, Plus, Shield, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowRight, ChevronDown, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { PageShell } from "@/components/layout/page-shell";
+import { SurfacePanel } from "@/components/ui/surface-panel";
 import {
   MAX_CUSTOM_CONTEXT_ENTRIES,
   COUNTRY_OPTIONS,
@@ -19,23 +19,11 @@ import {
   sessionContextSchema,
   type SessionContextInput,
 } from "@/lib/verification";
-
-type CreatedSession = {
-  sessionId: string;
-  kyclinkUrl: string;
-  expiresAt: string;
-};
+import { saveVerificationDraft } from "@/lib/verification-draft";
 
 type Viewer = {
   email: string | null;
   demoAccountId: string | null;
-};
-
-const STEP_LABELS: Record<KycLinkStep, string> = {
-  document_select: "Selection du document",
-  document_scan: "Capture du document",
-  liveness: "Verification de presence",
-  completed: "Parcours termine",
 };
 
 const SCENARIO_DESCRIPTIONS: Record<SessionContextInput["scenario"], string> = {
@@ -65,10 +53,6 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdSession, setCreatedSession] = useState<CreatedSession | null>(null);
-  const [kycReady, setKycReady] = useState(false);
-  const [kycStep, setKycStep] = useState<KycLinkStep | null>(null);
-  const [iframeError, setIframeError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const notificationChannelOptions = useMemo(() => {
@@ -135,31 +119,10 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     }));
   }
 
-  function redirectToFailure(payload: KycLinkErrorPayload) {
-    const query = new URLSearchParams();
-
-    query.set("sessionId", payload.sessionId ?? createdSession?.sessionId ?? "unknown-session");
-
-    if (payload.code) {
-      query.set("code", payload.code);
-    }
-
-    if (payload.message) {
-      query.set("message", payload.message);
-    } else if (payload.error) {
-      query.set("message", payload.error);
-    }
-
-    router.push(`/failure?${query.toString()}`);
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
-    setKycReady(false);
-    setKycStep(null);
-    setIframeError(null);
 
     const parsed = sessionContextSchema.safeParse(form);
     if (!parsed.success) {
@@ -174,25 +137,8 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     setErrors({});
 
     try {
-      const response = await fetch("/api/kyc/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(parsed.data),
-      });
-
-      const payload = (await response.json()) as
-        | CreatedSession
-        | {
-            message?: string;
-          };
-
-      if (!response.ok) {
-        throw new Error(payload && "message" in payload && payload.message ? payload.message : "Creation impossible.");
-      }
-
-      setCreatedSession(payload as CreatedSession);
+      saveVerificationDraft(parsed.data);
+      router.push("/verify/prepare");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Creation impossible.");
     } finally {
@@ -200,43 +146,24 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     }
   }
 
-  const flowStatus = createdSession ? (kycReady ? "active" : "launching") : "idle";
-
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10">
-      <div className="grid gap-8 xl:grid-cols-[0.84fr_1.16fr]">
-        <section className="space-y-6 rounded-[32px] border border-slate-200 bg-white/90 p-8 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+    <PageShell maxWidthClassName="max-w-4xl">
+      <SurfacePanel className="space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">SESSION_CONTEXT</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Configurez la session KYC.</h1>
-              <p className="text-sm leading-6 text-slate-600">
-                Choisissez un scenario simple, renseignez juste le contexte utile, puis l&apos;application mappe automatiquement les contexts backend et derive l&apos;externalId depuis votre reference client.
-              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Informations de verification</h1>
+              <p className="text-sm text-slate-600">Renseignez le necessaire pour creer la session.</p>
             </div>
 
             <LogoutButton className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950 disabled:opacity-70" label="Deconnexion" />
-          </div>
-
-          <div className="grid gap-4 rounded-3xl bg-slate-50 p-5 text-sm text-slate-600 sm:grid-cols-2">
-            <div>
-              <p className="font-medium text-slate-950">Compte demo</p>
-              <p>{viewer.demoAccountId ?? "Non determine"}</p>
-            </div>
-            <div>
-              <p className="font-medium text-slate-950">Utilisateur</p>
-              <p>{viewer.email ?? "Email non disponible"}</p>
-            </div>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
               <div className="space-y-2">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">1. Scenario</p>
-                <h2 className="text-xl font-semibold text-slate-950">Choisissez un point de depart clair.</h2>
-                <p className="text-sm leading-6 text-slate-600">
-                  Le scenario rassure l&apos;utilisateur et pre-remplit le type de verification sans exposer de jargon technique.
-                </p>
+                <h2 className="text-xl font-semibold text-slate-950">Choisissez un scenario.</h2>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
@@ -268,7 +195,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
             <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)]">
               <div className="space-y-2">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">2. Contexte de verification</p>
-                <h2 className="text-xl font-semibold text-slate-950">Renseignez juste les informations utiles au parcours.</h2>
+                <h2 className="text-xl font-semibold text-slate-950">Renseignez les informations utiles.</h2>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -296,7 +223,6 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                     value={form.referenceClient}
                     onChange={(event) => updateField("referenceClient", event.target.value)}
                   />
-                  <span className="text-xs text-slate-500">Identifiant metier de la demande. L&apos;externalId est derive cote serveur.</span>
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-700">
@@ -392,7 +318,6 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
               <div className="space-y-2">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">3. Notifications</p>
                 <h2 className="text-xl font-semibold text-slate-950">Recevoir des notifications sur cette verification</h2>
-                <p className="text-sm leading-6 text-slate-600">Choisissez le canal qui vous convient le mieux. Aucun de ces champs n&apos;est obligatoire.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -441,7 +366,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-2">
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">4. Options avancees</p>
-                  <h2 className="text-xl font-semibold text-slate-950">Ajoutez un contexte supplementaire si la demo le justifie.</h2>
+                  <h2 className="text-xl font-semibold text-slate-950">Ajoutez un contexte supplementaire si necessaire.</h2>
                 </div>
 
                 <button
@@ -538,109 +463,10 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
             >
               {submitting ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-              {submitting ? "Preparation de la session..." : "Continuer"}
+              {submitting ? "Creation de la session..." : "Creer la session"}
             </button>
           </form>
-        </section>
-
-        <section className="space-y-6">
-          <div className="rounded-[32px] border border-slate-200 bg-white/90 p-8 shadow-[var(--shadow-soft)] backdrop-blur-sm">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
-                <Shield className="size-5" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-slate-950">Regles J1 appliquees</h2>
-                <ul className="space-y-2 text-sm leading-6 text-slate-600">
-                  <li>Reference client limitee a 128 caracteres avant normalisation.</li>
-                  <li>Le telephone reste optionnel et le canal SMS n&apos;apparait que si un numero est fourni.</li>
-                  <li>La session KYC est creee cote serveur avec une cle demo resolue par compte.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {createdSession ? (
-            <div className="space-y-4 rounded-[32px] border border-slate-200 bg-white/90 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm">
-              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                <BadgeCheck className="mt-0.5 size-4 shrink-0" />
-                <div>
-                  <p className="font-medium">
-                    {flowStatus === "launching" ? "Session KYC creee." : "Parcours KycLink actif."}
-                  </p>
-                  <p>
-                    {flowStatus === "launching"
-                      ? `Session ${createdSession.sessionId} prete. Le composant KycLink va se charger.`
-                      : `Etape courante: ${kycStep ? STEP_LABELS[kycStep] : "initialisation"}.`}
-                  </p>
-                </div>
-              </div>
-
-              {iframeError ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {iframeError}
-                </div>
-              ) : null}
-
-              <div className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 sm:grid-cols-2">
-                <div>
-                  <p className="font-medium text-slate-950">Session ID</p>
-                  <p className="break-all">{createdSession.sessionId}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-950">Expiration</p>
-                  <p>{createdSession.expiresAt}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 sm:grid-cols-2">
-                <div>
-                  <p className="font-medium text-slate-950">Etat UI</p>
-                  <p>
-                    {flowStatus === "launching"
-                      ? "SESSION_PREPARE"
-                      : flowStatus === "active"
-                        ? "KYC_LINK"
-                        : "IDLE"}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-950">SDK pret</p>
-                  <p>{kycReady ? "oui" : "non"}</p>
-                </div>
-              </div>
-
-              {flowStatus === "launching" || flowStatus === "active" ? (
-                <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950">
-                  <KycLink
-                    kyclinkUrl={createdSession.kyclinkUrl}
-                    className="w-full border-0 bg-white"
-                    height={780}
-                    onReady={() => {
-                      setKycReady(true);
-                    }}
-                    onStep={(step) => {
-                      setKycStep(step);
-                    }}
-                    onComplete={(payload) => {
-                      setKycStep("completed");
-                      router.push(`/complete?sessionId=${encodeURIComponent(payload.sessionId)}`);
-                    }}
-                    onError={(payload) => {
-                      setIframeError(payload.message ?? payload.error ?? "Le parcours KycLink a remonte une erreur.");
-                      redirectToFailure(payload);
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="rounded-[32px] border border-dashed border-slate-300 bg-white/60 p-10 text-sm leading-7 text-slate-500 shadow-[var(--shadow-card)] backdrop-blur-sm">
-              La surface KycLink s&apos;affichera ici apres creation de session. Les etats finaux sont maintenant rediriges vers des pages dediees `complete` et `failure`.
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
+      </SurfacePanel>
+    </PageShell>
   );
 }

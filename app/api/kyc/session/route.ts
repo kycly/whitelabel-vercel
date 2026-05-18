@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   try {
     const created = await createKycSession({
-      demoAccountId: session.demoAccountId,
+      cognitoIdToken: session.cognitoIdToken,
       input: parsed.data,
     });
 

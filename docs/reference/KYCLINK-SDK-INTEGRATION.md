@@ -22,7 +22,7 @@ Frontend React
 
 Backend applicatif
   -> POST https://api.kycly.sn/kyclink/create
-  -> Authorization: Bearer ck_demo_*
+  -> Authorization: Bearer <cognito-id-token>
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
 Frontend React
@@ -139,25 +139,21 @@ La route d'integration a utiliser est:
 POST https://api.kycly.sn/kyclink/create
 ```
 
-### 2.3 — Cle machine a utiliser
+### 2.3 — Credential serveur a utiliser
 
-Le guide suppose un appel **machine-to-machine** vers `partner-node sandbox`.
+Dans `whitelabel-vercel`, l'appel serveur vers `partner-node sandbox` reutilise l'id token Cognito du compte connecte.
 
-Dans `whitelabel-vercel`, un seul cas existe:
+Cas retenu:
 
 | Environnement | Token | Usage |
 |---|---|---|
-| sandbox | `ck_demo_*` | integration M2M sandbox uniquement |
-
-Comment obtenir la cle:
-
-- `ck_demo_*` : cle demo retournee comme `demo_api_key` lors de la validation d'un compte demo ou de sa rotation par un `superadmin`.
+| sandbox | id token Cognito | authentification serveur-a-serveur scopee par `partner-node` |
 
 Contraintes importantes:
 
-- une `ck_demo_*` ne fonctionne qu'en `sandbox`
-- elle doit rester cote serveur uniquement
-- elle doit etre selectionnee par lookup strict depuis `DEMO_ACCOUNT_KEY_MAP` a partir du `demo_account_id` Cognito
+- le token reste cote serveur uniquement, dans la session HTTP-only signee
+- `partner-node` verifie le JWT puis resout dynamiquement le scope demo a partir du `sub`
+- aucune map locale `demo_account_id -> ck_demo_*` n'est maintenue dans `whitelabel-vercel`
 
 ---
 
@@ -167,7 +163,7 @@ Contraintes importantes:
 
 ```http
 POST /kyclink/create
-Authorization: Bearer ck_demo_<32hex>
+Authorization: Bearer <cognito-id-token>
 Content-Type: application/json
 ```
 
@@ -233,7 +229,7 @@ type CreateKycLinkSessionResponse = {
 
 export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
-  apiKey: string,
+  cognitoIdToken: string,
   baseUrl = process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
   const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
@@ -242,7 +238,7 @@ export async function createKycLinkSession(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${cognitoIdToken}`,
     },
     body: JSON.stringify(input),
   });
@@ -261,8 +257,8 @@ Le flux retenu est le suivant:
 1. verifier le JWT Cognito cote serveur
 2. appeler `GET /demo/me` sur `KYCLY_ME_BASE_URL`
 3. recuperer le `demoAccountId` courant
-4. resoudre la `ck_demo_*` correspondante via `DEMO_ACCOUNT_KEY_MAP`
-5. appeler `POST /kyclink/create` sur `KYCLY_API_BASE_URL`
+4. conserver l'id token Cognito dans la session HTTP-only signee
+5. appeler `POST /kyclink/create` sur `KYCLY_API_BASE_URL` avec ce token
 
 ### 3.3 — Route a exposer dans votre propre backend
 
@@ -278,12 +274,12 @@ Exemple Express minimal:
 
 ```ts
 app.post("/api/kyc/session", async (req, res) => {
-  const apiKey = resolveDemoApiKeyForCurrentUser(req);
+  const cognitoIdToken = readCognitoIdTokenFromSignedSession(req);
 
   const session = await createKycLinkSession({
     externalId: req.body.externalId,
     metadata: req.body.metadata,
-  }, apiKey);
+  }, cognitoIdToken);
 
   res.status(201).json(session);
 });
@@ -567,8 +563,8 @@ export interface KycLinkErrorPayload {
 
 - [ ] j'ai acces a GitHub Packages et `pnpm add @kycly/link` fonctionne
 - [ ] mon projet React a bien `react` et `react-dom`
-- [ ] j'ai une cle `ck_demo_*` associee au compte demo vise
-- [ ] ma cle est stockee cote serveur, jamais cote frontend
+- [ ] mon backend peut relire l'id token Cognito depuis une session HTTP-only signee
+- [ ] le token reste cote serveur, jamais cote frontend
 - [ ] mon backend applicatif expose une route type `/api/kyc/session`
 - [ ] cette route appelle `https://api.kycly.sn/kyclink/create`
 - [ ] mon frontend React recupere `kyclinkUrl` depuis **mon** backend

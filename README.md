@@ -52,12 +52,12 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 - routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/sessions`
 - pages `LOGIN`, `WELCOME`, `ACCESS_DENIED`, `VERIFY`, `SESSIONS`
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
-- proxy serveur de creation et de lecture des sessions KYC avec resolution `DEMO_ACCOUNT_KEY_MAP`
+- proxy serveur de creation et de lecture des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
 
 ## Demarrage local
 
 1. copier `.env.example` vers `.env.local`
-2. renseigner les variables Cognito et la map `DEMO_ACCOUNT_KEY_MAP`
+2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `KYCLY_API_BASE_URL` et `KYCLY_ME_BASE_URL`
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
@@ -86,7 +86,8 @@ Variables serveur:
 - `APP_SESSION_SECRET`
 - `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`, par exemple `https://me.kycly.sn`
-- `DEMO_ACCOUNT_KEY_MAP`
+
+La session applicative conserve aussi l'id token Cognito cote serveur, dans le cookie HTTP-only signe, pour authentifier les appels `partner-node /kyclink/*` sans exposer ce token au frontend.
 
 ## Note d'implementation
 

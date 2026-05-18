@@ -12,16 +12,13 @@ type FailureScreenProps = {
 
 export function FailureScreen({ sessionId, code, message }: FailureScreenProps) {
   return (
-    <PageShell>
+    <PageShell maxWidthClassName="max-w-4xl">
       <SurfacePanel className="space-y-6">
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800">
           <AlertTriangle className="mt-0.5 size-5 shrink-0" />
           <div className="space-y-1">
             <p className="font-semibold">FAILURE</p>
-            <p>
-              {message ??
-                "Le parcours KycLink a remonte une erreur recuperable. Vous pouvez revenir au contexte, verifier les informations de session et relancer sereinement une nouvelle tentative."}
-            </p>
+            <p>{message ?? "Le parcours a rencontre une erreur recuperable."}</p>
           </div>
         </div>
 
@@ -41,7 +38,7 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
             href="/verify"
             className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
           >
-            Revenir au contexte guide
+            Reessayer
           </Link>
 
           <LogoutButton

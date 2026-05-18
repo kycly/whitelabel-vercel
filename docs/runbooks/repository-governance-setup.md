@@ -229,7 +229,6 @@ Appliquer au minimum:
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 ### Environment `Production`
@@ -242,7 +241,6 @@ Appliquer au minimum:
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `/kyclink/*`
 - `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
-- `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Invariant obligatoire:
@@ -286,7 +284,7 @@ Dans l'app client Cognito dediee a `whitelabel-vercel`, verifier:
 - [ ] charger toutes les variables `Production`
 - [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox` pour `/kyclink/*`
 - [ ] verifier que `KYCLY_ME_BASE_URL` pointe sur l'hote exposant `/demo/me`
-- [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
+- [ ] verifier qu'aucune ancienne variable de mapping demo n'est definie
 
 ---
 

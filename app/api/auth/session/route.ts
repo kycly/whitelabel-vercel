@@ -45,7 +45,10 @@ export async function POST(request: Request) {
       user: claims,
     });
 
-    await writeSessionCookie(response, claims);
+    await writeSessionCookie(response, {
+      ...claims,
+      cognitoIdToken: parsed.data.idToken,
+    });
 
     return response;
   } catch (error) {

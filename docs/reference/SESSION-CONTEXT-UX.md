@@ -22,6 +22,25 @@ Le bon compromis UX est:
 - validation immediate
 - extension avancee facultative
 
+## Sequencement du parcours
+
+Le formulaire `SESSION_CONTEXT` ne doit plus partager sa page avec l'iframe KycLink.
+
+Flux retenu:
+
+1. `WELCOME`
+2. `SESSION_CONTEXT`
+3. `SESSION_PREPARE`
+4. `KYC_LINK`
+5. `RESULT`
+
+Regles:
+
+- `SESSION_CONTEXT` collecte uniquement les informations utiles
+- `SESSION_PREPARE` cree la session cote serveur dans une page intermediaire dediee
+- `KYC_LINK` affiche uniquement l'iframe et les actions minimales associees
+- `RESULT` relit le backend pour recuperer le resultat final sans recharger le formulaire
+
 ## Pourquoi cette approche
 
 partner-node peut se permettre une surface plus technique.
@@ -43,6 +62,13 @@ L'ecran `SESSION_CONTEXT` est decoupe en 4 zones.
 4. Options avancees
 
 Le header de cet ecran conserve aussi une action de deconnexion visible et immediate, placee en haut a droite, pour permettre de quitter la session demo sans casser le flux guide du formulaire.
+
+Contraintes de densite:
+
+- la page reste un bloc principal unique
+- les informations de compte demo ou de session ne sont pas dupliquees dans un panneau lateral
+- l'interface montre d'abord `Scenario`, `Reference client` et `Pays`
+- `Notifications` et `Options avancees` restent repliees tant qu'elles ne sont pas utiles
 
 ## 1. Scenario
 
@@ -193,6 +219,17 @@ Regle produit:
 - `Reference client` remplace une saisie trop technique de `externalId`
 - `Pays` et `Produit` donnent un contexte suffisant pour la plupart des demos
 - `Priorite` reste utile sans faire entrer l'utilisateur dans la logique de compliance
+
+### Priorite d'affichage
+
+Par defaut, l'ecran ne doit afficher que:
+
+- `Scenario`
+- `Reference client`
+- `Pays`
+- l'action principale de creation de session
+
+Le reste est progressif, jamais concurrent au premier regard.
 
 ## 3. Notifications
 

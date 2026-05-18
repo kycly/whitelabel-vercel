@@ -95,9 +95,19 @@ La page reste volontairement legere.
 
 L'app authentifie directement l'utilisateur contre Cognito depuis le navigateur, puis envoie l'id token a une route serveur qui verifie le JWT et etablit une session locale via cookie HTTP-only securise.
 
+La session applicative signee conserve cote serveur:
+
+- `sub`
+- `email`
+- `name`
+- `demoAccountId`
+- `canAccess`
+- l'id token Cognito, pour authentifier ensuite les appels serveur vers `partner-node /kyclink/*`
+
 Implications UX:
 
 - aucun token brut n'est affiche a l'utilisateur
+- aucun token Cognito n'est expose via `GET /api/me`
 - la reconnexion doit paraitre immediate si une session Cognito existe deja cote navigateur
 - la deconnexion efface la session Cognito locale puis la session applicative
 
@@ -118,6 +128,8 @@ Le contrat J1 suppose au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `NEXT_PUBLIC_AWS_REGION`
+- `APP_SESSION_SECRET`
+- `KYCLY_ME_BASE_URL`
 
 Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 

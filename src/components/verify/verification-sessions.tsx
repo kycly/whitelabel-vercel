@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Clock3, History, LoaderCircle, RefreshCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle, RefreshCcw } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { SurfacePanel } from "@/components/ui/surface-panel";
 
@@ -91,88 +91,24 @@ function decisionTone(validationStatus: SessionsResponse["data"][number]["valida
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function decisionTitle(item: SessionsResponse["data"][number]): string {
+function decisionLabel(item: SessionsResponse["data"][number]): string {
   if (item.validationStatus === "APPROVED") {
-    return "Decision favorable confirmee";
+    return "Approuve";
   }
 
   if (item.validationStatus === "REJECTED") {
-    return "Decision de rejet confirmee";
+    return "Rejete";
   }
 
   if (item.validationStatus === "REVIEW") {
-    return "Decision en revue manuelle";
+    return "En revue";
   }
 
   if (item.completed) {
-    return "Decision finale encore indisponible";
+    return "Decision en attente";
   }
 
-  return "Decision backend non encore disponible";
-}
-
-function decisionMessage(item: SessionsResponse["data"][number]): string {
-  if (item.validationStatus === "APPROVED") {
-    return "Le backend a confirme une issue favorable pour cette verification.";
-  }
-
-  if (item.validationStatus === "REJECTED") {
-    return "Le backend a confirme une issue negative pour cette verification.";
-  }
-
-  if (item.validationStatus === "REVIEW") {
-    return "Le backend demande encore une revue humaine avant cloture metier.";
-  }
-
-  if (item.completed) {
-    return "Le parcours est termine, mais la decision metier finale n'est pas encore remontee dans la liste.";
-  }
-
-  if (item.status === "processing") {
-    return "Le backend traite encore cette session avant toute decision metier.";
-  }
-
-  return "La session existe, mais aucun resultat backend exploitable n'est encore disponible.";
-}
-
-function contextualAction(item: SessionsResponse["data"][number]): {
-  href: string;
-  label: string;
-  className: string;
-} | null {
-  if (item.validationStatus === "APPROVED") {
-    return {
-      href: "/welcome",
-      label: "Clore et revenir a l'accueil",
-      className: "inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-700",
-    };
-  }
-
-  if (item.validationStatus === "REJECTED") {
-    return {
-      href: "/verify",
-      label: "Relancer une verification",
-      className: "inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-red-700",
-    };
-  }
-
-  if (item.validationStatus === "REVIEW") {
-    return {
-      href: `/complete?sessionId=${encodeURIComponent(item.sessionId)}`,
-      label: "Suivre la revue detaillee",
-      className: "inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-amber-600",
-    };
-  }
-
-  if (item.completed) {
-    return {
-      href: `/complete?sessionId=${encodeURIComponent(item.sessionId)}`,
-      label: "Voir le statut detaille",
-      className: "inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950",
-    };
-  }
-
-  return null;
+  return "En cours";
 }
 
 function formatDate(value: string | null): string {
@@ -294,21 +230,13 @@ export function VerificationSessions() {
   const isInitialEmpty = !state.isLoading && !state.error && state.data.length === 0 && !hasActiveFilter;
 
   return (
-    <PageShell maxWidthClassName="max-w-6xl">
+    <PageShell maxWidthClassName="max-w-5xl">
       <SurfacePanel className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-[var(--shadow-card)] backdrop-blur-sm">
-              <History className="size-4 text-blue-600" />
-              Historique demo
-            </div>
-
-            <div className="space-y-2">
-              <h1 className="text-4xl font-semibold tracking-tight text-slate-950">Suivez vos verifications KYC demo</h1>
-              <p className="max-w-3xl text-base leading-7 text-slate-600">
-                Cette vue relit les sessions connues de partner-node sandbox pour votre compte demo courant, afin de suivre l&apos;etat metier sans maintenir de copie locale supplementaire dans l&apos;application.
-              </p>
-            </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-600">SESSIONS</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Mes verifications</h1>
+            <p className="text-sm text-slate-600">Consultez les sessions de votre compte demo.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -328,69 +256,61 @@ export function VerificationSessions() {
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
             >
               <ArrowLeft className="size-4" />
-              Retour a l&apos;accueil
+              Accueil
             </Link>
 
             <Link
               href="/verify"
               className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
             >
-              Nouvelle session
+              Nouvelle verification
               <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-3xl bg-slate-50 p-4">
-          {STATUS_OPTIONS.map((option) => {
-            const isActive = status === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  setStatus(option.value);
-                  setOffset(0);
-                }}
-                className={
-                  isActive
-                    ? "rounded-2xl bg-blue-600 px-4 py-2 text-sm font-medium text-white"
-                    : "rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-                }
-              >
-                {option.label} ({state.meta.statusCounts[option.value]})
-              </button>
-            );
-          })}
-        </div>
+        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+          <label className="space-y-2 text-sm text-slate-700">
+            <span className="font-medium">Statut</span>
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as SessionStatus | "all");
+                setOffset(0);
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({state.meta.statusCounts[option.value]})
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-3xl bg-slate-50 p-4">
-          {DECISION_OPTIONS.map((option) => {
-            const isActive = decisionStatus === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  setDecisionStatus(option.value);
-                  setOffset(0);
-                }}
-                className={
-                  isActive
-                    ? "rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white"
-                    : "rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-                }
-              >
-                {option.label} ({state.meta.decisionCounts[option.value]})
-              </button>
-            );
-          })}
+          <label className="space-y-2 text-sm text-slate-700">
+            <span className="font-medium">Decision</span>
+            <select
+              value={decisionStatus}
+              onChange={(event) => {
+                setDecisionStatus(event.target.value as DecisionStatus | "all");
+                setOffset(0);
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {DECISION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({state.meta.decisionCounts[option.value]})
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {state.isLoading ? (
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
             <LoaderCircle className="size-4 animate-spin" />
-            Lecture en cours des sessions via le backend applicatif puis partner-node sandbox.
+            Lecture des verifications en cours.
           </div>
         ) : null}
 
@@ -400,64 +320,43 @@ export function VerificationSessions() {
 
         {isInitialEmpty ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-sm text-slate-600">
-            <p className="font-medium text-slate-950">Aucune verification demo n&apos;a encore ete enregistree.</p>
-            <p className="mt-2">Lancez une premiere session KYC pour commencer a alimenter cet historique associe a votre compte demo.</p>
+            <p className="font-medium text-slate-950">Aucune verification.</p>
           </div>
         ) : null}
 
         {isFilterEmpty ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-sm text-slate-600">
-            <p className="font-medium text-slate-950">Aucune verification ne correspond a ce filtre.</p>
-            <p className="mt-2">Essayez un autre statut, une autre decision metier, ou revenez a la vue complete pour relire l&apos;historique integral de votre compte demo.</p>
+            <p className="font-medium text-slate-950">Aucune verification pour ce filtre.</p>
           </div>
         ) : null}
 
         {state.data.length > 0 ? (
           <div className="grid gap-4">
             {state.data.map((item) => {
-              const action = contextualAction(item);
-
               return (
                 <article key={item.sessionId} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)]">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-2">
-                      <div className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${statusTone(item.status)}`}>
-                        {item.status}
-                      </div>
                       <h2 className="text-lg font-semibold text-slate-950">{item.externalId ?? item.sessionId}</h2>
-                      <p className="text-sm text-slate-500">Session ID: <span className="break-all text-slate-700">{item.sessionId}</span></p>
+                      <p className="text-sm text-slate-500">{formatDate(item.createdAt)}</p>
                     </div>
 
-                    {action ? (
-                      <Link href={action.href} className={action.className}>
-                        {action.label}
+                    <Link
+                      href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+                    >
+                        Voir
                         <ArrowRight className="size-4" />
-                      </Link>
-                    ) : null}
+                    </Link>
                   </div>
 
-                  <div className="mt-5 grid gap-4 rounded-3xl bg-slate-50 p-4 text-sm text-slate-600 md:grid-cols-4">
-                    <div>
-                      <p className="font-medium text-slate-950">Creee le</p>
-                      <p>{formatDate(item.createdAt)}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-950">Expire le</p>
-                      <p>{formatDate(item.expiresAt)}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-950">Finalisee</p>
-                      <p>{item.completed ? "oui" : "non"}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-950">Completee le</p>
-                      <p>{formatDate(item.completedAt)}</p>
-                    </div>
-                  </div>
-
-                  <div className={`mt-4 rounded-3xl border px-4 py-4 text-sm ${decisionTone(item.validationStatus)}`}>
-                    <p className="font-semibold">{decisionTitle(item)}</p>
-                    <p className="mt-1">{decisionMessage(item)}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em]">
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
+                      {item.status}
+                    </span>
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 ${decisionTone(item.validationStatus)}`}>
+                      {decisionLabel(item)}
+                    </span>
                   </div>
                 </article>
               );
@@ -466,12 +365,9 @@ export function VerificationSessions() {
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          <div className="flex items-center gap-2">
-            <Clock3 className="size-4 text-blue-600" />
-            <p>
-              Page courante : {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · Elements charges : {state.meta.returned} / {state.meta.total}
-            </p>
-          </div>
+          <p>
+            Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
+          </p>
 
           <div className="flex gap-3">
             <button
