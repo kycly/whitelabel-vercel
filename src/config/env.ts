@@ -1,53 +1,51 @@
-type DemoAccountKeyMap = Record<string, string>;
+const LOCAL_APP_ENV = "local";
+const LOCAL_DEV_SESSION_SECRET = "local-dev-session-secret-change-me";
 
 function normalizeBaseUrl(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-function parseDemoAccountKeyMap(raw: string | undefined): DemoAccountKeyMap {
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return {};
-    }
-
-    const entries = Object.entries(parsed).filter((entry): entry is [string, string] => {
-      return typeof entry[0] === "string" && typeof entry[1] === "string";
-    });
-
-    return Object.fromEntries(entries);
-  } catch {
-    return {};
-  }
+function resolveBaseUrl(...values: Array<string | undefined>): string {
+  const selected = values.find((value) => typeof value === "string" && value.trim().length > 0);
+  return normalizeBaseUrl(selected ?? "https://api.kycly.sn");
 }
+
+function resolveSessionSecret(appEnv: string): string {
+  const configuredSecret = process.env.APP_SESSION_SECRET?.trim();
+
+  if (configuredSecret && configuredSecret !== "replace-with-a-long-random-secret") {
+    return configuredSecret;
+  }
+
+  if (appEnv === LOCAL_APP_ENV) {
+    return LOCAL_DEV_SESSION_SECRET;
+  }
+
+  throw new Error("APP_SESSION_SECRET must be set to a non-placeholder value outside local.");
+}
+
+const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? LOCAL_APP_ENV;
 
 export const env = {
   public: {
-    appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? "local",
+    appEnv,
     awsRegion: process.env.NEXT_PUBLIC_AWS_REGION ?? "eu-west-1",
     cognitoAppClientId: process.env.NEXT_PUBLIC_COGNITO_APP_CLIENT_ID ?? "local-dev-client",
-    cognitoDomain: normalizeBaseUrl(
-      process.env.NEXT_PUBLIC_COGNITO_DOMAIN ?? "https://example.auth.eu-west-1.amazoncognito.com",
-    ),
-    cognitoRedirectSignIn:
-      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN ?? "http://localhost:3000/auth/callback",
-    cognitoRedirectSignOut:
-      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT ?? "http://localhost:3000/login",
     cognitoUserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "eu-west-1_local",
   },
   server: {
-    sessionSecret: process.env.APP_SESSION_SECRET ?? "local-dev-session-secret-change-me",
-    cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET,
-    kyclyApiBaseUrl: normalizeBaseUrl(process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn"),
-    demoAccountKeyMap: parseDemoAccountKeyMap(process.env.DEMO_ACCOUNT_KEY_MAP),
+    sessionSecret: resolveSessionSecret(appEnv),
+    kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
+    kyclySessionBaseUrl: resolveBaseUrl(
+      process.env.KYCLY_SESSION_BASE_URL,
+      process.env.KYCLY_API_BASE_URL,
+      "https://api.kycly.sn",
+    ),
+    kyclyMeBaseUrl: resolveBaseUrl(
+      process.env.KYCLY_ME_BASE_URL,
+      process.env.KYCLY_API_BASE_URL,
+      "https://api.kycly.sn",
+    ),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
   },
 } as const;
-
-export function getDemoAccountApiKey(demoAccountId: string): string | null {
-  return env.server.demoAccountKeyMap[demoAccountId] ?? null;
-}

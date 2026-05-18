@@ -1,101 +1,49 @@
-import { createHash, randomBytes } from "node:crypto";
-import { decodeJwt } from "jose";
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { env } from "@/config/env";
 
-const STATE_COOKIE_NAME = "kycly_cognito_state";
-const VERIFIER_COOKIE_NAME = "kycly_cognito_verifier";
-const OAUTH_COOKIE_MAX_AGE_SECONDS = 60 * 10;
-
-type TokenResponse = {
-  access_token?: string;
-  id_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  token_type?: string;
-};
-
-type SessionClaims = {
+export type VerifiedIdentityClaims = {
   sub: string;
   email: string | null;
   name: string | null;
+};
+
+export type SessionClaims = VerifiedIdentityClaims & {
   demoAccountId: string | null;
   canAccess: boolean;
 };
 
-function buildPkceChallenge(codeVerifier: string): string {
-  return createHash("sha256").update(codeVerifier).digest("base64url");
+export class PartnerDemoAccessError extends Error {
+  statusCode: number;
+  code: string;
+
+  constructor(message: string, statusCode: number, code: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+  }
 }
 
-export function createLoginRequest() {
-  const state = randomBytes(24).toString("base64url");
-  const codeVerifier = randomBytes(32).toString("base64url");
-  const codeChallenge = buildPkceChallenge(codeVerifier);
+let cachedJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
-  const authorizeUrl = new URL(`${env.public.cognitoDomain}/oauth2/authorize`);
-  authorizeUrl.searchParams.set("client_id", env.public.cognitoAppClientId);
-  authorizeUrl.searchParams.set("response_type", "code");
-  authorizeUrl.searchParams.set("redirect_uri", env.public.cognitoRedirectSignIn);
-  authorizeUrl.searchParams.set("scope", "openid email profile");
-  authorizeUrl.searchParams.set("state", state);
-  authorizeUrl.searchParams.set("code_challenge_method", "S256");
-  authorizeUrl.searchParams.set("code_challenge", codeChallenge);
-
-  return {
-    state,
-    codeVerifier,
-    authorizeUrl: authorizeUrl.toString(),
-  };
+function getCognitoRegion(): string {
+  const poolRegion = env.public.cognitoUserPoolId.split("_")[0];
+  return poolRegion || env.public.awsRegion;
 }
 
-export function getOauthCookieConfig() {
-  return {
-    stateCookieName: STATE_COOKIE_NAME,
-    verifierCookieName: VERIFIER_COOKIE_NAME,
-    maxAge: OAUTH_COOKIE_MAX_AGE_SECONDS,
-  } as const;
+export function getCognitoIssuer(): string {
+  return `https://cognito-idp.${getCognitoRegion()}.amazonaws.com/${env.public.cognitoUserPoolId}`;
 }
 
-export async function exchangeCodeForTokens(code: string, codeVerifier: string): Promise<TokenResponse> {
-  const tokenUrl = `${env.public.cognitoDomain}/oauth2/token`;
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    client_id: env.public.cognitoAppClientId,
-    code,
-    redirect_uri: env.public.cognitoRedirectSignIn,
-    code_verifier: codeVerifier,
-  });
-
-  const headers = new Headers({
-    "Content-Type": "application/x-www-form-urlencoded",
-  });
-
-  if (env.server.cognitoClientSecret) {
-    const basic = Buffer.from(
-      `${env.public.cognitoAppClientId}:${env.server.cognitoClientSecret}`,
-      "utf-8",
-    ).toString("base64");
-    headers.set("Authorization", `Basic ${basic}`);
+function getCognitoJwks() {
+  if (!cachedJwks) {
+    cachedJwks = createRemoteJWKSet(new URL(`${getCognitoIssuer()}/.well-known/jwks.json`));
   }
 
-  const response = await fetch(tokenUrl, {
-    method: "POST",
-    headers,
-    body,
-    cache: "no-store",
-  });
-
-  const payload = (await response.json()) as TokenResponse & { error?: string; error_description?: string };
-
-  if (!response.ok || !payload.id_token) {
-    throw new Error(payload.error_description ?? payload.error ?? "Cognito token exchange failed");
-  }
-
-  return payload;
+  return cachedJwks;
 }
 
-export function claimsFromIdToken(idToken: string): SessionClaims {
-  const decoded = decodeJwt(idToken) as Record<string, unknown>;
-  const sub = typeof decoded.sub === "string" ? decoded.sub : null;
+export function identityFromIdTokenPayload(payload: JWTPayload): VerifiedIdentityClaims {
+  const sub = typeof payload.sub === "string" ? payload.sub : null;
 
   if (!sub) {
     throw new Error("Missing sub claim in Cognito id token");
@@ -103,19 +51,87 @@ export function claimsFromIdToken(idToken: string): SessionClaims {
 
   return {
     sub,
-    email: typeof decoded.email === "string" ? decoded.email : null,
-    name: typeof decoded.name === "string" ? decoded.name : null,
-    demoAccountId:
-      typeof decoded["custom:demo_account_id"] === "string"
-        ? String(decoded["custom:demo_account_id"])
-        : null,
-    canAccess: String(decoded["custom:kyc_demo_access"] ?? "false") === "true",
+    email: typeof payload.email === "string" ? payload.email : null,
+    name: typeof payload.name === "string" ? payload.name : null,
   };
 }
 
-export function createLogoutUrl(): string {
-  const logoutUrl = new URL(`${env.public.cognitoDomain}/logout`);
-  logoutUrl.searchParams.set("client_id", env.public.cognitoAppClientId);
-  logoutUrl.searchParams.set("logout_uri", env.public.cognitoRedirectSignOut);
-  return logoutUrl.toString();
+export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<SessionClaims, "demoAccountId" | "canAccess">> {
+  const endpoint = new URL("/demo/me", `${env.server.kyclyMeBaseUrl}/`).toString();
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    cache: "no-store",
+  });
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (response.status === 403 || response.status === 404) {
+    if (env.public.appEnv === "local") {
+      console.info("[auth/session] partner demo access unresolved", {
+        status: response.status,
+        body,
+      });
+    }
+
+    return {
+      demoAccountId: null,
+      canAccess: false,
+    };
+  }
+
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "Partner demo access resolution failed";
+    const code =
+      body && typeof body === "object" && "code" in body && typeof body.code === "string"
+        ? body.code
+        : "PARTNER_DEMO_ACCESS_FAILED";
+
+    throw new PartnerDemoAccessError(message, response.status, code);
+  }
+
+  const demoAccount =
+    body && typeof body === "object" && "demo_account" in body && body.demo_account && typeof body.demo_account === "object"
+      ? body.demo_account
+      : null;
+
+  const demoAccountId =
+    demoAccount && "id" in demoAccount && typeof demoAccount.id === "string"
+      ? demoAccount.id
+      : null;
+
+  if (env.public.appEnv === "local") {
+    console.info("[auth/session] partner demo access resolved", {
+      status: response.status,
+      demoAccountId,
+    });
+  }
+
+  return {
+    demoAccountId,
+    canAccess: demoAccountId !== null,
+  };
+}
+
+export async function verifyCognitoIdToken(idToken: string): Promise<VerifiedIdentityClaims> {
+  const { payload } = await jwtVerify(idToken, getCognitoJwks(), {
+    issuer: getCognitoIssuer(),
+    audience: env.public.cognitoAppClientId,
+  });
+
+  if (payload.token_use !== "id") {
+    throw new Error("Unexpected Cognito token type");
+  }
+
+  return identityFromIdTokenPayload(payload);
 }
