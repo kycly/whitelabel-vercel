@@ -24,7 +24,7 @@ Documentation de cadrage:
 - cycle de vie des variables: [docs/runbooks/env-vars-lifecycle.md](docs/runbooks/env-vars-lifecycle.md)
 - gouvernance GitHub et configuration Vercel: [docs/runbooks/repository-governance-setup.md](docs/runbooks/repository-governance-setup.md)
 - procedure ecran par ecran GitHub et Vercel: [docs/runbooks/remote-setup-clickpath.md](docs/runbooks/remote-setup-clickpath.md)
-- contrat futur de liste des verifications: [docs/reference/KYC-SESSIONS-LIST-CONTRACT.md](docs/reference/KYC-SESSIONS-LIST-CONTRACT.md)
+- contrat de liste des verifications: [docs/reference/KYC-SESSIONS-LIST-CONTRACT.md](docs/reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - UX page de connexion: [docs/reference/AUTH-UX.md](docs/reference/AUTH-UX.md)
 - UX metadata de session: [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
 - guide d'integration React: [docs/reference/KYCLINK-SDK-INTEGRATION.md](docs/reference/KYCLINK-SDK-INTEGRATION.md)
