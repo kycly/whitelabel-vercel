@@ -6,3 +6,7 @@ out
 *.tsbuildinfo
 .env.local
 .env.*.local
+.env
+.vercel
+test-results
+playwright-report

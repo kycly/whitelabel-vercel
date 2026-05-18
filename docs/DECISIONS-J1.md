@@ -29,27 +29,28 @@ Cela reste vrai meme si l'app est deployee sur des environnements Vercel distinc
 Conséquences:
 
 - `preview` et `production` designent des stades de deploiement de l'app, pas des cibles metier `partner-node preview|production`
-- l'app ne manipule que des `ck_demo_*`
+- l'app whitelabel n'embarque aucune `ck_demo_*` locale
 - toute liste des verifications utilisateur doit lire `partner-node /kyclink/sessions` en sandbox, scope par `demo_account_id`
 - aucune persistance locale des sessions n'est justifiee tant que ce besoin est couvert par `partner-node`
 
 ## D2 — Contrat d'authentification
 
-Le J1 utilise Cognito Hosted UI.
+Le J1 utilise un login Cognito direct dans l'application.
 
 Flux retenu:
 
 1. page `LOGIN`
-2. redirection vers Cognito Hosted UI
-3. retour sur `GET /auth/callback`
-4. etablissement de la session applicative
+2. saisie email / mot de passe dans l'app
+3. recuperation de l'id token Cognito dans le navigateur
+4. envoi vers `POST /api/auth/session`
+5. etablissement de la session applicative
 5. passage vers `AUTH_LOADING`
 
 Conséquence:
 
-- pas de formulaire local email / mot de passe
 - pas d'inscription libre dans l'app
-- la config doit inclure domaine et URLs de redirect
+- pas de callbacks OAuth a configurer
+- la config doit inclure seulement region, user pool et app client id
 
 ## D2bis — Format de session applicative apres callback
 
@@ -66,21 +67,22 @@ Format retenu:
 Contenu attendu:
 
 - identite minimale utilisateur
-- claims d'acces utiles
+- resultat de resolution du scope demo via `partner-node /demo/me`
 - `demo_account_id`
-- jetons necessaires si le flux retenu les exige, mais jamais exposes au JavaScript client
+- id token Cognito conserve uniquement cote serveur dans le cookie HTTP-only signe
 
 Conséquence:
 
 - `GET /api/me` lit cette session serveur
 - le frontend ne manipule pas directement les tokens Cognito bruts
+- le backend reutilise cet id token pour appeler `partner-node /kyclink/*`
 
 ## D3 — Contrat des routes internes minimales
 
 Routes J1 retenues:
 
-- `GET /auth/login`
-- `GET /auth/callback`
+- `POST /api/auth/session`
+- `GET /auth/logout`
 - `POST /auth/logout`
 - `GET /api/me`
 - `POST /api/kyc/session`
@@ -90,14 +92,14 @@ Routes J1 retenues:
 Le logout J1 suit exactement la meme logique sur preview et production:
 
 1. suppression de la session applicative locale
-2. redirection vers le logout Cognito Hosted UI
-3. retour vers l'URL de sign-out de l'environnement courant
+2. suppression de la session Cognito locale dans le navigateur
+3. retour vers `LOGIN`
 
 Regles:
 
-- preview -> utiliser `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers l'URL preview active
-- production -> utiliser `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT` pointe vers le domaine canonique de production
-- pas de comportement different par produit hors l'URL de retour
+- preview et production suivent la meme logique locale
+- pas d'URL de sign-out Cognito a configurer
+- pas de comportement different par produit
 
 ## D4 — Regle `Reference client` -> `externalId`
 
@@ -146,40 +148,35 @@ Conséquence:
 
 - la phrase `pas de saisie de telephone` doit se lire comme `pas de saisie de telephone obligatoire`
 
-## D6 — Format de `DEMO_ACCOUNT_KEY_MAP`
+## D6 — Credential serveur pour `partner-node /kyclink/*`
 
-Le J1 retient un format JSON serveur unique:
-
-```json
-{
-  "demo_acme": "ck_demo_xxx",
-  "demo_beta": "ck_demo_yyy"
-}
-```
+Le J1 retient une authentification serveur-a-serveur par reutilisation de l'id token Cognito verifie lors de la creation de session applicative.
 
 Regles:
 
-- la map reste cote serveur uniquement
-- lookup strict par `demo_account_id`
-- aucun fallback silencieux
-- absence de mapping -> erreur serveur explicite
+- whitelabel-vercel ne maintient aucune map locale `demo_account_id -> ck_demo_*`
+- l'id token Cognito est conserve uniquement dans le cookie HTTP-only signe de la session applicative
+- `partner-node` reste responsable de resoudre dynamiquement le scope demo a partir du `sub`
+- aucun fallback vers une credential differente ou un autre compte demo
 
 ## D7 — Contrat de creation de session
 
 Le backend de whitelabel-vercel doit, dans cet ordre:
 
 1. valider la session utilisateur
-2. verifier l'acces applicatif
-3. resoudre `demo_account_id`
-4. deriver `externalId`
-5. construire `metadata`
-6. resoudre `ck_demo_*`
-7. appeler `partner-node /kyclink/create`
-8. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
+2. resoudre le scope demo via `partner-node /demo/me`
+3. verifier l'acces applicatif
+4. resoudre `demo_account_id`
+5. deriver `externalId`
+6. deriver `parentOrigin` depuis la requete HTTP
+7. construire `metadata`
+8. reutiliser l'id token Cognito conserve cote serveur
+9. appeler `partner-node /kyclink/create`
+10. renvoyer `{ sessionId, kyclinkUrl, expiresAt }`
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 
-- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec la `ck_demo_*` du compte courant
+- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur, puis replie sur l'index `GET /kyclink/sessions` si la route detail repond `404`
 - `GET /api/kyc/sessions` appelle `partner-node /kyclink/sessions` avec la meme contrainte de scope demo
 
 ## D7bis — Contrat de la liste `Mes verifications`
@@ -197,6 +194,7 @@ Champs cibles par item:
 - `completedAt`
 - `expiresAt`
 - `createdAt`
+- `validationStatus`
 
 Champs explicitement exclus:
 
@@ -207,14 +205,17 @@ Champs explicitement exclus:
 - `metadata`
 - `updated_at`
 
-Pagination cible:
+Pagination et meta cibles:
 
 - `limit` par defaut `20`
 - `limit` max `50`
 - `offset` par defaut `0`
-- pas de `total` ni de `hasMore` au premier jet
+- `total` expose apres filtres et avant pagination
+- ordre canonique `createdAt DESC`
+- pas de `hasMore` ni de `nextOffset` au premier jet
+- `statusCounts` et `decisionCounts` exposes pour alimenter l'UI
 
-La specification detaillee a suivre avant implementation se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+La specification detaillee de la route se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## D8 — Etat des trous restants
 

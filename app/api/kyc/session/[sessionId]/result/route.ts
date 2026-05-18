@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/auth/session";
-import { fetchKycSessionResult, KycSessionError } from "@/server/kyclink";
+import { fetchKycSessionResultWithFallback, KycSessionError } from "@/server/kyclink";
 
 type RouteContext = {
   params: Promise<{
@@ -34,8 +34,8 @@ export async function GET(_request: Request, context: RouteContext) {
   const { sessionId } = await context.params;
 
   try {
-    const result = await fetchKycSessionResult({
-      demoAccountId: session.demoAccountId,
+    const result = await fetchKycSessionResultWithFallback({
+      cognitoIdToken: session.cognitoIdToken,
       sessionId,
     });
 
