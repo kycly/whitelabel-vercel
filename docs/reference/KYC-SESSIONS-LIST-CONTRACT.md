@@ -8,6 +8,8 @@ Le but est simple: permettre a un utilisateur identifie de lister ses verificati
 
 La source canonique reste `partner-node` sandbox via `GET /kyclink/sessions`.
 
+`whitelabel-vercel` cible cette lecture via `KYCLY_SESSION_BASE_URL`. Si la variable est vide, le proxy replie sur `KYCLY_API_BASE_URL`.
+
 `whitelabel-vercel` ne fait qu'un proxy serveur borne au `demo_account_id` courant.
 
 Consequences:
@@ -19,12 +21,12 @@ Consequences:
 
 ## Regles d'acces
 
-La route future devra:
+La route actuelle doit:
 
 1. verifier la session applicative
 2. verifier `canAccess = true`
 3. verifier la presence de `demo_account_id`
-4. resoudre la `ck_demo_*` du compte courant via `DEMO_ACCOUNT_KEY_MAP`
+4. reutiliser l'id token Cognito conserve dans la session HTTP-only serveur
 5. appeler `partner-node sandbox /kyclink/sessions`
 
 Si l'un de ces prealables echoue, la route ne doit jamais tenter de fallback vers un autre compte ou un autre environnement.

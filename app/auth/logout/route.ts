@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server";
-import { createLogoutUrl } from "@/auth/cognito";
+import { NextRequest, NextResponse } from "next/server";
 import { clearSessionCookie } from "@/auth/session";
 
-export async function POST() {
-  const response = NextResponse.redirect(createLogoutUrl(), 303);
+function handleLogout(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/login", request.url), 303);
   clearSessionCookie(response);
   return response;
+}
+
+export async function GET(request: NextRequest) {
+  return handleLogout(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleLogout(request);
 }

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   try {
     const query = parseKycSessionsListQuery(new URL(request.url).searchParams);
     const result = await fetchKycSessions({
-      demoAccountId: session.demoAccountId,
+      cognitoIdToken: session.cognitoIdToken,
       query,
     });
 

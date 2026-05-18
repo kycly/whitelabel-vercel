@@ -16,8 +16,7 @@ Construire une application web de demonstration / whitelabel pour @kycly/link, i
 - base dediee au J1: non
 - acces direct a la base partner-node: non
 - dependance de service au backend partner-node sandbox pour creer et lire les sessions: oui
-- creation de session avec JWT Cognito seul: non
-- creation de session cote serveur avec ck_demo_*: oui
+- creation de session avec JWT Cognito cote serveur: oui
 - une app multi-tenant pour plusieurs demo testeurs: oui
 - meme canon esthetique UI/UX que integration-node, mais implemente localement dans whitelabel-vercel: oui
 
@@ -25,10 +24,10 @@ Construire une application web de demonstration / whitelabel pour @kycly/link, i
 
 ```text
 Utilisateur
-  -> Login Cognito Hosted UI
+  -> Login Cognito direct
   -> whitelabel-vercel frontend
   -> whitelabel-vercel backend
-  -> partner-node sandbox /kyclink/create via ck_demo_*
+  -> partner-node sandbox /kyclink/create via JWT Cognito serveur
   -> @kycly/link
 ```
 
@@ -40,44 +39,35 @@ Utilisateur
 4. Le frontend recupere un JWT Cognito.
 5. Le frontend appelle le backend de whitelabel-vercel avec ce JWT.
 6. Le backend valide le JWT.
-7. Le backend lit les claims utiles, notamment le droit d'acces a l'app et le compte demo cible.
+7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
-9. Le backend resout la bonne cle ck_demo_* a utiliser.
-10. Le backend appelle `partner-node` pour creer la session.
+9. Le backend reutilise l'id token Cognito stocke dans la session HTTP-only.
+10. Le backend derive aussi `parentOrigin` depuis la requete HTTP puis appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
 13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
 14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `validationStatus`.
+15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `COMPLETE`.
 
 ## Contrat d'autorisation minimal
 
-Le token Cognito doit transporter assez d'information pour autoriser l'acces sans appel runtime a partner-node.
+Le token Cognito doit permettre d'etablir l'identite utilisateur.
 
-Claims minimum recommandes:
+La resolution du droit d'acces demo et du `demo_account_id` se fait ensuite via `partner-node /demo/me`, qui derive le scope sandbox a partir du `sub` Cognito et de la liaison locale vers un compte demo.
+
+Claims minimum attendus:
 
 - sub
 - email
-- custom:kyc_demo_access
-- custom:demo_account_id
-
-Exemple logique:
-
-```json
-{
-  "sub": "2a9e1d6f-xxxx-xxxx-xxxx-6e0f0f3e1e10",
-  "email": "demo.user@example.com",
-  "custom:kyc_demo_access": "true",
-  "custom:demo_account_id": "demo_acme"
-}
-```
 
 ## Regles de securite
 
-- le frontend ne voit jamais de ck_demo_*
-- le JWT Cognito sert a authentifier l'utilisateur, pas a remplacer la credential serveur
-- le backend verifie l'acces avant toute creation de session
-- le backend choisit la ck_demo_* a partir du compte demo autorise
-- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node
+- le frontend ne voit jamais le JWT Cognito brut une fois la session applicative etablie
+- le backend verifie l'acces via `partner-node /demo/me` avant toute creation de session
+- le backend reutilise l'id token Cognito verifie pour authentifier les appels `partner-node /kyclink/*`
+- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour la creation de session et les lectures detaillees `/kyclink/*`
+- `KYCLY_SESSION_BASE_URL` peut cibler un host distinct pour `GET /kyclink/sessions`; si absente, l'app replie sur `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` doit cibler l'hote exposant `/demo/me`
 - l'app n'utilise ni la base ni le backend runtime de partner-node
 
 ## Canon UI/UX local
@@ -99,18 +89,13 @@ Variables publiques:
 - NEXT_PUBLIC_AWS_REGION
 - NEXT_PUBLIC_COGNITO_USER_POOL_ID
 - NEXT_PUBLIC_COGNITO_APP_CLIENT_ID
-- NEXT_PUBLIC_COGNITO_DOMAIN
-- NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN
-- NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT
 - NEXT_PUBLIC_APP_ENV
 
 Variables serveur:
 
-- COGNITO_JWKS_URL
-- COGNITO_ISSUER
-- COGNITO_CLIENT_SECRET si le flux retenu en a besoin
 - KYCLY_API_BASE_URL
-- DEMO_ACCOUNT_KEY_MAP
+- KYCLY_SESSION_BASE_URL
+- KYCLY_ME_BASE_URL
 - DEFAULT_KYCLINK_THEME
 
 Politique J1:
@@ -120,10 +105,9 @@ Politique J1:
 
 Notes:
 
-- DEMO_ACCOUNT_KEY_MAP designe une configuration serveur qui mappe un demo_account_id a une ck_demo_*.
-- Cette config doit rester cote serveur uniquement.
-- Format J1 recommande pour DEMO_ACCOUNT_KEY_MAP: JSON objet `{ "demo_account_id": "ck_demo_xxx" }`.
-- Absence de mapping pour un `demo_account_id` autorise: erreur serveur explicite, jamais de fallback silencieux.
+- l'id token Cognito est conserve uniquement cote serveur dans le cookie HTTP-only signe.
+- `partner-node` resout le scope demo a partir du `sub` Cognito et du contexte local.
+- aucune map locale `demo_account_id -> ck_demo_*` n'est maintenue dans whitelabel-vercel.
 
 ## Environnements de deploiement
 
@@ -151,8 +135,16 @@ whitelabel-vercel/
   docs/
     BLUEPRINT.md
   app/
+    access-denied/
+    auth-loading/
+    complete/
+    failure/
     login/
+    sessions/
     verify/
+      prepare/
+      session/
+    welcome/
     api/
       auth/
       kyc/
@@ -166,8 +158,8 @@ whitelabel-vercel/
 
 ## Endpoints backend minimaux
 
-- GET /auth/login
-- GET /auth/callback
+- POST /api/auth/session
+- GET /auth/logout
 - POST /auth/logout
 - GET /api/me
 - POST /api/kyc/session
@@ -176,20 +168,18 @@ whitelabel-vercel/
 
 Responsabilites:
 
-- GET /auth/login redirige vers Cognito Hosted UI
-- GET /auth/callback recupere le retour Cognito et etablit la session applicative via cookie serveur
-- POST /auth/logout termine la session applicative puis declenche le logout Cognito avec l'URL de retour de l'environnement courant
-- GET /api/me valide le JWT et expose l'identite autorisee minimale
-- POST /api/kyc/session valide le JWT, determine le compte demo, derive `externalId`, selectionne la bonne ck_demo_*, cree la session via partner-node et renvoie la charge utile necessaire au frontend
-- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
+- POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
+- GET /auth/logout et POST /auth/logout terminent la session applicative locale
+- GET /api/me lit la session applicative et expose l'identite autorisee minimale
+- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, derive aussi l'origin parent a partir de la requete HTTP, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
+- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend, avec repli sur l'index des sessions si la route detail upstream repond `404`
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 
-Le contrat cible de cette future route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+Le contrat de cette route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## Ce qu'on ne fait pas au J1
 
 - aucune base de donnees dediee
-- aucun appel runtime a partner-node pour resoudre les droits
 - aucun stockage local avance des sessions
 - aucun backoffice
 - aucun deploiement par tenant
@@ -199,7 +189,7 @@ Le contrat cible de cette future route est detaille dans [reference/KYC-SESSIONS
 Ajouter une persistance dediee seulement si l'un des besoins suivants devient reel:
 
 - audit local des sessions creees
-- mapping user -> demo_account hors claims Cognito
+- mapping user -> demo_account hors partner-node
 - branding fort par tenant
 - analytics ou parcours applicatifs persistants
 - backoffice propre a l'app
@@ -210,15 +200,15 @@ Avant toute persistance locale, l'evolution deja retenue est:
 2. consommer `partner-node sandbox /kyclink/sessions`
 3. conserver `partner-node` comme source canonique des sessions demo
 
-## Prochaine etape recommandee
+## Etat implemente a date
 
-Implementer le scaffold applicatif minimal avec:
+Le projet couvre maintenant ce socle executable:
 
-1. Next.js App Router
-2. integration Cognito pour login utilisateur
-3. verification serveur des JWT
-4. route POST /api/kyc/session
-5. page verify qui initialise @kycly/link a partir d'une session creee cote serveur
+1. login Cognito direct et session applicative HTTP-only
+2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> COMPLETE`
+3. historique `SESSIONS` scope au `demo_account_id` courant
+4. lecture resultat robuste avec fallback serveur sur l'index des sessions
+5. smokes Playwright sur tunnel principal, fallback logout et parcours mobile protege
 
 ## Documentation de reference
 
@@ -226,6 +216,6 @@ Implementer le scaffold applicatif minimal avec:
 - parcours J1: [PARCOURS-J1.md](PARCOURS-J1.md)
 - UX page de connexion: [reference/AUTH-UX.md](reference/AUTH-UX.md)
 - UX metadata de session: [reference/SESSION-CONTEXT-UX.md](reference/SESSION-CONTEXT-UX.md)
-- contrat futur de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
+- contrat de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)

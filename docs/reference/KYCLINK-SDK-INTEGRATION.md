@@ -22,7 +22,7 @@ Frontend React
 
 Backend applicatif
   -> POST https://api.kycly.sn/kyclink/create
-  -> Authorization: Bearer ck_demo_*
+  -> Authorization: Bearer <cognito-id-token>
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
 Frontend React
@@ -86,7 +86,7 @@ Alternative persistante pour une machine locale: stocker le token dans `~/.npmrc
 
 ```ini
 @kycly:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=ghp_xxxxxxxxxxxxxxxxxxxx
+//npm.pkg.github.com/:_authToken=<github_packages_token>
 ```
 
 Dans ce cas, le `.npmrc` du repo peut rester tel quel et vous n'avez plus besoin d'exporter `NODE_AUTH_TOKEN` a chaque shell.
@@ -123,7 +123,11 @@ Contraintes utiles:
 
 ### 2.2 — Instance backend actuelle
 
-Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node`.
+Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`.
+
+La lecture de liste `GET /kyclink/sessions` peut pointer vers un host distinct, configure dans `KYCLY_SESSION_BASE_URL`. Si cette variable reste vide, l'app replie sur `KYCLY_API_BASE_URL`.
+
+La resolution du scope demo via `/demo/me` peut pointer vers un host distinct, configure dans `KYCLY_ME_BASE_URL`.
 
 Pour l'usage interne actuel, l'instance de reference est:
 
@@ -137,25 +141,21 @@ La route d'integration a utiliser est:
 POST https://api.kycly.sn/kyclink/create
 ```
 
-### 2.3 — Cle machine a utiliser
+### 2.3 — Credential serveur a utiliser
 
-Le guide suppose un appel **machine-to-machine** vers `partner-node sandbox`.
+Dans `whitelabel-vercel`, l'appel serveur vers `partner-node sandbox` reutilise l'id token Cognito du compte connecte.
 
-Dans `whitelabel-vercel`, un seul cas existe:
+Cas retenu:
 
 | Environnement | Token | Usage |
 |---|---|---|
-| sandbox | `ck_demo_*` | integration M2M sandbox uniquement |
-
-Comment obtenir la cle:
-
-- `ck_demo_*` : cle demo retournee comme `demo_api_key` lors de la validation d'un compte demo ou de sa rotation par un `superadmin`.
+| sandbox | id token Cognito | authentification serveur-a-serveur scopee par `partner-node` |
 
 Contraintes importantes:
 
-- une `ck_demo_*` ne fonctionne qu'en `sandbox`
-- elle doit rester cote serveur uniquement
-- elle doit etre selectionnee par lookup strict depuis `DEMO_ACCOUNT_KEY_MAP` a partir du `demo_account_id` Cognito
+- le token reste cote serveur uniquement, dans la session HTTP-only signee
+- `partner-node` verifie le JWT puis resout dynamiquement le scope demo a partir du `sub`
+- aucune map locale `demo_account_id -> ck_demo_*` n'est maintenue dans `whitelabel-vercel`
 
 ---
 
@@ -165,7 +165,7 @@ Contraintes importantes:
 
 ```http
 POST /kyclink/create
-Authorization: Bearer ck_demo_<32hex>
+Authorization: Bearer <cognito-id-token>
 Content-Type: application/json
 ```
 
@@ -174,11 +174,12 @@ Payload attendu:
 ```ts
 {
   externalId: string;
+  parentOrigin: string;
   metadata?: SessionMetadata;
 }
 ```
 
-Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend.
+Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend. `parentOrigin` est egalement derivee cote backend depuis l'origin de la requete HTTP, puis forwardee vers `partner-node`.
 
 Reponse succes:
 
@@ -231,14 +232,23 @@ type CreateKycLinkSessionResponse = {
 
 export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
+  parentOrigin: string,
+  cognitoIdToken: string,
+  baseUrl = process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
-  const response = await fetch("https://api.kycly.sn/kyclink/create", {
+  const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
+  const payload = {
+    ...input,
+    parentOrigin,
+  };
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.KYCLY_CLIENT_API_KEY}`,
+      Authorization: `Bearer ${cognitoIdToken}`,
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -248,6 +258,15 @@ export async function createKycLinkSession(
   return (await response.json()) as CreateKycLinkSessionResponse;
 }
 ```
+
+Dans `whitelabel-vercel`, cette fonction n'utilise pas une variable unique de type `KYCLY_CLIENT_API_KEY`.
+Le flux retenu est le suivant:
+
+1. verifier le JWT Cognito cote serveur
+2. appeler `GET /demo/me` sur `KYCLY_ME_BASE_URL`
+3. recuperer le `demoAccountId` courant
+4. conserver l'id token Cognito dans la session HTTP-only signee
+5. appeler `POST /kyclink/create` sur `KYCLY_API_BASE_URL` avec ce token
 
 ### 3.3 — Route a exposer dans votre propre backend
 
@@ -263,10 +282,12 @@ Exemple Express minimal:
 
 ```ts
 app.post("/api/kyc/session", async (req, res) => {
+  const cognitoIdToken = readCognitoIdTokenFromSignedSession(req);
+
   const session = await createKycLinkSession({
     externalId: req.body.externalId,
     metadata: req.body.metadata,
-  });
+  }, cognitoIdToken);
 
   res.status(201).json(session);
 });
@@ -402,8 +423,9 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 2. l'ecran `COMPLETE` attend au moins 10 secondes
 3. le frontend appelle ensuite `/api/kyc/session/:sessionId/result`
 4. le backend applicatif appelle `partner-node /kyclink/:sessionId/result`
-5. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
-6. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
+5. si cette route detail repond `404`, le backend replie sur `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat
+6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+7. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.
 
@@ -550,8 +572,8 @@ export interface KycLinkErrorPayload {
 
 - [ ] j'ai acces a GitHub Packages et `pnpm add @kycly/link` fonctionne
 - [ ] mon projet React a bien `react` et `react-dom`
-- [ ] j'ai une cle `ck_demo_*` associee au compte demo vise
-- [ ] ma cle est stockee cote serveur, jamais cote frontend
+- [ ] mon backend peut relire l'id token Cognito depuis une session HTTP-only signee
+- [ ] le token reste cote serveur, jamais cote frontend
 - [ ] mon backend applicatif expose une route type `/api/kyc/session`
 - [ ] cette route appelle `https://api.kycly.sn/kyclink/create`
 - [ ] mon frontend React recupere `kyclinkUrl` depuis **mon** backend

@@ -41,7 +41,7 @@ Le repo porte maintenant les elements GitHub suivants:
 
 Role retenu:
 
-- `ci.yml` fournit le quality gate obligatoire
+- `ci.yml` fournit le quality gate obligatoire, y compris le smoke navigateur Playwright
 - `PULL_REQUEST_TEMPLATE.md` impose une hygiene minimale de revue, de verification et de promotion
 
 ---
@@ -57,7 +57,7 @@ Les elements suivants doivent etre regles dans GitHub et Vercel:
 - root directory Vercel
 - variables Vercel `Preview` et `Production`
 - branche de production Vercel
-- callbacks Cognito autorises
+- configuration du client Cognito dedie
 
 Note de contexte:
 
@@ -161,6 +161,11 @@ Regle retenue:
 
 - utiliser un PAT lecture seule avec scope `read:packages`
 
+Important:
+
+- `GH_PACKAGES_TOKEN` couvre la CI GitHub Actions
+- `NODE_AUTH_TOKEN` reste requis dans Vercel `Preview` et `Production` pour installer `@kycly/link` pendant le build
+
 ---
 
 ## Configuration du projet Vercel
@@ -219,14 +224,12 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_APP_ENV=preview`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox`
-- `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
+- `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 ### Environment `Production`
@@ -234,14 +237,12 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_APP_ENV=production`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
-- `NEXT_PUBLIC_COGNITO_DOMAIN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
-- `COGNITO_CLIENT_SECRET` si necessaire
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox`
-- `DEMO_ACCOUNT_KEY_MAP` avec `ck_demo_*` seulement
+- `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
+- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
+- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Invariant obligatoire:
@@ -255,16 +256,9 @@ Invariant obligatoire:
 
 Dans l'app client Cognito dediee a `whitelabel-vercel`, verifier:
 
-- URL de callback preview autorisee
-- URL de callback production autorisee
-- URL de logout preview autorisee
-- URL de logout production autorisee
-
-Verifier aussi la coherence entre:
-
-- les URLs declarees dans Cognito
-- les valeurs Vercel `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN`
-- les valeurs Vercel `NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT`
+- l'association au bon user pool
+- l'activation du flux d'authentification retenu pour le login direct
+- la coherence entre region, user pool et app client id diffuses a Vercel
 
 ---
 
@@ -290,8 +284,9 @@ Verifier aussi la coherence entre:
 - [ ] activer les previews Vercel
 - [ ] charger toutes les variables `Preview`
 - [ ] charger toutes les variables `Production`
-- [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox`
-- [ ] verifier que `DEMO_ACCOUNT_KEY_MAP` ne contient que des `ck_demo_*`
+- [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox` pour `/kyclink/*`
+- [ ] verifier que `KYCLY_ME_BASE_URL` pointe sur l'hote exposant `/demo/me`
+- [ ] verifier qu'aucune ancienne variable de mapping demo n'est definie
 
 ---
 

@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Clock3, LoaderCircle, RefreshCcw } from "lucide-react";
-import { PageShell } from "@/components/layout/page-shell";
-import { SurfacePanel } from "@/components/ui/surface-panel";
+import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
+import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import {
+  errorAlertClassName,
+  infoAlertClassName,
+  primaryIconButtonClassName,
+  secondaryIconButtonClassName,
+  surfaceInfoCardClassName,
+  successIconButtonClassName,
+  warningAlertClassName,
+} from "@/components/ui/fixed-action-layout";
 
 type KycSessionResult = {
   sessionId: string;
@@ -108,22 +116,6 @@ function decisionTone(validationStatus: KycSessionResult["validationStatus"]): s
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function decisionMessage(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "Le backend confirme une decision positive pour cette verification. L'utilisateur peut etre redirige vers la suite du parcours prevue pour un dossier accepte.";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "Le backend confirme une decision de rejet pour cette verification. L'interface peut maintenant orienter l'utilisateur vers une reprise ou un canal de support adapte.";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "Le backend place cette verification en revue manuelle. Un traitement humain ou un controle complementaire reste necessaire avant une decision finale.";
-  }
-
-  return "Le parcours iframe est termine, mais le backend n'a pas encore expose de decision metier finale pour cette session.";
-}
-
 function pollingMessage(countdownSeconds: number, attemptCount: number): string {
   const nextAttempt = Math.min(attemptCount + 1, MAX_POLL_ATTEMPTS);
 
@@ -132,22 +124,6 @@ function pollingMessage(countdownSeconds: number, attemptCount: number): string 
   }
 
   return `Le poll ${nextAttempt}/${MAX_POLL_ATTEMPTS} partira dans ${countdownSeconds}s.`;
-}
-
-function formatHistoryTimestamp(checkedAt: string): string {
-  return new Intl.DateTimeFormat("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(new Date(checkedAt));
-}
-
-function historyTone(outcome: PollAttempt["outcome"]): string {
-  if (outcome === "error") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
 export function VerificationComplete({ sessionId }: { sessionId: string }) {
@@ -312,124 +288,60 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
   const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
 
   return (
-    <PageShell>
-      <SurfacePanel className="space-y-6">
-        <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-800">
-          <BadgeCheck className="mt-0.5 size-5 shrink-0" />
-          <div className="space-y-1">
-            <p className="font-semibold">COMPLETE</p>
-            <p>Le parcours KycLink est termine. Nous confirmons maintenant calmement le resultat backend avant d&apos;afficher l&apos;etat final de la verification.</p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 rounded-3xl bg-slate-50 p-5 text-sm text-slate-600 sm:grid-cols-2">
-          <div>
-            <p className="font-medium text-slate-950">Session ID</p>
-            <p className="break-all">{sessionId}</p>
-          </div>
-          <div>
-            <p className="font-medium text-slate-950">Etat backend</p>
-            <p>{currentStatus}</p>
-          </div>
+    <ProtectedScreenShell backHref="/sessions" title="Résultat" maxWidthClassName="max-w-4xl" panelClassName="space-y-5 pt-4">
+        <div className={surfaceInfoCardClassName}>
+          <p>{currentStatus}</p>
         </div>
 
         {state.countdownSeconds > 0 ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-800">
+          <div className={infoAlertClassName}>
             <Clock3 className="mt-0.5 size-5 shrink-0" />
             <div>
-              <p className="font-medium">{state.attemptCount === 0 ? "Premier poll differe." : "Prochain poll planifie."}</p>
-              <p>{pollingMessage(state.countdownSeconds, state.attemptCount)} Le backoff reste progressif entre deux lectures tant que la decision backend n&apos;est pas finalisee.</p>
+              <p>{pollingMessage(state.countdownSeconds, state.attemptCount)}</p>
             </div>
           </div>
         ) : null}
 
         {state.isPolling ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
+          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
             <LoaderCircle className="size-4 animate-spin" />
-            Lecture en cours du backend applicatif puis de partner-node pour confirmer l&apos;etat courant de cette session.
+            Lecture du resultat en cours.
           </div>
         ) : null}
 
         {state.error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          <div className={errorAlertClassName}>
             {state.error}
           </div>
         ) : null}
 
         {state.data ? (
-          <>
-            <div className={`rounded-3xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
-              <p className="font-semibold">{decisionTitle(state.data.validationStatus)}</p>
-              <p className="mt-1">{decisionMessage(state.data.validationStatus)}</p>
-              {approvedExitHref ? (
-                <div className="mt-4">
-                  <Link
-                    href={approvedExitHref}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 font-medium text-white transition hover:bg-emerald-700"
-                  >
-                    Terminer et revenir a l&apos;accueil
-                  </Link>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 sm:grid-cols-5">
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
+            <p className="font-semibold">{decisionTitle(state.data.validationStatus)}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
-                <p className="font-medium text-slate-950">External ID</p>
-                <p className="break-all">{state.data.externalId ?? "—"}</p>
+                <p className="font-medium">Reference</p>
+                <p className="break-all">{state.data.externalId ?? sessionId}</p>
               </div>
               <div>
-                <p className="font-medium text-slate-950">Status</p>
+                <p className="font-medium">Decision</p>
+                <p>{validationStatusLabel(state.data.validationStatus)}</p>
+              </div>
+              <div>
+                <p className="font-medium">Statut</p>
                 <p>{state.data.status}</p>
               </div>
               <div>
-                <p className="font-medium text-slate-950">Completed</p>
-                <p>{state.data.completed ? "oui" : "non"}</p>
-              </div>
-              <div>
-                <p className="font-medium text-slate-950">Completed at</p>
+                <p className="font-medium">Finalise le</p>
                 <p>{state.data.completedAt ?? "—"}</p>
               </div>
-              <div>
-                <p className="font-medium text-slate-950">Decision backend</p>
-                <p>{validationStatusLabel(state.data.validationStatus)}</p>
-              </div>
             </div>
-
-            {state.attemptHistory.length > 0 ? (
-              <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5">
-                <div>
-                  <p className="text-sm font-semibold text-slate-950">Historique des lectures backend</p>
-                  <p className="text-sm text-slate-600">
-                    Les tentatives ci-dessous montrent a quel moment l&apos;application a relu le backend et quand la prochaine verification etait planifiee.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {state.attemptHistory.map((attempt) => (
-                    <div key={`${attempt.attempt}-${attempt.checkedAt}`} className={`rounded-2xl border px-4 py-3 text-sm ${historyTone(attempt.outcome)}`}>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium">Tentative {attempt.attempt}</p>
-                        <p>{formatHistoryTimestamp(attempt.checkedAt)}</p>
-                      </div>
-                      <p className="mt-2">{attempt.message}</p>
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
-                        <span>Etat: {attempt.status ? statusLabel(attempt.status) : "Lecture indisponible"}</span>
-                        <span>Decision: {validationStatusLabel(attempt.validationStatus)}</span>
-                        <span>Final: {attempt.completed === null ? "inconnu" : attempt.completed ? "oui" : "non"}</span>
-                        <span>Prochain poll: {attempt.nextPollInSeconds === null ? "aucun" : `${attempt.nextPollInSeconds}s`}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </>
+          </div>
         ) : null}
 
         {reachedPollingLimit ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            Aucun statut final n&apos;a ete confirme apres plusieurs lectures. Vous pouvez relancer la lecture du resultat ou revenir creer une nouvelle session guidee.
+          <div className={warningAlertClassName}>
+            Aucun statut final n&apos;a encore ete confirme.
           </div>
         ) : null}
 
@@ -448,20 +360,46 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
               }));
               setPollGeneration((current) => current + 1);
             }}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+            aria-label="Actualiser"
+            title="Actualiser"
+            className={secondaryIconButtonClassName}
           >
             <RefreshCcw className="size-4" />
-            Relancer la verification du resultat
+            <span className="sr-only">Actualiser</span>
           </button>
 
           <Link
-            href="/verify"
-            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
+            href="/sessions"
+            aria-label="Mes vérifications"
+            title="Mes vérifications"
+            className={secondaryIconButtonClassName}
           >
-            Nouvelle session guidee
+            <History className="size-4" />
+            <span className="sr-only">Mes vérifications</span>
           </Link>
+
+          <Link
+            href="/verify"
+            aria-label="Nouvelle vérification"
+            title="Nouvelle vérification"
+            className={primaryIconButtonClassName}
+          >
+            <Plus className="size-4" />
+            <span className="sr-only">Nouvelle vérification</span>
+          </Link>
+
+          {approvedExitHref ? (
+            <Link
+              href={approvedExitHref}
+              aria-label="Retour accueil"
+              title="Retour accueil"
+              className={successIconButtonClassName}
+            >
+              <Home className="size-4" />
+              <span className="sr-only">Retour accueil</span>
+            </Link>
+          ) : null}
         </div>
-      </SurfacePanel>
-    </PageShell>
+    </ProtectedScreenShell>
   );
 }

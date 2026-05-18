@@ -27,14 +27,11 @@ jobs:
       NEXT_PUBLIC_APP_ENV: ci
       NEXT_PUBLIC_AWS_REGION: eu-west-1
       NEXT_PUBLIC_COGNITO_APP_CLIENT_ID: ci-cognito-client-id
-      NEXT_PUBLIC_COGNITO_DOMAIN: https://ci.auth.eu-west-1.amazoncognito.com
-      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN: https://preview.example.com/auth/callback
-      NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT: https://preview.example.com/login
       NEXT_PUBLIC_COGNITO_USER_POOL_ID: eu-west-1_ci
       APP_SESSION_SECRET: ci-session-secret-not-for-runtime
-      COGNITO_CLIENT_SECRET: ci-cognito-client-secret
       KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
-      DEMO_ACCOUNT_KEY_MAP: '{"demo_acme":"ck_demo_ci"}'
+      KYCLY_SESSION_BASE_URL: https://sandbox.partner-node.example.com
+      KYCLY_ME_BASE_URL: https://me.partner-node.example.com
       DEFAULT_KYCLINK_THEME: kycly-light
 
     steps:
@@ -76,3 +73,11 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser smoke
+        env:
+          PLAYWRIGHT_SKIP_BUILD: "1"
+        run: pnpm test:e2e
