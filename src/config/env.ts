@@ -1,3 +1,6 @@
+const LOCAL_APP_ENV = "local";
+const LOCAL_DEV_SESSION_SECRET = "local-dev-session-secret-change-me";
+
 function normalizeBaseUrl(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
@@ -7,15 +10,31 @@ function resolveBaseUrl(...values: Array<string | undefined>): string {
   return normalizeBaseUrl(selected ?? "https://api.kycly.sn");
 }
 
+function resolveSessionSecret(appEnv: string): string {
+  const configuredSecret = process.env.APP_SESSION_SECRET?.trim();
+
+  if (configuredSecret && configuredSecret !== "replace-with-a-long-random-secret") {
+    return configuredSecret;
+  }
+
+  if (appEnv === LOCAL_APP_ENV) {
+    return LOCAL_DEV_SESSION_SECRET;
+  }
+
+  throw new Error("APP_SESSION_SECRET must be set to a non-placeholder value outside local.");
+}
+
+const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? LOCAL_APP_ENV;
+
 export const env = {
   public: {
-    appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? "local",
+    appEnv,
     awsRegion: process.env.NEXT_PUBLIC_AWS_REGION ?? "eu-west-1",
     cognitoAppClientId: process.env.NEXT_PUBLIC_COGNITO_APP_CLIENT_ID ?? "local-dev-client",
     cognitoUserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "eu-west-1_local",
   },
   server: {
-    sessionSecret: process.env.APP_SESSION_SECRET ?? "local-dev-session-secret-change-me",
+    sessionSecret: resolveSessionSecret(appEnv),
     kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
     kyclySessionBaseUrl: resolveBaseUrl(
       process.env.KYCLY_SESSION_BASE_URL,
