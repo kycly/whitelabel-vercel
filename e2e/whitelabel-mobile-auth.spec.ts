@@ -159,7 +159,7 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   expect((await refreshResultButton.boundingBox())?.height).toBe(44);
   await refreshResultButton.click();
 
-  await expect(page.getByText("Decision favorable confirmee")).toBeVisible();
-  await expect(page.getByText("Approuve")).toBeVisible();
+  await expect(page.getByText("Validation APPROVED")).toBeVisible();
+  await expect(page.getByText("APPROVED", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 });
