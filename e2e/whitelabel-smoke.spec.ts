@@ -84,7 +84,7 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
 
   await page.getByRole("button", { name: "Actualiser" }).click();
 
-  await expect(page.getByText("Validation APPROVED")).toBeVisible();
-  await expect(page.getByText("APPROVED", { exact: true })).toBeVisible();
+  await expect(page.getByText("validationStatus: APPROVED")).toBeVisible();
+  await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 });

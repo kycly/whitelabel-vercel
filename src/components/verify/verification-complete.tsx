@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   type ValidationStatus,
-  validationStatusHeadline,
-  validationStatusLabel,
-  validationStatusTone,
+  validationStatusValue,
 } from "@/components/verify/validation-status";
 import {
   errorAlertClassName,
@@ -62,18 +60,6 @@ function nextPollDelayMs(attempt: number): number {
   );
 }
 
-function statusLabel(status: KycSessionResult["status"] | null): string {
-  if (status === "completed") {
-    return "Resultat backend confirme";
-  }
-
-  if (status === "processing") {
-    return "Analyse backend en cours";
-  }
-
-  return "Attente du premier resultat backend";
-}
-
 function pollingMessage(countdownSeconds: number, attemptCount: number): string {
   const nextAttempt = Math.min(attemptCount + 1, MAX_POLL_ATTEMPTS);
 
@@ -82,6 +68,18 @@ function pollingMessage(countdownSeconds: number, attemptCount: number): string 
   }
 
   return `Le poll ${nextAttempt}/${MAX_POLL_ATTEMPTS} partira dans ${countdownSeconds}s.`;
+}
+
+function statusTone(status: KycSessionResult["status"]): string {
+  if (status === "completed") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
+
+  if (status === "processing") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
 export function VerificationComplete({ sessionId }: { sessionId: string }) {
@@ -239,10 +237,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
 
   const reachedPollingLimit = !state.data?.completed && state.attemptCount >= MAX_POLL_ATTEMPTS;
 
-  const currentStatus = useMemo(() => {
-    return statusLabel(state.data?.status ?? null);
-  }, [state.data?.status]);
-
   const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
 
   return (
@@ -253,9 +247,11 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
       maxWidthClassName="max-w-4xl"
       panelClassName="space-y-5 pt-4"
     >
-        <div className={surfaceInfoCardClassName}>
-          <p>{currentStatus}</p>
-        </div>
+        {state.data ? (
+          <div className={surfaceInfoCardClassName}>
+            <p>status: {state.data.status}</p>
+          </div>
+        ) : null}
 
         {state.countdownSeconds > 0 ? (
           <div className={infoAlertClassName}>
@@ -280,19 +276,19 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-2xl border px-5 py-4 text-sm ${validationStatusTone(state.data.validationStatus)}`}>
-            <p className="font-semibold">{validationStatusHeadline(state.data.validationStatus)}</p>
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${statusTone(state.data.status)}`}>
+            <p className="font-semibold">validationStatus: {validationStatusValue(state.data.validationStatus)}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>
               </div>
               <div>
-                <p className="font-medium">Validation</p>
-                <p>{validationStatusLabel(state.data.validationStatus)}</p>
+                <p className="font-medium">validationStatus</p>
+                <p>{validationStatusValue(state.data.validationStatus)}</p>
               </div>
               <div>
-                <p className="font-medium">Statut</p>
+                <p className="font-medium">status</p>
                 <p>{state.data.status}</p>
               </div>
               <div>

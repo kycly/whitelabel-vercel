@@ -6,8 +6,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, His
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   type ValidationStatus,
-  validationStatusLabel,
-  validationStatusTone,
+  validationStatusValue,
 } from "@/components/verify/validation-status";
 import {
   errorAlertClassName,
@@ -65,9 +64,9 @@ const PAGE_SIZE = 20;
 
 const STATUS_OPTIONS: Array<{ label: string; value: SessionStatus | "all" }> = [
   { label: "Toutes", value: "all" },
-  { label: "En attente", value: "pending" },
-  { label: "En analyse", value: "processing" },
-  { label: "Terminees", value: "completed" },
+  { label: "pending", value: "pending" },
+  { label: "processing", value: "processing" },
+  { label: "completed", value: "completed" },
 ];
 
 const DECISION_OPTIONS: Array<{ label: string; value: DecisionStatus | "all" }> = [
@@ -90,7 +89,7 @@ function statusTone(status: string): string {
 }
 
 function decisionLabel(item: SessionsResponse["data"][number]): string {
-  return validationStatusLabel(item.validationStatus);
+  return validationStatusValue(item.validationStatus);
 }
 
 function formatDate(value: string | null): string {
@@ -398,7 +397,7 @@ export function VerificationSessions() {
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {item.status}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${validationStatusTone(item.validationStatus)}`}>
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {decisionLabel(item)}
                   </span>
                 </div>
