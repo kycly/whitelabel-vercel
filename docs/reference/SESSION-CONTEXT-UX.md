@@ -42,6 +42,7 @@ Regles:
 - `COMPLETE` relit le backend pour recuperer le resultat final sans recharger le formulaire
 - `WELCOME` n'expose pas d'icone retour
 - `SESSION_CONTEXT` expose une icone retour avec repli explicite vers `WELCOME`
+- `SESSION_CONTEXT` force ce retour vers `WELCOME`, sans dependre de l'historique navigateur
 - `KYC_LINK` n'expose pas d'icone retour
 - `KYC_LINK` n'expose pas non plus de deconnexion
 - la reprise sur `/verify/session?sessionId=...` relit la session canonique via `/api/kyc/session/:sessionId` avant d'afficher l'iframe
@@ -66,6 +67,8 @@ Premier niveau visible:
 1. `External ID`
 2. `Notification SMS`
 
+Le champ `External ID` reste editable librement, mais doit aussi proposer une generation instantanee via une icone discrete sans label visible.
+
 Second niveau sur action explicite de l'utilisateur:
 
 - `Contexte metier`
@@ -85,7 +88,7 @@ Contraintes de densite:
 - les champs additionnels apparaissent inline dans le meme bloc, uniquement apres activation d'un groupe
 - chaque groupe ouvert peut etre retire via une action de suppression discrete
 - le vocabulaire visuel reprend integration-node: hero centre, carte `surface-light`, champs hauts et CTA plein bleu
-- l'icone retour de `SESSION_CONTEXT` renvoie vers `WELCOME` si l'historique n'est pas exploitable
+- l'icone retour de `SESSION_CONTEXT` renvoie directement vers `WELCOME`
 
 ## 1. Scenario
 
@@ -117,6 +120,12 @@ Options recommandees:
 ## 2. Contexte de verification
 
 Le noyau du parcours ne montre plus qu'un identifiant et un canal SMS. Le reste du contexte est extensible a la demande.
+
+Regle UX complementaire pour `External ID`:
+
+- saisie libre toujours autorisee
+- generation possible en un clic via une icone adjacente
+- valeur generee sur 8 caracteres alphanumeriques lisibles, sans caracteres ambigus
 
 ### Champs retenus
 

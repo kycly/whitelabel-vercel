@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
-import { saveActiveVerificationSession } from "@/lib/active-verification-session";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -49,15 +48,12 @@ export function VerificationPrepareScreen() {
 
         const createdSession = (await response.json()) as {
           sessionId: string;
-          kyclinkUrl: string;
-          expiresAt: string;
         };
 
         if (cancelled) {
           return;
         }
 
-        saveActiveVerificationSession(createdSession);
         clearVerificationDraft();
         window.location.replace(`/verify/session?sessionId=${encodeURIComponent(createdSession.sessionId)}`);
       } catch (reason) {
@@ -83,7 +79,7 @@ export function VerificationPrepareScreen() {
   }, []);
 
   return (
-    <ProtectedScreenShell backHref="/verify" title="Session" maxWidthClassName="max-w-2xl" panelClassName="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+    <ProtectedScreenShell backHref="/verify" preferBackHref title="Session" showLogout={false} maxWidthClassName="max-w-2xl" panelClassName="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface-light)]">
           <LoaderCircle className="h-9 w-9 animate-spin text-brand" />
           <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">

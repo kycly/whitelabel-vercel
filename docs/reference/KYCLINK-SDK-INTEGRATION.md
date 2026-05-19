@@ -38,6 +38,7 @@ Pour `whitelabel-vercel`, la reprise et le refresh ne doivent plus dependre d'un
 - ouvre KycLink si la session est `ACTIVE`
 - redirige vers `COMPLETE` si la session est `COMPLETED`
 - redirige vers `FAILURE` si la session est `EXPIRED` ou introuvable
+- ne depend jamais d'une session KYC active prealablement sauvegardee en `sessionStorage`
 
 ---
 
@@ -186,7 +187,7 @@ Payload attendu:
 }
 ```
 
-Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend. `parentOrigin` est egalement derivee cote backend depuis l'origin de la requete HTTP, puis forwardee vers `partner-node`.
+Dans whitelabel-vercel, `externalId` est saisi dans le formulaire comme un champ metier simple, ou genere a la demande via une icone discrète. Il n'est pas expose comme parametre technique brut au reste de l'UI. `parentOrigin` est derivee cote backend depuis l'origin de la requete HTTP, puis forwardee vers `partner-node`.
 
 Reponse succes:
 

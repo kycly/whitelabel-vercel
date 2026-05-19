@@ -17,6 +17,7 @@ export function AuthLoadingScreen({ target }: { target: string }) {
     <ProtectedScreenShell
       backHref="/auth/logout"
       title="Redirection"
+      showBack={false}
       showLogout={false}
       maxWidthClassName="max-w-3xl"
       panelClassName="flex flex-1 flex-col justify-center text-center"

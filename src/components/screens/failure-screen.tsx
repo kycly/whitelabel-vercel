@@ -19,7 +19,7 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
   const presentation = getFailurePresentation(code, message);
 
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Erreur" maxWidthClassName="max-w-3xl" panelClassName="space-y-5 pt-4">
+    <ProtectedScreenShell backHref="/welcome" title="Erreur" showBack={false} showLogout={false} maxWidthClassName="max-w-3xl" panelClassName="space-y-5 pt-4">
         <div className={errorAlertWithIconClassName}>
           <AlertTriangle className="mt-0.5 size-5 shrink-0" />
           <div className="space-y-1">

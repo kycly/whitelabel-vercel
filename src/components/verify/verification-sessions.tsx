@@ -241,7 +241,7 @@ export function VerificationSessions() {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
+    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex h-11 items-center">

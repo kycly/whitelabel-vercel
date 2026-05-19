@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { KycLink } from "@kycly/link/react";
 import type { KycLinkErrorPayload } from "@kycly/link";
 import { useRouter } from "next/navigation";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { primaryCtaClassName, surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
 
 type VerificationRunScreenProps = {
   sessionId: string;

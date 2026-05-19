@@ -130,8 +130,16 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await expect(page).toHaveURL(/\/verify$/);
   await page.waitForLoadState("networkidle");
   await expect(page.getByText("Contexte de vérification")).toBeVisible();
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
 
-  await page.getByPlaceholder("cust_0042").fill("cust_smoke_001");
+  await page.getByRole("link", { name: /Commencer/i }).click();
+  await expect(page).toHaveURL(/\/verify$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Contexte de vérification")).toBeVisible();
+  await page.getByRole("button", { name: "Générer un external ID" }).click();
+  await expect(page.getByPlaceholder("cust_0042")).toHaveValue(/[A-Z2-9]{8}/);
+
   await page.getByPlaceholder("+221771234567").fill("+221771234567");
   await page.getByRole("button", { name: "Créer la session" }).click();
 
@@ -153,4 +161,6 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await page.goto("/sessions");
   await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Reprendre" })).toBeVisible();
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
 });

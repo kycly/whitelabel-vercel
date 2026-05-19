@@ -154,9 +154,10 @@ Regles specifiques:
 - `WELCOME` n'affiche pas d'icone retour
 - `KYC_LINK` n'affiche pas d'icone retour
 - `KYC_LINK` n'affiche pas non plus d'action de deconnexion
-- `SESSION_CONTEXT`, `SESSION_PREPARE`, `COMPLETE` et `SESSIONS` utilisent une icone retour avec fallback explicite par etape, sans dependre uniquement de l'historique navigateur
+- `SESSION_CONTEXT`, `SESSION_PREPARE`, `COMPLETE` et `SESSIONS` utilisent une icone retour a destination canonique par etape, sans dependre de l'historique navigateur
 - l'icone retour de `COMPLETE` renvoie vers `SESSIONS`
-- les ecrans proteges conservent aussi une deconnexion iconique en haut a droite
+- les ecrans proteges ne conservent une deconnexion iconique en haut a droite que lorsqu'elle reste utile au flux
+- `KYC_LINK`, `AUTH_LOADING`, `FAILURE` et `ACCESS_DENIED` evitent les sorties generiques concurrentes dans le header
 - les labels editoriaux de type `WELCOME`, `COMPLETE`, `SESSIONS` ou `KYC_LINK` ne doivent pas etre affiches comme titres d'ecran
 
 Pour l'authentification J1, cette logique s'applique aussi au formulaire de connexion direct:
@@ -164,7 +165,7 @@ Pour l'authentification J1, cette logique s'applique aussi au formulaire de conn
 - carte unique et centree
 - etats inline pour login, nouveau mot de passe et reset
 - message de restauration de session visible avant l'affichage complet du formulaire
-- action secondaire de deconnexion gardee sobre sur les ecrans proteges
+- action de deconnexion reservee aux ecrans ou elle ne concurrence pas un CTA metier plus clair
 - hero centre avec icone principale et accent de confiance
 
 ## Regles specifiques `SESSION_CONTEXT`

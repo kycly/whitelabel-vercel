@@ -85,7 +85,7 @@ La page reste volontairement legere.
 - conserver le meme langage visuel que le reste du scaffold
 - mobile-first, carte de connexion centree, contenu simple
 - reprendre le meme frame mobile et le meme hero que integration-node
-- afficher une icone retour unique en haut a gauche sur les ecrans d'auth transitoires et de sous-etapes, y compris sur `AUTH_LOADING`
+- afficher une icone retour uniquement sur les sous-etapes du formulaire quand elle sert a revenir dans le flux local
 - la deconnexion reste reservee aux ecrans proteges, pas a `LOGIN`
 
 ## Etats a prevoir
@@ -102,20 +102,21 @@ La page reste volontairement legere.
 - pas de grand titre ni de texte explicatif long
 - un seul indicateur de progression visible
 - aucun detail technique sur la verification serveur ou le scope demo
-- l'icone retour quitte l'app via `GET /auth/logout` si aucun historique navigateur fiable n'existe
+- aucun bouton retour ni deconnexion concurrente dans le header
 
 ## Regles specifiques `ACCESS_DENIED`
 
 - un message unique et direct
 - aucune explication technique sur les claims ou le scoping partner-node
-- une icone retour en haut a gauche, avec repli vers `GET /auth/logout`
+- aucune navigation generique concurrente dans le header
+- une seule sortie explicite de deconnexion dans le contenu
 
 ## Decision de navigation
 
 - l'etat initial de `LOGIN` n'affiche pas d'icone retour
 - les sous-etapes `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD` repliquent d'abord vers l'etape precedente du formulaire
 - `FORGOT_PASSWORD_CONFIRM` revient d'abord vers la demande de code
-- `AUTH_LOADING` quitte l'app via `GET /auth/logout` si l'utilisateur interrompt la transition sans historique fiable
+- `AUTH_LOADING` ne propose pas d'interruption manuelle de la transition
 - les ecrans proteges racine ne replient jamais vers `LOGIN` pour eviter les boucles avec la restauration de session
 
 ## Decision technique J1

@@ -135,6 +135,13 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page).toHaveURL(/\/verify$/);
   await page.waitForLoadState("networkidle");
   await expect(page.getByText("Contexte de vérification")).toBeVisible();
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
+
+  await welcomeCta.click();
+  await expect(page).toHaveURL(/\/verify$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Contexte de vérification")).toBeVisible();
 
   for (const label of ["Contexte métier", "Contexte routage", "Email", "Contexte libre"]) {
     await page.getByRole("checkbox", { name: label }).check();
@@ -175,6 +182,11 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page.getByRole("link", { name: "Reprendre" })).toBeVisible();
   expect((await page.getByRole("button", { name: "Actualiser" }).boundingBox())?.height).toBe(44);
   expect((await page.getByRole("link", { name: "Nouvelle vérification" }).boundingBox())?.height).toBe(44);
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
+
+  await page.goto("/sessions");
+  await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
 
   await page.getByRole("link", { name: /Voir le résultat/i }).click();
   await page.waitForURL(new RegExp(`/complete\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });

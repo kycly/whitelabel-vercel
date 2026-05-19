@@ -170,6 +170,11 @@ L'ecran `Mes verifications` applique la regle suivante:
 3. exiger `expiresAt > now`
 4. pointer vers `/verify/session?sessionId=...`
 
+Regle de navigation associee:
+
+- le retour de `Mes verifications` renvoie explicitement vers `WELCOME`
+- cette navigation ne depend pas de l'historique navigateur
+
 Le verdict final de reprise reste toutefois porte par `GET /api/kyc/session/:sessionId`, afin d'eviter toute dependance a l'etat local du navigateur.
 
 ## Erreurs cibles

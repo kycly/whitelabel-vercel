@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, FileText, LoaderCircle, Plus, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ArrowRight, Dices, FileText, LoaderCircle, Plus, ShieldCheck, X } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   checklistCardClassName,
@@ -61,6 +61,15 @@ function getFieldError(errors: Record<string, string>, keys: string[]): string |
 
 function isGroupActive(group: OptionalContextGroup, activeFields: Record<OptionalField, boolean>): boolean {
   return GROUP_FIELDS[group].some((field) => activeFields[field]);
+}
+
+const EXTERNAL_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateExternalId(length = 8): string {
+  const randomBytes = new Uint8Array(length);
+  crypto.getRandomValues(randomBytes);
+
+  return Array.from(randomBytes, (value) => EXTERNAL_ID_ALPHABET[value & 31]).join("");
 }
 
 export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
@@ -250,6 +259,17 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     }));
   }
 
+  function handleGenerateReferenceClient() {
+    const nextValue = generateExternalId();
+
+    setForm((current) => ({
+      ...current,
+      referenceClient: nextValue,
+    }));
+
+    clearFieldErrors(["referenceClient"]);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -291,7 +311,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Contexte" maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-4">
+    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Contexte" maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-4">
       <form className="flex h-full min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
         <div className={scrollablePanelBodyClassName}>
         <div className="mb-6 flex animate-fade-in flex-col items-center justify-center text-center">
@@ -308,13 +328,24 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
           <div className="grid gap-4">
             <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <span className="font-medium">External ID</span>
-              <input
-                className={formFieldClassName({ hasError: Boolean(errors.referenceClient) })}
-                maxLength={128}
-                placeholder="cust_0042"
-                value={form.referenceClient}
-                onChange={(event) => updateField("referenceClient", event.target.value)}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  className={formFieldClassName({ hasError: Boolean(errors.referenceClient) })}
+                  maxLength={128}
+                  placeholder="cust_0042"
+                  value={form.referenceClient}
+                  onChange={(event) => updateField("referenceClient", event.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateReferenceClient}
+                  aria-label="Générer un external ID"
+                  title="Générer un external ID"
+                  className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] transition hover:bg-white"
+                >
+                  <Dices className="size-5" aria-hidden="true" />
+                </button>
+              </div>
               {errors.referenceClient ? <p className="text-sm text-red-600">{errors.referenceClient}</p> : null}
             </label>
 
