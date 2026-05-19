@@ -34,7 +34,7 @@ Si l'un de ces prealables echoue, la route ne doit jamais tenter de fallback ver
 ## Requete cible
 
 ```http
-GET /api/kyc/sessions?limit=20&offset=0&status=completed&decisionStatus=APPROVED
+GET /api/kyc/sessions?limit=20&offset=0&status=completed&workflowStatus=APPROVED
 ```
 
 ### Query params
@@ -44,14 +44,14 @@ GET /api/kyc/sessions?limit=20&offset=0&status=completed&decisionStatus=APPROVED
 | `limit` | `number` | `20` | entier positif, max `50` |
 | `offset` | `number` | `0` | entier >= `0` |
 | `status` | `string` | — | optionnel, filtre borne aux valeurs UI utiles `pending`, `processing`, `completed` |
-| `decisionStatus` | `string` | — | optionnel, filtre borne a `APPROVED`, `REJECTED`, `REVIEW` |
+| `workflowStatus` | `string` | — | optionnel, filtre borne a `PENDING`, `IN_REVIEW`, `ESCALATED`, `APPROVED`, `REJECTED` |
 
 Choix volontaires:
 
 - `limit` est plus strict que le max backend actuel pour garder une pagination simple cote whitelabel
 - aucun tri client expose: l'ordre canonique reste `created_at DESC`
 - aucun filtre par date, `externalId` ou texte libre au premier jet
-- les filtres `status` et `decisionStatus` sont appliques cote API whitelabel avant pagination finale
+- les filtres `status` et `workflowStatus` sont appliques cote API whitelabel avant pagination finale
 
 ## Reponse cible
 
@@ -68,7 +68,7 @@ Choix volontaires:
       "completedAt": "2026-04-08T10:05:00Z",
       "expiresAt": "2026-04-08T14:00:00Z",
       "createdAt": "2026-04-08T10:00:00Z",
-      "validationStatus": "APPROVED"
+      "workflowStatus": "APPROVED"
     }
   ],
   "meta": {
@@ -82,11 +82,13 @@ Choix volontaires:
       "processing": 0,
       "completed": 1
     },
-    "decisionCounts": {
+    "workflowCounts": {
       "all": 1,
+      "PENDING": 0,
+      "IN_REVIEW": 0,
+      "ESCALATED": 0,
       "APPROVED": 1,
-      "REJECTED": 0,
-      "REVIEW": 0
+      "REJECTED": 0
     }
   }
 }
@@ -103,7 +105,7 @@ Choix volontaires:
 | `completedAt` | `string \| null` | `completed_at` | horodatage de completion connu localement |
 | `expiresAt` | `string \| null` | `expires_at` | expiration de l'URL KycLink |
 | `createdAt` | `string` | `created_at` | ordre de tri canonique |
-| `validationStatus` | `"APPROVED" \| "REJECTED" \| "REVIEW" \| null` | enrichissement par lecture detaillee | lu via `GET /kyclink/:sessionId/result` quand la session est terminee |
+| `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflow_status` | projection brute du statut metier local issu de `partner-node verifications_local.status` |
 
 ### Meta
 
@@ -114,7 +116,7 @@ Choix volontaires:
 | `offset` | `number` | offset applique |
 | `total` | `number` | nombre total d'elements apres filtres API et avant pagination |
 | `statusCounts` | `object` | compteurs utilises par les chips de filtre statut |
-| `decisionCounts` | `object` | compteurs utilises par les chips de filtre decision |
+| `workflowCounts` | `object` | compteurs utilises par les chips de filtre statut metier |
 
 Choix volontaires:
 
@@ -123,8 +125,8 @@ Choix volontaires:
 
 Les compteurs sont calcules par `whitelabel-vercel` sur sa projection derivee:
 
-- `statusCounts` respecte le filtre `decisionStatus` courant
-- `decisionCounts` respecte le filtre `status` courant
+- `statusCounts` respecte le filtre `workflowStatus` courant
+- `workflowCounts` respecte le filtre `status` courant
 
 ## Projection volontairement minimale
 
@@ -145,14 +147,14 @@ Raison:
 
 ## Limites fonctionnelles assumees
 
-`validationStatus` n'est pas porte par `partner-node /kyclink/sessions` lui-meme.
+`workflowStatus` est porte directement par `partner-node /kyclink/sessions` sous le nom `workflow_status`.
 
-La route whitelabel l'enrichit donc uniquement pour les sessions deja terminees via une lecture detaillee secondaire sur `GET /kyclink/:sessionId/result`.
+La route whitelabel ne synthétise plus de statut metier et ne derive plus de decision depuis une lecture detaillee secondaire.
 
 Consequences:
 
-- la liste reste une projection derivee, pas un miroir brut du contrat de listing de `partner-node`
-- une session terminee peut encore remonter `validationStatus = null` si la decision detaillee n'est pas encore disponible
+- la liste reste une projection minimale, mais le statut metier affiche est un miroir direct de `partner-node`
+- une session peut encore remonter `workflowStatus = null` tant qu'aucune verification locale n'est encore rattachee a ce `session_id`
 
 ## Erreurs cibles
 

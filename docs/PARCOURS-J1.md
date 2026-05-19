@@ -377,7 +377,7 @@ L'ecran `COMPLETE` doit donc:
 - attendre au moins 10 secondes avant le premier poll backend
 - interroger ensuite `/api/kyc/session/:sessionId/result`
 - replier cote serveur sur `GET /kyclink/sessions` si la route detail upstream repond `404`
-- afficher `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+- afficher `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`
 - arreter le polling quand `completed = true` ou quand la limite de tentatives est atteinte
 - utiliser un backoff progressif entre les polls suivants plutot qu'un intervalle fixe
 
@@ -385,10 +385,10 @@ L'ecran `COMPLETE` doit donc:
 
 - attente avant premier poll
 - polling en cours
-- resultat backend sans decision finale
-- resultat backend avec `validationStatus = APPROVED`
-- resultat backend avec `validationStatus = REJECTED`
-- resultat backend avec `validationStatus = REVIEW`
+- resultat backend sans statut metier rattache
+- resultat backend avec `workflowStatus = APPROVED`
+- resultat backend avec `workflowStatus = REJECTED`
+- resultat backend avec `workflowStatus = IN_REVIEW`
 - echec temporaire de lecture backend
 
 ### CTA

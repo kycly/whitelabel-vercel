@@ -424,7 +424,7 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 3. le frontend appelle ensuite `/api/kyc/session/:sessionId/result`
 4. le backend applicatif appelle `partner-node /kyclink/:sessionId/result`
 5. si cette route detail repond `404`, le backend replie sur `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat
-6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`
 7. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.

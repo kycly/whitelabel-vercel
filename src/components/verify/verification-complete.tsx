@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
-  type ValidationStatus,
-  validationStatusValue,
-} from "@/components/verify/validation-status";
+  type WorkflowStatus,
+  workflowStatusTone,
+  workflowStatusValue,
+} from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
   infoAlertClassName,
@@ -24,7 +25,7 @@ type KycSessionResult = {
   status: "pending" | "processing" | "completed";
   completed: boolean;
   completedAt: string | null;
-  validationStatus: ValidationStatus | null;
+  workflowStatus: WorkflowStatus | null;
 };
 
 type ResultState = {
@@ -42,7 +43,7 @@ type PollAttempt = {
   outcome: "success" | "error";
   status: KycSessionResult["status"] | null;
   completed: boolean | null;
-  validationStatus: KycSessionResult["validationStatus"];
+  workflowStatus: KycSessionResult["workflowStatus"];
   nextPollInSeconds: number | null;
   message: string;
 };
@@ -80,6 +81,10 @@ function statusTone(status: KycSessionResult["status"]): string {
   }
 
   return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function resultTone(result: KycSessionResult): string {
+  return result.workflowStatus ? workflowStatusTone(result.workflowStatus) : statusTone(result.status);
 }
 
 export function VerificationComplete({ sessionId }: { sessionId: string }) {
@@ -166,7 +171,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
                 outcome: "success",
                 status: parsed.status,
                 completed: parsed.completed,
-                validationStatus: parsed.validationStatus,
+                workflowStatus: parsed.workflowStatus,
                 nextPollInSeconds: parsed.completed ? null : nextDelaySeconds,
                 message: parsed.completed
                   ? "Le backend a confirme un statut final pour cette session."
@@ -196,7 +201,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
                 outcome: "error",
                 status: null,
                 completed: null,
-                validationStatus: null,
+                workflowStatus: null,
                 nextPollInSeconds: nextDelaySeconds,
                 message: error instanceof Error ? error.message : "Lecture impossible.",
               },
@@ -237,7 +242,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
 
   const reachedPollingLimit = !state.data?.completed && state.attemptCount >= MAX_POLL_ATTEMPTS;
 
-  const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
+  const approvedExitHref = state.data?.workflowStatus === "APPROVED" ? "/welcome" : null;
 
   return (
     <ProtectedScreenShell
@@ -276,16 +281,16 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-2xl border px-5 py-4 text-sm ${statusTone(state.data.status)}`}>
-            <p className="font-semibold">validationStatus: {validationStatusValue(state.data.validationStatus)}</p>
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${resultTone(state.data)}`}>
+            <p className="font-semibold">workflowStatus: {workflowStatusValue(state.data.workflowStatus)}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>
               </div>
               <div>
-                <p className="font-medium">validationStatus</p>
-                <p>{validationStatusValue(state.data.validationStatus)}</p>
+                <p className="font-medium">workflowStatus</p>
+                <p>{workflowStatusValue(state.data.workflowStatus)}</p>
               </div>
               <div>
                 <p className="font-medium">status</p>

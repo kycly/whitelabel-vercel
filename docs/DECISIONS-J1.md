@@ -194,7 +194,7 @@ Champs cibles par item:
 - `completedAt`
 - `expiresAt`
 - `createdAt`
-- `validationStatus`
+- `workflowStatus`
 
 Champs explicitement exclus:
 
@@ -213,7 +213,7 @@ Pagination et meta cibles:
 - `total` expose apres filtres et avant pagination
 - ordre canonique `createdAt DESC`
 - pas de `hasMore` ni de `nextOffset` au premier jet
-- `statusCounts` et `decisionCounts` exposes pour alimenter l'UI
+- `statusCounts` et `workflowCounts` exposes pour alimenter l'UI
 
 La specification detaillee de la route se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 

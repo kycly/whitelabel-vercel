@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
-  type ValidationStatus,
-  validationStatusValue,
-} from "@/components/verify/validation-status";
+  type WorkflowStatus,
+  workflowStatusTone,
+  workflowStatusValue,
+} from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
   featureActionCardClassName,
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/fixed-action-layout";
 
 type SessionStatus = "pending" | "processing" | "completed";
-type DecisionStatus = ValidationStatus;
+type SessionWorkflowStatus = WorkflowStatus;
 
 type SessionsResponse = {
   data: Array<{
@@ -31,7 +32,7 @@ type SessionsResponse = {
     completedAt: string | null;
     expiresAt: string | null;
     createdAt: string;
-    validationStatus: "APPROVED" | "REJECTED" | "REVIEW" | null;
+    workflowStatus: SessionWorkflowStatus | null;
   }>;
   meta: {
     returned: number;
@@ -44,11 +45,13 @@ type SessionsResponse = {
       processing: number;
       completed: number;
     };
-    decisionCounts: {
+    workflowCounts: {
       all: number;
+      PENDING: number;
+      IN_REVIEW: number;
+      ESCALATED: number;
       APPROVED: number;
       REJECTED: number;
-      REVIEW: number;
     };
   };
 };
@@ -69,11 +72,13 @@ const STATUS_OPTIONS: Array<{ label: string; value: SessionStatus | "all" }> = [
   { label: "completed", value: "completed" },
 ];
 
-const DECISION_OPTIONS: Array<{ label: string; value: DecisionStatus | "all" }> = [
-  { label: "Toutes les validations", value: "all" },
+const WORKFLOW_OPTIONS: Array<{ label: string; value: SessionWorkflowStatus | "all" }> = [
+  { label: "Tous les statuts metier", value: "all" },
+  { label: "PENDING", value: "PENDING" },
+  { label: "IN_REVIEW", value: "IN_REVIEW" },
+  { label: "ESCALATED", value: "ESCALATED" },
   { label: "APPROVED", value: "APPROVED" },
   { label: "REJECTED", value: "REJECTED" },
-  { label: "REVIEW", value: "REVIEW" },
 ];
 
 function statusTone(status: string): string {
@@ -88,8 +93,8 @@ function statusTone(status: string): string {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function decisionLabel(item: SessionsResponse["data"][number]): string {
-  return validationStatusValue(item.validationStatus);
+function workflowLabel(item: SessionsResponse["data"][number]): string {
+  return workflowStatusValue(item.workflowStatus);
 }
 
 function formatDate(value: string | null): string {
@@ -105,7 +110,7 @@ function formatDate(value: string | null): string {
 
 export function VerificationSessions() {
   const [status, setStatus] = useState<SessionStatus | "all">("all");
-  const [decisionStatus, setDecisionStatus] = useState<DecisionStatus | "all">("all");
+  const [workflowStatus, setWorkflowStatus] = useState<SessionWorkflowStatus | "all">("all");
   const [offset, setOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<SessionsState>({
@@ -121,11 +126,13 @@ export function VerificationSessions() {
         processing: 0,
         completed: 0,
       },
-      decisionCounts: {
+      workflowCounts: {
         all: 0,
+        PENDING: 0,
+        IN_REVIEW: 0,
+        ESCALATED: 0,
         APPROVED: 0,
         REJECTED: 0,
-        REVIEW: 0,
       },
     },
     isLoading: true,
@@ -152,8 +159,8 @@ export function VerificationSessions() {
           searchParams.set("status", status);
         }
 
-        if (decisionStatus !== "all") {
-          searchParams.set("decisionStatus", decisionStatus);
+        if (workflowStatus !== "all") {
+          searchParams.set("workflowStatus", workflowStatus);
         }
 
         const response = await fetch(`/api/kyc/sessions?${searchParams.toString()}`, {
@@ -202,17 +209,17 @@ export function VerificationSessions() {
     return () => {
       controller.abort();
     };
-  }, [decisionStatus, offset, reloadKey, status]);
+  }, [offset, reloadKey, status, workflowStatus]);
 
   const canGoBack = offset > 0;
   const canGoNext = state.meta.offset + state.meta.returned < state.meta.total;
-  const hasActiveFilter = status !== "all" || decisionStatus !== "all";
+  const hasActiveFilter = status !== "all" || workflowStatus !== "all";
   const isFilterEmpty = !state.isLoading && !state.error && state.data.length === 0 && hasActiveFilter;
   const isInitialEmpty = !state.isLoading && !state.error && state.data.length === 0 && !hasActiveFilter;
 
   function resetFilters() {
     setStatus("all");
-    setDecisionStatus("all");
+    setWorkflowStatus("all");
     setOffset(0);
   }
 
@@ -314,17 +321,17 @@ export function VerificationSessions() {
 
         <label className="block">
           <select
-            aria-label="Filtrer par décision"
-            value={decisionStatus}
+            aria-label="Filtrer par statut metier"
+            value={workflowStatus}
             onChange={(event) => {
-              setDecisionStatus(event.target.value as DecisionStatus | "all");
+              setWorkflowStatus(event.target.value as SessionWorkflowStatus | "all");
               setOffset(0);
             }}
             className={formFieldClassName({ compact: true })}
           >
-            {DECISION_OPTIONS.map((option) => (
+            {WORKFLOW_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                    {option.label} ({state.meta.decisionCounts[option.value]})
+                {option.label} ({state.meta.workflowCounts[option.value]})
               </option>
             ))}
           </select>
@@ -397,8 +404,8 @@ export function VerificationSessions() {
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {item.status}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
-                    {decisionLabel(item)}
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${workflowStatusTone(item.workflowStatus)}`}>
+                    {workflowLabel(item)}
                   </span>
                 </div>
               </article>

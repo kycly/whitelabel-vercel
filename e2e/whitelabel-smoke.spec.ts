@@ -55,7 +55,7 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         status: "completed",
         completed: true,
         completedAt: "2026-05-18T12:03:00.000Z",
-        validationStatus: "APPROVED",
+        workflowStatus: "APPROVED",
       }),
     });
   });
@@ -84,7 +84,7 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
 
   await page.getByRole("button", { name: "Actualiser" }).click();
 
-  await expect(page.getByText("validationStatus: APPROVED")).toBeVisible();
+  await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
   await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 });

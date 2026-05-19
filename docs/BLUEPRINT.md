@@ -46,7 +46,7 @@ Utilisateur
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
 13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
-14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `validationStatus`.
+14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`.
 15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `COMPLETE`.
 
 ## Contrat d'autorisation minimal

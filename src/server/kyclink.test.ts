@@ -94,7 +94,7 @@ describe("server/kyclink", () => {
         status: "completed",
         completed: true,
         completedAt: "2026-05-17T12:03:00.000Z",
-        validationStatus: "APPROVED",
+        workflowStatus: "APPROVED",
       }),
     });
 
@@ -105,7 +105,7 @@ describe("server/kyclink", () => {
       sessionId: "sess_1",
     });
 
-    expect(result.validationStatus).toBe("APPROVED");
+    expect(result.workflowStatus).toBe("APPROVED");
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.kycly.test/kyclink/sess_1/result");
@@ -138,7 +138,7 @@ describe("server/kyclink", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1/result");
   });
 
-  it("uses validation_status returned by the sessions endpoint as the canonical history source", async () => {
+  it("uses workflow_status returned by the sessions endpoint as the canonical history source", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -149,7 +149,7 @@ describe("server/kyclink", () => {
               session_id: "sess_1",
               external_id: "cust_0042",
               status: "completed",
-              validation_status: "APPROVED",
+              workflow_status: "APPROVED",
               expires_at: null,
               completed_at: "2026-05-17T12:03:00.000Z",
               created_at: "2026-05-17T12:00:00.000Z",
@@ -158,7 +158,7 @@ describe("server/kyclink", () => {
               session_id: "sess_2",
               external_id: "cust_0043",
               status: "processing",
-              validation_status: null,
+              workflow_status: null,
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:05:00.000Z",
@@ -176,7 +176,7 @@ describe("server/kyclink", () => {
 
     const result = await fetchKycSessions({
       cognitoIdToken: "cognito-id-token",
-      query: parseKycSessionsListQuery(new URLSearchParams("status=completed&decisionStatus=APPROVED")),
+      query: parseKycSessionsListQuery(new URLSearchParams("status=completed&workflowStatus=APPROVED")),
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -184,7 +184,7 @@ describe("server/kyclink", () => {
     expect(result.data[0]?.sessionId).toBe("sess_1");
     expect(result.meta.total).toBe(1);
     expect(result.meta.statusCounts.completed).toBe(1);
-    expect(result.meta.decisionCounts.APPROVED).toBe(1);
+    expect(result.meta.workflowCounts.APPROVED).toBe(1);
   });
 
   it("keeps the canonical createdAt DESC order before pagination", async () => {

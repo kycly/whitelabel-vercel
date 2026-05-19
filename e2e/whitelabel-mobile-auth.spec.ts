@@ -59,7 +59,7 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             completedAt: null,
             expiresAt: "2026-05-18T12:00:00.000Z",
             createdAt: "2026-05-18T11:50:00.000Z",
-            validationStatus: null,
+            workflowStatus: null,
           },
         ],
         meta: {
@@ -73,11 +73,13 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             processing: 0,
             completed: 0,
           },
-          decisionCounts: {
+          workflowCounts: {
             all: 1,
+            PENDING: 0,
+            IN_REVIEW: 0,
+            ESCALATED: 0,
             APPROVED: 0,
             REJECTED: 0,
-            REVIEW: 0,
           },
         },
       }),
@@ -94,7 +96,7 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         status: "completed",
         completed: true,
         completedAt: "2026-05-18T12:03:00.000Z",
-        validationStatus: "APPROVED",
+        workflowStatus: "APPROVED",
       }),
     });
   });
@@ -159,7 +161,7 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   expect((await refreshResultButton.boundingBox())?.height).toBe(44);
   await refreshResultButton.click();
 
-  await expect(page.getByText("validationStatus: APPROVED")).toBeVisible();
+  await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
   await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 });

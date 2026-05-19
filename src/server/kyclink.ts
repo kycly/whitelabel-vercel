@@ -18,23 +18,23 @@ const kycSessionResultSchema = z.object({
   status: z.enum(["pending", "processing", "completed"]),
   completed: z.boolean(),
   completedAt: z.string().nullable(),
-  validationStatus: z.enum(["APPROVED", "REJECTED", "REVIEW"]).nullable(),
+  workflowStatus: z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]).nullable(),
 });
 
-const decisionStatusSchema = z.enum(["APPROVED", "REJECTED", "REVIEW"]);
+const workflowStatusSchema = z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]);
 
 const kycSessionsListQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(20),
   offset: z.coerce.number().int().min(0).default(0),
   status: z.enum(["pending", "processing", "completed"]).optional(),
-  decisionStatus: decisionStatusSchema.optional(),
+  workflowStatus: workflowStatusSchema.optional(),
 });
 
 const upstreamKycSessionSchema = z.object({
   session_id: z.string().min(1),
   external_id: z.string().nullable(),
   status: z.string().min(1),
-  validation_status: z.enum(["APPROVED", "REJECTED", "REVIEW"]).nullable().optional(),
+  workflow_status: workflowStatusSchema.nullable().optional(),
   expires_at: z.string().nullable(),
   completed_at: z.string().nullable(),
   created_at: z.string().min(1),
@@ -50,7 +50,7 @@ const kycSessionsListSchema = z.object({
       completedAt: z.string().nullable(),
       expiresAt: z.string().nullable(),
       createdAt: z.string().min(1),
-      validationStatus: z.enum(["APPROVED", "REJECTED", "REVIEW"]).nullable(),
+      workflowStatus: workflowStatusSchema.nullable(),
     }),
   ),
   meta: z.object({
@@ -64,11 +64,13 @@ const kycSessionsListSchema = z.object({
       processing: z.number().int().min(0),
       completed: z.number().int().min(0),
     }),
-    decisionCounts: z.object({
+    workflowCounts: z.object({
       all: z.number().int().min(0),
+      PENDING: z.number().int().min(0),
+      IN_REVIEW: z.number().int().min(0),
+      ESCALATED: z.number().int().min(0),
       APPROVED: z.number().int().min(0),
       REJECTED: z.number().int().min(0),
-      REVIEW: z.number().int().min(0),
     }),
   }),
 });
@@ -94,7 +96,7 @@ export function parseKycSessionsListQuery(input: URLSearchParams): KycSessionsLi
     limit: input.get("limit") ?? undefined,
     offset: input.get("offset") ?? undefined,
     status: input.get("status") ?? undefined,
-    decisionStatus: input.get("decisionStatus") ?? undefined,
+    workflowStatus: input.get("workflowStatus") ?? undefined,
   });
 }
 
@@ -259,15 +261,15 @@ export async function fetchKycSessions(params: {
     completedAt: item.completed_at,
     expiresAt: item.expires_at,
     createdAt: item.created_at,
-    validationStatus: item.validation_status ?? null,
+    workflowStatus: item.workflow_status ?? null,
   }));
 
   const statusCountsScope =
-    params.query.decisionStatus === undefined
+    params.query.workflowStatus === undefined
       ? data
-      : data.filter((item) => item.validationStatus === params.query.decisionStatus);
+      : data.filter((item) => item.workflowStatus === params.query.workflowStatus);
 
-  const decisionCountsScope =
+  const workflowCountsScope =
     params.query.status === undefined
       ? data
       : data.filter((item) => item.status === params.query.status);
@@ -277,7 +279,7 @@ export async function fetchKycSessions(params: {
       return false;
     }
 
-    if (params.query.decisionStatus && item.validationStatus !== params.query.decisionStatus) {
+    if (params.query.workflowStatus && item.workflowStatus !== params.query.workflowStatus) {
       return false;
     }
 
@@ -301,11 +303,13 @@ export async function fetchKycSessions(params: {
         processing: statusCountsScope.filter((item) => item.status === "processing").length,
         completed: statusCountsScope.filter((item) => item.status === "completed").length,
       },
-      decisionCounts: {
-        all: decisionCountsScope.length,
-        APPROVED: decisionCountsScope.filter((item) => item.validationStatus === "APPROVED").length,
-        REJECTED: decisionCountsScope.filter((item) => item.validationStatus === "REJECTED").length,
-        REVIEW: decisionCountsScope.filter((item) => item.validationStatus === "REVIEW").length,
+      workflowCounts: {
+        all: workflowCountsScope.length,
+        PENDING: workflowCountsScope.filter((item) => item.workflowStatus === "PENDING").length,
+        IN_REVIEW: workflowCountsScope.filter((item) => item.workflowStatus === "IN_REVIEW").length,
+        ESCALATED: workflowCountsScope.filter((item) => item.workflowStatus === "ESCALATED").length,
+        APPROVED: workflowCountsScope.filter((item) => item.workflowStatus === "APPROVED").length,
+        REJECTED: workflowCountsScope.filter((item) => item.workflowStatus === "REJECTED").length,
       },
     },
   });
