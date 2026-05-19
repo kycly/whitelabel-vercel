@@ -11,6 +11,7 @@ type ProtectedScreenShellProps = {
   pageClassName?: string;
   title?: string;
   backHref: string;
+  preferBackHref?: boolean;
   showBack?: boolean;
   showLogout?: boolean;
 };
@@ -22,6 +23,7 @@ export function ProtectedScreenShell({
   pageClassName,
   title,
   backHref,
+  preferBackHref = false,
   showBack = true,
   showLogout = true,
 }: ProtectedScreenShellProps) {
@@ -32,6 +34,7 @@ export function ProtectedScreenShell({
           {showBack ? (
             <BackIconButton
               fallbackHref={backHref}
+              preferFallbackHref={preferBackHref}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-light)] text-[var(--muted-foreground)] transition-all duration-150 hover:bg-[var(--border)] hover:text-[var(--foreground)]"
             />
           ) : (

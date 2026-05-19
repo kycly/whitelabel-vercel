@@ -32,7 +32,7 @@ function loginStepTitle(step: LoginStep): string {
     return "Réinitialisation";
   }
 
-  return "Connexion";
+  return "KYCLY Demo";
 }
 
 function mapAuthError(error: unknown): string {

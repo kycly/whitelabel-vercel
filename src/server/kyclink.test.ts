@@ -15,8 +15,8 @@ vi.mock("@/config/env", () => ({
 import {
   createKycSession,
   fetchKycSessionResult,
-  fetchKycSessionResultWithFallback,
   fetchKycSessions,
+  KycSessionError,
   parseKycSessionsListQuery,
 } from "@/server/kyclink";
 import type { SessionContextInput } from "@/lib/verification";
@@ -113,7 +113,7 @@ describe("server/kyclink", () => {
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
   });
 
-  it("falls back to the sessions index when the upstream result route returns 404", async () => {
+  it("propagates the upstream 404 instead of synthesizing a null decision", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -123,50 +123,22 @@ describe("server/kyclink", () => {
           message: "KycLink session not found",
           code: "KYCLINK_SESSION_NOT_FOUND",
         }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              session_id: "sess_1",
-              external_id: "cust_0042",
-              status: "processing",
-              expires_at: null,
-              completed_at: null,
-              created_at: "2026-05-17T12:00:00.000Z",
-            },
-          ],
-          meta: {
-            returned: 1,
-            limit: 50,
-            offset: 0,
-          },
-        }),
       });
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await fetchKycSessionResultWithFallback({
-      cognitoIdToken: "cognito-id-token",
-      sessionId: "sess_1",
-    });
+    await expect(
+      fetchKycSessionResult({
+        cognitoIdToken: "cognito-id-token",
+        sessionId: "sess_1",
+      }),
+    ).rejects.toBeInstanceOf(KycSessionError);
 
-    expect(result).toEqual({
-      sessionId: "sess_1",
-      externalId: "cust_0042",
-      status: "processing",
-      completed: false,
-      completedAt: null,
-      validationStatus: null,
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1/result");
-    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://session.kycly.test/kyclink/sessions?limit=50&offset=0");
   });
 
-  it("uses the sessions list endpoint and result endpoint together to compute canonical filtered history", async () => {
+  it("uses validation_status returned by the sessions endpoint as the canonical history source", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -177,6 +149,7 @@ describe("server/kyclink", () => {
               session_id: "sess_1",
               external_id: "cust_0042",
               status: "completed",
+              validation_status: "APPROVED",
               expires_at: null,
               completed_at: "2026-05-17T12:03:00.000Z",
               created_at: "2026-05-17T12:00:00.000Z",
@@ -185,6 +158,7 @@ describe("server/kyclink", () => {
               session_id: "sess_2",
               external_id: "cust_0043",
               status: "processing",
+              validation_status: null,
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:05:00.000Z",
@@ -196,17 +170,6 @@ describe("server/kyclink", () => {
             offset: 0,
           },
         }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          sessionId: "sess_1",
-          externalId: "cust_0042",
-          status: "completed",
-          completed: true,
-          completedAt: "2026-05-17T12:03:00.000Z",
-          validationStatus: "APPROVED",
-        }),
       });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -216,7 +179,7 @@ describe("server/kyclink", () => {
       query: parseKycSessionsListQuery(new URLSearchParams("status=completed&decisionStatus=APPROVED")),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.data).toHaveLength(1);
     expect(result.data[0]?.sessionId).toBe("sess_1");
     expect(result.meta.total).toBe(1);

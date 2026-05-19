@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
+  type ValidationStatus,
+  validationStatusLabel,
+  validationStatusTone,
+} from "@/components/verify/validation-status";
+import {
   errorAlertClassName,
   featureActionCardClassName,
   formFieldClassName,
@@ -16,7 +21,7 @@ import {
 } from "@/components/ui/fixed-action-layout";
 
 type SessionStatus = "pending" | "processing" | "completed";
-type DecisionStatus = "APPROVED" | "REJECTED" | "REVIEW";
+type DecisionStatus = ValidationStatus;
 
 type SessionsResponse = {
   data: Array<{
@@ -66,10 +71,10 @@ const STATUS_OPTIONS: Array<{ label: string; value: SessionStatus | "all" }> = [
 ];
 
 const DECISION_OPTIONS: Array<{ label: string; value: DecisionStatus | "all" }> = [
-  { label: "Toutes les decisions", value: "all" },
-  { label: "Favorables", value: "APPROVED" },
-  { label: "Rejetees", value: "REJECTED" },
-  { label: "En revue", value: "REVIEW" },
+  { label: "Toutes les validations", value: "all" },
+  { label: "APPROVED", value: "APPROVED" },
+  { label: "REJECTED", value: "REJECTED" },
+  { label: "REVIEW", value: "REVIEW" },
 ];
 
 function statusTone(status: string): string {
@@ -84,40 +89,8 @@ function statusTone(status: string): string {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function decisionTone(validationStatus: SessionsResponse["data"][number]["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "border-amber-200 bg-amber-50 text-amber-800";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-700";
-}
-
 function decisionLabel(item: SessionsResponse["data"][number]): string {
-  if (item.validationStatus === "APPROVED") {
-    return "Approuve";
-  }
-
-  if (item.validationStatus === "REJECTED") {
-    return "Rejete";
-  }
-
-  if (item.validationStatus === "REVIEW") {
-    return "En revue";
-  }
-
-  if (item.completed) {
-    return "Decision en attente";
-  }
-
-  return "En cours";
+  return validationStatusLabel(item.validationStatus);
 }
 
 function formatDate(value: string | null): string {
@@ -352,7 +325,7 @@ export function VerificationSessions() {
           >
             {DECISION_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label} ({state.meta.decisionCounts[option.value]})
+                    {option.label} ({state.meta.decisionCounts[option.value]})
               </option>
             ))}
           </select>
@@ -425,7 +398,7 @@ export function VerificationSessions() {
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {item.status}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${decisionTone(item.validationStatus)}`}>
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${validationStatusTone(item.validationStatus)}`}>
                     {decisionLabel(item)}
                   </span>
                 </div>

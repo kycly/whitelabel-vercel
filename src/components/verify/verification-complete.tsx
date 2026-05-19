@@ -5,6 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
+  type ValidationStatus,
+  validationStatusHeadline,
+  validationStatusLabel,
+  validationStatusTone,
+} from "@/components/verify/validation-status";
+import {
   errorAlertClassName,
   infoAlertClassName,
   primaryIconButtonClassName,
@@ -20,7 +26,7 @@ type KycSessionResult = {
   status: "pending" | "processing" | "completed";
   completed: boolean;
   completedAt: string | null;
-  validationStatus: "APPROVED" | "REJECTED" | "REVIEW" | null;
+  validationStatus: ValidationStatus | null;
 };
 
 type ResultState = {
@@ -66,54 +72,6 @@ function statusLabel(status: KycSessionResult["status"] | null): string {
   }
 
   return "Attente du premier resultat backend";
-}
-
-function validationStatusLabel(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "Approuve";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "Rejete";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "Revue manuelle";
-  }
-
-  return "Non disponible";
-}
-
-function decisionTitle(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "Decision favorable confirmee";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "Decision de rejet confirmee";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "Verification basculee en revue manuelle";
-  }
-
-  return "Decision backend encore en attente";
-}
-
-function decisionTone(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "border-amber-200 bg-amber-50 text-amber-800";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
 function pollingMessage(countdownSeconds: number, attemptCount: number): string {
@@ -288,7 +246,13 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
   const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
 
   return (
-    <ProtectedScreenShell backHref="/sessions" title="Résultat" maxWidthClassName="max-w-4xl" panelClassName="space-y-5 pt-4">
+    <ProtectedScreenShell
+      backHref="/sessions"
+      preferBackHref
+      title="Résultat"
+      maxWidthClassName="max-w-4xl"
+      panelClassName="space-y-5 pt-4"
+    >
         <div className={surfaceInfoCardClassName}>
           <p>{currentStatus}</p>
         </div>
@@ -316,15 +280,15 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-2xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
-            <p className="font-semibold">{decisionTitle(state.data.validationStatus)}</p>
+          <div className={`rounded-2xl border px-5 py-4 text-sm ${validationStatusTone(state.data.validationStatus)}`}>
+            <p className="font-semibold">{validationStatusHeadline(state.data.validationStatus)}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>
               </div>
               <div>
-                <p className="font-medium">Decision</p>
+                <p className="font-medium">Validation</p>
                 <p>{validationStatusLabel(state.data.validationStatus)}</p>
               </div>
               <div>
