@@ -64,12 +64,13 @@ function isGroupActive(group: OptionalContextGroup, activeFields: Record<Optiona
 }
 
 const EXTERNAL_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const EXTERNAL_ID_PREFIX = "KYCLY_";
 
 function generateExternalId(length = 8): string {
   const randomBytes = new Uint8Array(length);
   crypto.getRandomValues(randomBytes);
 
-  return Array.from(randomBytes, (value) => EXTERNAL_ID_ALPHABET[value & 31]).join("");
+  return EXTERNAL_ID_PREFIX + Array.from(randomBytes, (value) => EXTERNAL_ID_ALPHABET[value & 31]).join("");
 }
 
 export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {

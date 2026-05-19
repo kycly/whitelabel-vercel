@@ -179,6 +179,7 @@ Regles visuelles et UX a conserver:
 - pas de bouton de deconnexion visible dans le bloc principal
 - hero centre puis carte `surface-light`, dans le meme vocabulaire que integration-node
 - deux champs visibles par defaut seulement: `External ID` et `Notification SMS`
+- `External ID` reste editable librement et propose une generation en un clic via une icone discrete, avec un format `KYCLY_` suivi de 8 caracteres lisibles
 - tous les autres champs sont ajoutes explicitement par l'utilisateur via une checklist `Besoins optionnels`
 - les ajouts sont regroupes par contextes `Contexte metier`, `Contexte routage`, `Email` et `Contexte libre`
 - les champs optionnels apparaissent inline dans le meme panneau, avec suppression discrete par groupe ou par paire libre

@@ -125,7 +125,7 @@ Regle UX complementaire pour `External ID`:
 
 - saisie libre toujours autorisee
 - generation possible en un clic via une icone adjacente
-- valeur generee sur 8 caracteres alphanumeriques lisibles, sans caracteres ambigus
+- valeur generee prefixee par `KYCLY_`, suivie de 8 caracteres alphanumeriques lisibles, sans caracteres ambigus
 
 ### Champs retenus
 

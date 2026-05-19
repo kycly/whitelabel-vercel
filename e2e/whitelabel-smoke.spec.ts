@@ -138,7 +138,7 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await page.waitForLoadState("networkidle");
   await expect(page.getByText("Contexte de vérification")).toBeVisible();
   await page.getByRole("button", { name: "Générer un external ID" }).click();
-  await expect(page.getByPlaceholder("cust_0042")).toHaveValue(/[A-Z2-9]{8}/);
+  await expect(page.getByPlaceholder("cust_0042")).toHaveValue(/KYCLY_[A-Z2-9]{8}/);
 
   await page.getByPlaceholder("+221771234567").fill("+221771234567");
   await page.getByRole("button", { name: "Créer la session" }).click();
