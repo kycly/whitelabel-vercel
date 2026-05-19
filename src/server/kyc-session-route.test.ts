@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { mockReadSession, mockCreateKycSession } = vi.hoisted(() => ({
+const { mockReadSession, mockCreateKycSession, mockFetchKycSession } = vi.hoisted(() => ({
   mockReadSession: vi.fn(),
   mockCreateKycSession: vi.fn(),
+  mockFetchKycSession: vi.fn(),
 }));
 
 vi.mock("@/auth/session", () => ({
@@ -11,6 +12,7 @@ vi.mock("@/auth/session", () => ({
 
 vi.mock("@/server/kyclink", () => ({
   createKycSession: mockCreateKycSession,
+  fetchKycSession: mockFetchKycSession,
   KycSessionError: class KycSessionError extends Error {
     statusCode: number;
     code: string;
@@ -24,6 +26,7 @@ vi.mock("@/server/kyclink", () => ({
 }));
 
 import { POST } from "../../app/api/kyc/session/route";
+import { GET } from "../../app/api/kyc/session/[sessionId]/route";
 
 const validSessionContext = {
   scenario: "onboarding",
@@ -109,5 +112,37 @@ describe("api/kyc/session route", () => {
         parentOrigin: "https://whitelabel.kycly.test",
       }),
     );
+  });
+
+  it("forwards canonical session reads to the backend with the requested session id", async () => {
+    mockReadSession.mockResolvedValue({
+      sub: "user-1",
+      email: "demo.user@example.com",
+      name: "Demo User",
+      demoAccountId: "demo-account-1",
+      canAccess: true,
+      cognitoIdToken: "cognito-id-token",
+    });
+    mockFetchKycSession.mockResolvedValue({
+      sessionId: "sess_1",
+      externalId: "cust_0042",
+      kyclinkUrl: "https://kyclink.example.com/session/sess_1",
+      status: "processing",
+      expiresAt: "2026-05-18T13:00:00.000Z",
+      completedAt: null,
+      workflowStatus: "IN_REVIEW",
+      sessionState: "ACTIVE",
+      resumeAvailable: true,
+    });
+
+    const response = await GET(new Request("https://whitelabel.kycly.test/api/kyc/session/sess_1"), {
+      params: Promise.resolve({ sessionId: "sess_1" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mockFetchKycSession).toHaveBeenCalledWith({
+      cognitoIdToken: "cognito-id-token",
+      sessionId: "sess_1",
+    });
   });
 });

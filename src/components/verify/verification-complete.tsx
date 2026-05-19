@@ -18,6 +18,7 @@ import {
   successIconButtonClassName,
   warningAlertClassName,
 } from "@/components/ui/fixed-action-layout";
+import { getAppErrorMessage } from "@/lib/app-error";
 
 type KycSessionResult = {
   sessionId: string;
@@ -145,10 +146,12 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             cache: "no-store",
           });
 
-          const payload = (await response.json()) as KycSessionResult | { message?: string };
+          const payload = (await response.json()) as KycSessionResult | { message?: string; code?: string };
 
           if (!response.ok) {
-            throw new Error(payload && "message" in payload && payload.message ? payload.message : "Lecture impossible.");
+            const message = payload && "message" in payload && payload.message ? payload.message : "Lecture impossible.";
+            const code = payload && "code" in payload && typeof payload.code === "string" ? payload.code : undefined;
+            throw new Error(getAppErrorMessage(code, message));
           }
 
           if (cancelled) {

@@ -163,6 +163,7 @@ whitelabel-vercel/
 - POST /auth/logout
 - GET /api/me
 - POST /api/kyc/session
+- GET /api/kyc/session/:sessionId
 - GET /api/kyc/session/:sessionId/result
 - GET /api/kyc/sessions
 
@@ -172,10 +173,11 @@ Responsabilites:
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
 - POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, derive aussi l'origin parent a partir de la requete HTTP, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
-- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend, avec repli sur l'index des sessions si la route detail upstream repond `404`
+- GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour relire la session canonique et decide si la reprise reste autorisee
+- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 
-Le contrat de cette route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+Les contrats de ces routes sont detailles dans [reference/KYC-SESSION-CONTRACT.md](reference/KYC-SESSION-CONTRACT.md) et [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## Ce qu'on ne fait pas au J1
 
@@ -196,9 +198,9 @@ Ajouter une persistance dediee seulement si l'un des besoins suivants devient re
 
 Avant toute persistance locale, l'evolution deja retenue est:
 
-1. exposer un proxy serveur `GET /api/kyc/sessions`
-2. consommer `partner-node sandbox /kyclink/sessions`
-3. conserver `partner-node` comme source canonique des sessions demo
+1. exposer un proxy serveur `GET /api/kyc/session/:sessionId`
+2. exposer un proxy serveur `GET /api/kyc/sessions`
+3. consommer `partner-node` comme source canonique des sessions demo
 
 ## Etat implemente a date
 
@@ -207,8 +209,10 @@ Le projet couvre maintenant ce socle executable:
 1. login Cognito direct et session applicative HTTP-only
 2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> COMPLETE`
 3. historique `SESSIONS` scope au `demo_account_id` courant
-4. lecture resultat robuste avec fallback serveur sur l'index des sessions
-5. smokes Playwright sur tunnel principal, fallback logout et parcours mobile protege
+4. reprise canonique robuste via `GET /api/kyc/session/:sessionId`
+5. lecture resultat robuste sans dependre du stockage navigateur
+6. erreurs hors KYC harmonisees pour expiration, session introuvable et indisponibilite de reprise
+7. smokes Playwright sur tunnel principal, historique et parcours mobile protege
 
 ## Documentation de reference
 
@@ -216,6 +220,7 @@ Le projet couvre maintenant ce socle executable:
 - parcours J1: [PARCOURS-J1.md](PARCOURS-J1.md)
 - UX page de connexion: [reference/AUTH-UX.md](reference/AUTH-UX.md)
 - UX metadata de session: [reference/SESSION-CONTEXT-UX.md](reference/SESSION-CONTEXT-UX.md)
+- contrat de lecture canonique d'une session: [reference/KYC-SESSION-CONTRACT.md](reference/KYC-SESSION-CONTRACT.md)
 - contrat de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)

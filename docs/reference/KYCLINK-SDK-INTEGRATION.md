@@ -14,7 +14,8 @@ Le flux cible est le suivant:
 1. votre **backend applicatif** appelle `partner-node`
 2. `partner-node` cree une session KycLink
 3. votre backend recoit `{ sessionId, kyclinkUrl, expiresAt }`
-4. votre frontend React rend `<KycLink />`
+4. votre frontend React relit la session canonique sur `/verify/session?sessionId=...`
+5. votre frontend React rend `<KycLink />` si la session est encore reprenable
 
 ```text
 Frontend React
@@ -26,11 +27,17 @@ Backend applicatif
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
 Frontend React
-  -> recoit kyclinkUrl
-  -> rend <KycLink kyclinkUrl={...} />
+  -> relit GET /api/kyc/session/:sessionId
+  -> rend <KycLink kyclinkUrl={...} /> si la session est ACTIVE
 ```
 
 **Regle centrale** : n'appelez pas `partner-node` directement depuis le navigateur. La creation de session se fait cote serveur, jamais cote frontend.
+
+Pour `whitelabel-vercel`, la reprise et le refresh ne doivent plus dependre d'un stockage navigateur comme source de verite. L'entree `/verify/session?sessionId=...` relit toujours `GET /api/kyc/session/:sessionId`, puis:
+
+- ouvre KycLink si la session est `ACTIVE`
+- redirige vers `COMPLETE` si la session est `COMPLETED`
+- redirige vers `FAILURE` si la session est `EXPIRED` ou introuvable
 
 ---
 

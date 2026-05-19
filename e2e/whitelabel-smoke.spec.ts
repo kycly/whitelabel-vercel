@@ -59,12 +59,72 @@ test.beforeEach(async ({ context, baseURL, page }) => {
       }),
     });
   });
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sessionId: SESSION_ID,
+        externalId: "cust_smoke_001",
+        kyclinkUrl: "https://example.test/kyclink/session/sess_smoke_001",
+        status: "processing",
+        expiresAt: "2099-05-18T12:00:00.000Z",
+        completedAt: null,
+        workflowStatus: "IN_REVIEW",
+        sessionState: "ACTIVE",
+        resumeAvailable: true,
+      }),
+    });
+  });
+
+  await page.route("**/api/kyc/sessions?**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            sessionId: SESSION_ID,
+            externalId: "cust_smoke_001",
+            status: "processing",
+            completed: false,
+            completedAt: null,
+            expiresAt: "2099-05-18T12:00:00.000Z",
+            createdAt: "2026-05-18T12:00:00.000Z",
+            workflowStatus: "IN_REVIEW",
+          },
+        ],
+        meta: {
+          returned: 1,
+          limit: 20,
+          offset: 0,
+          total: 1,
+          statusCounts: {
+            all: 1,
+            pending: 0,
+            processing: 1,
+            completed: 0,
+          },
+          workflowCounts: {
+            all: 1,
+            PENDING: 0,
+            IN_REVIEW: 1,
+            ESCALATED: 0,
+            APPROVED: 0,
+            REJECTED: 0,
+          },
+        },
+      }),
+    });
+  });
 });
 
 test("traverse le tunnel principal jusqu'au resultat avec session mockee", async ({ page }) => {
   await page.goto("/welcome");
 
   await expect(page.getByRole("heading", { name: "Accueil" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
   await page.getByRole("link", { name: /Commencer/i }).click();
 
   await expect(page).toHaveURL(/\/verify$/);
@@ -78,6 +138,8 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await page.waitForURL(/\/verify\/prepare$/, { timeout: 30_000 });
   await page.waitForURL(new RegExp(`/verify/session\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Parcours" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Déconnexion" })).toHaveCount(0);
 
   await page.goto(`/complete?sessionId=${SESSION_ID}`);
   await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
@@ -87,4 +149,8 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
   await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
+
+  await page.goto("/sessions");
+  await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Reprendre" })).toBeVisible();
 });

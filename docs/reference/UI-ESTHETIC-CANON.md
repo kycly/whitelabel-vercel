@@ -135,7 +135,7 @@ src/
 - formulation orientee confiance et accompagnement
 - densite adaptee mobile avant desktop
 - header compact type wizard avec titre centre
-- icone retour en haut a gauche et deconnexion en haut a droite sur les ecrans proteges
+- deconnexion en haut a droite sur les ecrans proteges
 
 Pour les ecrans proteges du parcours KYC, la sequence cible est maintenant:
 
@@ -151,8 +151,11 @@ Regles specifiques:
 - l'iframe KycLink vit sur une page dediee, jamais sur l'ecran de collecte
 - l'ecran de preparation technique reste minimal et transitoire
 - les ecrans `COMPLETE` et `SESSIONS` exposent seulement le statut, la reference utile, la decision observable et les actions de suite
-- toutes les pages du parcours affichent une icone retour unique en haut a gauche
-- l'icone retour utilise un fallback explicite par etape, sans dependre uniquement de l'historique navigateur
+- `WELCOME` n'affiche pas d'icone retour
+- `KYC_LINK` n'affiche pas d'icone retour
+- `KYC_LINK` n'affiche pas non plus d'action de deconnexion
+- `SESSION_CONTEXT`, `SESSION_PREPARE`, `COMPLETE` et `SESSIONS` utilisent une icone retour avec fallback explicite par etape, sans dependre uniquement de l'historique navigateur
+- l'icone retour de `COMPLETE` renvoie vers `SESSIONS`
 - les ecrans proteges conservent aussi une deconnexion iconique en haut a droite
 - les labels editoriaux de type `WELCOME`, `COMPLETE`, `SESSIONS` ou `KYC_LINK` ne doivent pas etre affiches comme titres d'ecran
 
@@ -187,8 +190,11 @@ Regles visuelles et UX a conserver:
 - `SESSION_PREPARE` ne montre qu'un loader et une phrase courte
 - `KYC_LINK` privilegie l'iframe et supprime les titres concurrents
 - `COMPLETE` et `SESSIONS` gardent des actions courtes et des resumees lisibles, sans sur-explication
+- `workflowStatus = null` est rendu cote UI comme `TRAIT. EN COURS`
 - `SESSIONS` affiche en plus des raccourcis decisionnels clairs, compacts et secondaires: actualiser, reinitialiser les filtres, relancer une verification
 - `SESSIONS` privilegie des actions utilitaires en icones avec `title`/`aria-label`, et reserve le texte plein au seul CTA primaire utile dans les etats vides
+- dans une ligne de session, `Reprendre` n'apparait que si la session est incomplete et non expiree
+- chaque ligne de session conserve aussi une action textuelle `Voir le résultat`
 - `COMPLETE` privilegie aussi des actions utilitaires en icones avec `title`/`aria-label`, avec sortie positive explicite vers l'accueil quand disponible
 - `ACCESS_DENIED` et `FAILURE` restent centrés sur un message unique et une sortie claire
 

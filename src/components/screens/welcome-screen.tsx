@@ -16,7 +16,7 @@ type WelcomeScreenProps = {
 
 export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) {
   return (
-    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-8">
+    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" showBack={false} maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-8">
       <div className={scrollablePanelBodyClassName}>
         <div className="mb-6 flex animate-fade-in flex-col items-center justify-center">
           <div className="relative mb-5 flex h-36 w-36 items-center justify-center rounded-full bg-[var(--surface-light)]">

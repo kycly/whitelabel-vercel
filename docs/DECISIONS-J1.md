@@ -176,8 +176,15 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 
-- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur, puis replie sur l'index `GET /kyclink/sessions` si la route detail repond `404`
+- `GET /api/kyc/session/:sessionId` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur et devient la source canonique pour la reprise et le refresh
+- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur pour lire le resultat courant
 - `GET /api/kyc/sessions` appelle `partner-node /kyclink/sessions` avec la meme contrainte de scope demo
+
+La regle de reprise retenue est:
+
+- la liste de sessions decide seulement si elle affiche l'action `Reprendre`
+- la validation finale de reprise est toujours portee par `GET /api/kyc/session/:sessionId`
+- aucune dependance forte a `sessionStorage` ne doit subsister pour rouvrir l'iframe
 
 ## D7bis — Contrat de la liste `Mes verifications`
 

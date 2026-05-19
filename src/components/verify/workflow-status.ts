@@ -1,7 +1,7 @@
 export type WorkflowStatus = "PENDING" | "IN_REVIEW" | "ESCALATED" | "APPROVED" | "REJECTED";
 
 export function workflowStatusValue(workflowStatus: WorkflowStatus | null): string {
-  return workflowStatus ?? "null";
+  return workflowStatus ?? "TRAIT. EN COURS";
 }
 
 export function workflowStatusTone(workflowStatus: WorkflowStatus | null): string {

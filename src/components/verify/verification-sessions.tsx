@@ -11,14 +11,15 @@ import {
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
-  featureActionCardClassName,
   formFieldClassName,
   inlinePrimaryButtonClassName,
   metricCardClassName,
+  secondaryButtonClassName,
   primaryIconButtonClassName,
   secondaryIconButtonClassName,
   surfaceInfoPanelClassName,
 } from "@/components/ui/fixed-action-layout";
+import { getAppErrorMessage } from "@/lib/app-error";
 
 type SessionStatus = "pending" | "processing" | "completed";
 type SessionWorkflowStatus = WorkflowStatus;
@@ -108,6 +109,15 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
+function isResumableSession(item: SessionsResponse["data"][number]): boolean {
+  if (item.completed || !item.expiresAt) {
+    return false;
+  }
+
+  const expiresAtMs = Date.parse(item.expiresAt);
+  return !Number.isNaN(expiresAtMs) && expiresAtMs > Date.now();
+}
+
 export function VerificationSessions() {
   const [status, setStatus] = useState<SessionStatus | "all">("all");
   const [workflowStatus, setWorkflowStatus] = useState<SessionWorkflowStatus | "all">("all");
@@ -179,8 +189,15 @@ export function VerificationSessions() {
             typeof payload.message === "string"
               ? payload.message
               : "Lecture impossible.";
+          const code =
+            payload &&
+            typeof payload === "object" &&
+            "code" in payload &&
+            typeof payload.code === "string"
+              ? payload.code
+              : undefined;
 
-          throw new Error(message);
+          throw new Error(getAppErrorMessage(code, message));
         }
 
         const sessions = payload as SessionsResponse;
@@ -381,6 +398,8 @@ export function VerificationSessions() {
       {state.data.length > 0 ? (
         <div className="grid gap-4">
           {state.data.map((item) => {
+            const resumeHref = `/verify/session?sessionId=${encodeURIComponent(item.sessionId)}`;
+
             return (
               <article key={item.sessionId} className="rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -388,16 +407,6 @@ export function VerificationSessions() {
                     <h2 className="truncate text-base font-semibold text-[var(--foreground)]">{item.externalId ?? item.sessionId}</h2>
                     <p className="text-xs text-[var(--muted-foreground)]">{formatDate(item.createdAt)}</p>
                   </div>
-
-                  <Link
-                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
-                    aria-label={`Voir la session ${item.externalId ?? item.sessionId}`}
-                    title="Voir la session"
-                    className={secondaryIconButtonClassName}
-                  >
-                    <ArrowUpRight className="size-4" />
-                    <span className="sr-only">Voir la session</span>
-                  </Link>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]">
@@ -407,6 +416,26 @@ export function VerificationSessions() {
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${workflowStatusTone(item.workflowStatus)}`}>
                     {workflowLabel(item)}
                   </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {isResumableSession(item) ? (
+                    <Link
+                      href={resumeHref}
+                      className={inlinePrimaryButtonClassName}
+                    >
+                      Reprendre
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  ) : null}
+
+                  <Link
+                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
+                    className={secondaryButtonClassName}
+                  >
+                    Voir le résultat
+                    <ArrowUpRight className="size-4" />
+                  </Link>
                 </div>
               </article>
             );

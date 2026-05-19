@@ -12,10 +12,25 @@ const createdSessionSchema = z.object({
   expiresAt: z.string().min(1),
 });
 
+const sessionStatusSchema = z.enum(["pending", "processing", "completed"]);
+const sessionStateSchema = z.enum(["ACTIVE", "COMPLETED", "EXPIRED"]);
+
+const kycSessionSchema = z.object({
+  sessionId: z.string().min(1),
+  externalId: z.string().nullable(),
+  kyclinkUrl: z.string().url(),
+  status: sessionStatusSchema,
+  expiresAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  workflowStatus: z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]).nullable(),
+  sessionState: sessionStateSchema,
+  resumeAvailable: z.boolean(),
+});
+
 const kycSessionResultSchema = z.object({
   sessionId: z.string().min(1),
   externalId: z.string().optional(),
-  status: z.enum(["pending", "processing", "completed"]),
+  status: sessionStatusSchema,
   completed: z.boolean(),
   completedAt: z.string().nullable(),
   workflowStatus: z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]).nullable(),
@@ -76,6 +91,7 @@ const kycSessionsListSchema = z.object({
 });
 
 export type CreatedKycSession = z.infer<typeof createdSessionSchema>;
+export type KycSession = z.infer<typeof kycSessionSchema>;
 export type KycSessionResult = z.infer<typeof kycSessionResultSchema>;
 export type KycSessionsListQuery = z.infer<typeof kycSessionsListQuerySchema>;
 export type KycSessionsList = z.infer<typeof kycSessionsListSchema>;
@@ -230,6 +246,42 @@ export async function fetchKycSessionResult(params: {
   }
 
   return kycSessionResultSchema.parse(body);
+}
+
+export async function fetchKycSession(params: {
+  cognitoIdToken: string;
+  sessionId: string;
+}): Promise<KycSession> {
+  const endpoint = new URL(`/kyclink/${params.sessionId}`, `${env.server.kyclyApiBaseUrl}/`).toString();
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${params.cognitoIdToken}`,
+    },
+    cache: "no-store",
+  });
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "KYC session fetch failed";
+    const code =
+      body && typeof body === "object" && "code" in body && typeof body.code === "string"
+        ? body.code
+        : "KYCLINK_SESSION_FETCH_FAILED";
+
+    throw new KycSessionError(message, response.status, code);
+  }
+
+  return kycSessionSchema.parse(body);
 }
 
 export async function fetchKycSessions(params: {

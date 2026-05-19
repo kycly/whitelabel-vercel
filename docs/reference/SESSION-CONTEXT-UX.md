@@ -40,8 +40,11 @@ Regles:
 - `SESSION_PREPARE` cree la session cote serveur dans une page intermediaire dediee
 - `KYC_LINK` affiche uniquement l'iframe et les actions minimales associees
 - `COMPLETE` relit le backend pour recuperer le resultat final sans recharger le formulaire
-- chaque etape expose une icone retour unique en haut a gauche avec repli explicite
-- les ecrans proteges du parcours conservent la deconnexion en haut a droite
+- `WELCOME` n'expose pas d'icone retour
+- `SESSION_CONTEXT` expose une icone retour avec repli explicite vers `WELCOME`
+- `KYC_LINK` n'expose pas d'icone retour
+- `KYC_LINK` n'expose pas non plus de deconnexion
+- la reprise sur `/verify/session?sessionId=...` relit la session canonique via `/api/kyc/session/:sessionId` avant d'afficher l'iframe
 
 ## Pourquoi cette approche
 

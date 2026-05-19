@@ -40,7 +40,25 @@ test.beforeEach(async ({ context, baseURL, page }) => {
       body: JSON.stringify({
         sessionId: SESSION_ID,
         kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
-        expiresAt: "2026-05-18T12:00:00.000Z",
+        expiresAt: "2099-05-18T12:00:00.000Z",
+      }),
+    });
+  });
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sessionId: SESSION_ID,
+        externalId: "cust_mobile_001",
+        kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
+        status: "pending",
+        expiresAt: "2099-05-18T12:00:00.000Z",
+        completedAt: null,
+        workflowStatus: null,
+        sessionState: "ACTIVE",
+        resumeAvailable: true,
       }),
     });
   });
@@ -57,7 +75,7 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             status: "pending",
             completed: false,
             completedAt: null,
-            expiresAt: "2026-05-18T12:00:00.000Z",
+            expiresAt: "2099-05-18T12:00:00.000Z",
             createdAt: "2026-05-18T11:50:00.000Z",
             workflowStatus: null,
           },
@@ -107,6 +125,7 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
 
   await page.goto("/welcome");
   await expect(page.getByRole("heading", { name: "Accueil" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
 
   const welcomeCta = page.getByRole("link", { name: "Commencer" });
   await expect(welcomeCta).toBeVisible();
@@ -146,14 +165,18 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await page.waitForURL(/\/verify\/prepare$/, { timeout: 30_000 });
   await page.waitForURL(new RegExp(`/verify/session\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Parcours" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Déconnexion" })).toHaveCount(0);
 
   await page.goto("/sessions");
   await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
   await expect(page.getByText("cust_mobile_001")).toBeVisible();
+  await expect(page.getByText("TRAIT. EN COURS")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Reprendre" })).toBeVisible();
   expect((await page.getByRole("button", { name: "Actualiser" }).boundingBox())?.height).toBe(44);
   expect((await page.getByRole("link", { name: "Nouvelle vérification" }).boundingBox())?.height).toBe(44);
 
-  await page.getByRole("link", { name: /Voir la session cust_mobile_001/ }).click();
+  await page.getByRole("link", { name: /Voir le résultat/i }).click();
   await page.waitForURL(new RegExp(`/complete\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
 

@@ -4,6 +4,8 @@ Ce document fige le contrat de la route `GET /api/kyc/sessions` dans `whitelabel
 
 Le but est simple: permettre a un utilisateur identifie de lister ses verifications demo sans introduire de persistance locale dediee dans l'app.
 
+Cette liste sert aussi de point d'entree pour reprendre une session KYC incomplete encore valide.
+
 ## Source canonique
 
 La source canonique reste `partner-node` sandbox via `GET /kyclink/sessions`.
@@ -16,8 +18,11 @@ Consequences:
 
 - pas de base locale dediee dans `whitelabel-vercel`
 - pas de liste cross-environnement
+- quand `workflowStatus = null`, le rendu UI attendu cote whitelabel est le libelle `TRAIT. EN COURS`
 - pas de liste cross-compte demo
 - pas d'exposition des champs techniques inutiles a l'utilisateur final
+
+La reprise effective ne se fait pas directement depuis cette reponse. L'UI utilise `sessionId`, puis relit la session canonique via `GET /api/kyc/session/:sessionId` avant d'ouvrir KycLink.
 
 ## Regles d'acces
 
@@ -155,6 +160,17 @@ Consequences:
 
 - la liste reste une projection minimale, mais le statut metier affiche est un miroir direct de `partner-node`
 - une session peut encore remonter `workflowStatus = null` tant qu'aucune verification locale n'est encore rattachee a ce `session_id`
+
+## Regle de reprise UI
+
+L'ecran `Mes verifications` applique la regle suivante:
+
+1. afficher `Reprendre` si `completed = false`
+2. exiger `expiresAt` non nul
+3. exiger `expiresAt > now`
+4. pointer vers `/verify/session?sessionId=...`
+
+Le verdict final de reprise reste toutefois porte par `GET /api/kyc/session/:sessionId`, afin d'eviter toute dependance a l'etat local du navigateur.
 
 ## Erreurs cibles
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import { getFailurePresentation } from "@/lib/app-error";
 import {
   errorAlertWithIconClassName,
   inlinePrimaryButtonClassName,
@@ -15,12 +16,14 @@ type FailureScreenProps = {
 };
 
 export function FailureScreen({ sessionId, code, message }: FailureScreenProps) {
+  const presentation = getFailurePresentation(code, message);
+
   return (
     <ProtectedScreenShell backHref="/welcome" title="Erreur" maxWidthClassName="max-w-3xl" panelClassName="space-y-5 pt-4">
         <div className={errorAlertWithIconClassName}>
           <AlertTriangle className="mt-0.5 size-5 shrink-0" />
           <div className="space-y-1">
-            <p>{message ?? "Le parcours a rencontre une erreur recuperable."}</p>
+            <p>{presentation.message}</p>
           </div>
         </div>
 
@@ -37,17 +40,17 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
 
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/verify"
+            href={presentation.primaryHref}
             className={inlinePrimaryButtonClassName}
           >
-            Reessayer
+            {presentation.primaryLabel}
           </Link>
 
           <Link
-            href="/welcome"
+            href={presentation.secondaryHref}
             className={secondaryButtonClassName}
           >
-            Accueil
+            {presentation.secondaryLabel}
           </Link>
         </div>
     </ProtectedScreenShell>
