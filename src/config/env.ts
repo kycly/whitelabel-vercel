@@ -1,4 +1,5 @@
-const LOCAL_APP_ENV = "local";
+import { LOCAL_APP_ENV, publicEnv } from "@/config/public-env";
+
 const LOCAL_DEV_SESSION_SECRET = "local-dev-session-secret-change-me";
 
 function normalizeBaseUrl(value: string): string {
@@ -24,17 +25,10 @@ function resolveSessionSecret(appEnv: string): string {
   throw new Error("APP_SESSION_SECRET must be set to a non-placeholder value outside local.");
 }
 
-const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? LOCAL_APP_ENV;
-
 export const env = {
-  public: {
-    appEnv,
-    awsRegion: process.env.NEXT_PUBLIC_AWS_REGION ?? "eu-west-1",
-    cognitoAppClientId: process.env.NEXT_PUBLIC_COGNITO_APP_CLIENT_ID ?? "local-dev-client",
-    cognitoUserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "eu-west-1_local",
-  },
+  public: publicEnv,
   server: {
-    sessionSecret: resolveSessionSecret(appEnv),
+    sessionSecret: resolveSessionSecret(publicEnv.appEnv),
     kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
     kyclySessionBaseUrl: resolveBaseUrl(
       process.env.KYCLY_SESSION_BASE_URL,

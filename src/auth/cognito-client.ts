@@ -4,13 +4,13 @@ import {
   CognitoUser,
   CognitoUserPool,
 } from "amazon-cognito-identity-js";
-import { env } from "@/config/env";
+import { publicEnv } from "@/config/public-env";
 
 let pendingNewPasswordUser: CognitoUser | null = null;
 
 const userPool = new CognitoUserPool({
-  UserPoolId: env.public.cognitoUserPoolId,
-  ClientId: env.public.cognitoAppClientId,
+  UserPoolId: publicEnv.cognitoUserPoolId,
+  ClientId: publicEnv.cognitoAppClientId,
 });
 
 export type CognitoAuthResult = {
