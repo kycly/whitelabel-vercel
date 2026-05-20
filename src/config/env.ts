@@ -29,6 +29,7 @@ export const env = {
   public: publicEnv,
   server: {
     sessionSecret: resolveSessionSecret(publicEnv.appEnv),
+    appCanonicalOrigin: process.env.APP_CANONICAL_ORIGIN?.trim() || null,
     kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
     kyclySessionBaseUrl: resolveBaseUrl(
       process.env.KYCLY_SESSION_BASE_URL,

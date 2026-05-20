@@ -123,6 +123,7 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | Variable | Description |
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
+| `APP_CANONICAL_ORIGIN` | origin canonique optionnelle transmise comme `parentOrigin` a `partner-node /kyclink/create`; si vide, l'app derive l'origin cote serveur depuis les headers forwardes puis `host` |
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
 | `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` |
 | `KYCLY_SESSION_BASE_URL` | URL du host `partner-node` appele cote serveur pour `GET /kyclink/sessions`; replie sur `KYCLY_API_BASE_URL` si vide |
@@ -172,6 +173,20 @@ Regles retenues:
 - une valeur placeholder comme `replace-with-a-long-random-secret` ne doit jamais etre reutilisee hors local
 - hors environnement `local`, l'application doit echouer au demarrage si `APP_SESSION_SECRET` est absent ou reste sur un placeholder
 - ne jamais exposer cette valeur dans le client
+
+### `APP_CANONICAL_ORIGIN`
+
+Role:
+
+- figer l'origine parent envoyee a `partner-node /kyclink/create`
+
+Regles retenues:
+
+- valeur optionnelle mais recommandee des qu'un host public stable existe
+- doit etre une origin bare (`https://app.example.com`), sans path, query string ni hash
+- si elle est vide, l'application derive `parentOrigin` cote serveur depuis `x-forwarded-host` / `x-forwarded-proto`, puis `host`
+- ne jamais utiliser le header navigateur `Origin` comme source de verite
+- en cas de previews ou d'alias multiples, definir explicitement cette variable elimine les divergences Safari / Android / webview
 
 ### `NODE_AUTH_TOKEN`
 

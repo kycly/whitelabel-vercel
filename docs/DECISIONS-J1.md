@@ -168,7 +168,7 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 3. verifier l'acces applicatif
 4. resoudre `demo_account_id`
 5. deriver `externalId`
-6. deriver `parentOrigin` depuis la requete HTTP
+6. resoudre `parentOrigin` cote serveur depuis `APP_CANONICAL_ORIGIN`, sinon depuis les headers forwardes / le host de la requete
 7. construire `metadata`
 8. reutiliser l'id token Cognito conserve cote serveur
 9. appeler `partner-node /kyclink/create`

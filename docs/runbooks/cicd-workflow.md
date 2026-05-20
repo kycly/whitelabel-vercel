@@ -256,6 +256,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Variables serveur minimales
 
 - `APP_SESSION_SECRET`
+- `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour le build Vercel si `@kycly/link` est installe depuis GitHub Packages
 - `KYCLY_API_BASE_URL`
 - `KYCLY_SESSION_BASE_URL`
@@ -265,6 +266,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Politique retenue
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
+- `APP_CANONICAL_ORIGIN` doit pointer vers le host public qui doit etre autorise a embarquer KycLink; si vide, l'app derive l'origine depuis les headers forwardes / `host`
 - `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
 - `KYCLY_API_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` en `Preview` et `Production`
 - `KYCLY_SESSION_BASE_URL` pointe vers le host exposant `GET /kyclink/sessions` en `Preview` et `Production`, ou reste vide pour replier sur `KYCLY_API_BASE_URL`
@@ -276,6 +278,7 @@ Les variables doivent etre separees par environnement Vercel.
 Pour `Preview` comme pour `Production`:
 
 - `KYCLY_API_BASE_URL` -> runtime sandbox de `partner-node` pour `/kyclink/*`
+- `APP_CANONICAL_ORIGIN` -> host public autorise pour l'iframe KycLink, ou vide pour derivation proxy / host
 - `KYCLY_SESSION_BASE_URL` -> host exposant `GET /kyclink/sessions`, ou vide pour reutiliser `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
 - aucune `ck_live_*`

@@ -310,7 +310,7 @@ Etat intermediaire pendant lequel le backend cree la session KYC.
 - le backend verifie le JWT
 - le backend determine le `demo_account_id`
 - le backend derive `externalId` a partir de la reference client
-- le backend derive `parentOrigin` depuis la requete HTTP
+- le backend resout `parentOrigin` cote serveur depuis `APP_CANONICAL_ORIGIN`, sinon depuis les headers forwardes / le host de la requete
 - le backend reutilise l'id token Cognito stocke dans la session serveur
 - le backend appelle `partner-node` pour creer la session
 

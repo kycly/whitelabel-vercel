@@ -42,7 +42,7 @@ Utilisateur
 7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
 9. Le backend reutilise l'id token Cognito stocke dans la session HTTP-only.
-10. Le backend derive aussi `parentOrigin` depuis la requete HTTP puis appelle `partner-node` pour creer la session.
+10. Le backend resout aussi `parentOrigin` cote serveur depuis une origine canonique configuree, sinon depuis les headers forwardes / le host de la requete, puis appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
 13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
@@ -172,7 +172,7 @@ Responsabilites:
 - POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
-- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, derive aussi l'origin parent a partir de la requete HTTP, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
+- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, resout l'origin parent cote serveur a partir d'une origine canonique configuree ou des headers proxy / host, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
 - GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour relire la session canonique et decide si la reprise reste autorisee
 - GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire

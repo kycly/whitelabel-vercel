@@ -41,6 +41,7 @@ Preparer les informations suivantes:
 - les valeurs Cognito publiques de `whitelabel-vercel`
 - une valeur `APP_SESSION_SECRET` pour `Preview`
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
+- `APP_CANONICAL_ORIGIN` si vous voulez figer l'origine parent forwardee a KycLink au lieu de la deriver depuis les headers proxy / host
 - `KYCLY_API_BASE_URL` du runtime `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 - `KYCLY_SESSION_BASE_URL` du host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
 - `KYCLY_ME_BASE_URL` du host exposant `/demo/me`

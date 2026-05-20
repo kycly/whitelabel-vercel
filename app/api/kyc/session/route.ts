@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/auth/session";
+import { env } from "@/config/env";
 import { createKycSession, KycSessionError } from "@/server/kyclink";
+import { resolveParentOrigin } from "@/server/request-origin";
 import { sessionContextSchema } from "@/lib/verification";
 
 export async function POST(request: Request) {
@@ -41,7 +43,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const requestOrigin = request.headers.get("origin") ?? new URL(request.url).origin;
+    const requestOrigin = resolveParentOrigin(request, {
+      canonicalOrigin: env.server.appCanonicalOrigin,
+    });
     const created = await createKycSession({
       cognitoIdToken: session.cognitoIdToken,
       input: parsed.data,

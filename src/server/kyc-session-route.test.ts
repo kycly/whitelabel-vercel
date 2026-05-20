@@ -6,8 +6,18 @@ const { mockReadSession, mockCreateKycSession, mockFetchKycSession } = vi.hoiste
   mockFetchKycSession: vi.fn(),
 }));
 
+const mockEnv = vi.hoisted(() => ({
+  server: {
+    appCanonicalOrigin: null as string | null,
+  },
+}));
+
 vi.mock("@/auth/session", () => ({
   readSession: mockReadSession,
+}));
+
+vi.mock("@/config/env", () => ({
+  env: mockEnv,
 }));
 
 vi.mock("@/server/kyclink", () => ({
@@ -47,9 +57,10 @@ const validSessionContext = {
 describe("api/kyc/session route", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mockEnv.server.appCanonicalOrigin = null;
   });
 
-  it("prefers the Origin header when forwarding parentOrigin to partner-node", async () => {
+  it("prefers the configured canonical origin when forwarding parentOrigin to partner-node", async () => {
     mockReadSession.mockResolvedValue({
       sub: "user-1",
       email: "demo.user@example.com",
@@ -63,6 +74,7 @@ describe("api/kyc/session route", () => {
       kyclinkUrl: "https://kyclink.example.com/session/sess_1",
       expiresAt: "2026-05-18T13:00:00.000Z",
     });
+    mockEnv.server.appCanonicalOrigin = "https://app.kycly.example";
 
     const response = await POST(new Request("https://whitelabel.kycly.test/api/kyc/session", {
       method: "POST",
@@ -77,12 +89,47 @@ describe("api/kyc/session route", () => {
     expect(mockCreateKycSession).toHaveBeenCalledWith(
       expect.objectContaining({
         cognitoIdToken: "cognito-id-token",
-        parentOrigin: "https://portal.customer.test",
+        parentOrigin: "https://app.kycly.example",
       }),
     );
   });
 
-  it("falls back to the request URL origin when the Origin header is absent", async () => {
+  it("prefers forwarded headers to derive parentOrigin when no canonical origin is configured", async () => {
+    mockReadSession.mockResolvedValue({
+      sub: "user-1",
+      email: "demo.user@example.com",
+      name: "Demo User",
+      demoAccountId: "demo-account-1",
+      canAccess: true,
+      cognitoIdToken: "cognito-id-token",
+    });
+    mockCreateKycSession.mockResolvedValue({
+      sessionId: "sess_2",
+      kyclinkUrl: "https://kyclink.example.com/session/sess_2",
+      expiresAt: "2026-05-18T13:00:00.000Z",
+    });
+
+    const response = await POST(new Request("https://whitelabel.kycly.test/api/kyc/session", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-host": "customer-preview.vercel.app",
+        "x-forwarded-proto": "https",
+        origin: "https://portal.customer.test",
+      },
+      body: JSON.stringify(validSessionContext),
+    }));
+
+    expect(response.status).toBe(201);
+    expect(mockCreateKycSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cognitoIdToken: "cognito-id-token",
+        parentOrigin: "https://customer-preview.vercel.app",
+      }),
+    );
+  });
+
+  it("falls back to the request URL origin when forwarded headers are absent", async () => {
     mockReadSession.mockResolvedValue({
       sub: "user-1",
       email: "demo.user@example.com",
