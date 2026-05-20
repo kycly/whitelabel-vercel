@@ -135,7 +135,7 @@ Ordre des etapes retenu:
 8. `pnpm typecheck`
 9. `pnpm lint`
 10. `pnpm build`
-11. `pnpm exec playwright install --with-deps chromium`
+11. `pnpm exec playwright install --with-deps chromium webkit`
 12. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
 
 Ordre de severite retenu:
@@ -144,7 +144,7 @@ Ordre de severite retenu:
 - le garde-fou sandbox-only doit bloquer toute introduction de `ck_live_*`
 - les tests executables passent avant les controles purement statiques
 - le build reste obligatoire pour verifier le runtime Next/Vercel
-- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit
+- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit, sur les projets Playwright actives dans `playwright.config.ts`
 
 Note locale:
 
