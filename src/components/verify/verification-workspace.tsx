@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowRight, Dices, FileText, LoaderCircle, Plus, ShieldCheck, X } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
@@ -75,6 +75,7 @@ function generateExternalId(length = 8): string {
 
 export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   const router = useRouter();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<SessionContextInput>(() => ({
     ...defaultSessionContext,
     notificationEmail: "",
@@ -97,6 +98,23 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   const hasAdvancedCapacity = form.customContextEntries.length < MAX_CUSTOM_CONTEXT_ENTRIES;
   const hasOptionalFieldsVisible = Object.values(activeFields).some(Boolean);
   const hasInlineErrors = Object.keys(errors).length > 0;
+
+  function scrollContextBodyToBottom() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const container = scrollContainerRef.current;
+
+        if (!container) {
+          return;
+        }
+
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    });
+  }
 
   function updateVerificationType(value: SessionContextInput["verificationType"]) {
     setForm((current) => ({
@@ -142,6 +160,8 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     for (const field of GROUP_FIELDS[group]) {
       activateField(field);
     }
+
+    scrollContextBodyToBottom();
   }
 
   function deactivateField(field: OptionalField) {
@@ -312,9 +332,16 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Contexte" maxWidthClassName="sm:max-w-[430px]" panelClassName="flex h-full flex-col gap-4 !pt-0">
+    <ProtectedScreenShell
+      backHref="/welcome"
+      preferBackHref
+      title="Contexte"
+      maxWidthClassName="sm:max-w-[430px]"
+      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
+    >
       <form className="flex h-full min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-        <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div ref={scrollContainerRef} className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
         <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
           <div className="relative mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-light)]">
             <FileText className="h-7 w-7 text-brand" strokeWidth={1.7} aria-hidden="true" />

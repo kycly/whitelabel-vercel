@@ -200,3 +200,48 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 });
+
+test("fait defiler la page contexte quand des champs optionnels apparaissent", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto("/verify");
+  await expect(page).toHaveURL(/\/verify$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Contexte de vérification")).toBeVisible();
+
+  for (const label of ["Contexte métier", "Contexte routage", "Email", "Contexte libre"]) {
+    await page.getByRole("checkbox", { name: label }).check();
+  }
+
+  const addPairButton = page.getByRole("button", { name: "Ajouter une paire" });
+  for (let index = 0; index < 3; index += 1) {
+    await addPairButton.click();
+  }
+
+  const layoutMetrics = await page.evaluate(() => {
+    const main = document.querySelector("main");
+
+    return {
+      windowScrollY: window.scrollY,
+      viewportHeight: window.innerHeight,
+      documentHeight: document.documentElement.scrollHeight,
+      mainOverflowY: main ? getComputedStyle(main).overflowY : null,
+    };
+  });
+
+  expect(layoutMetrics.documentHeight).toBeGreaterThan(layoutMetrics.viewportHeight);
+  expect(layoutMetrics.mainOverflowY).toBe("hidden");
+
+  const createSessionButton = page.getByRole("button", { name: "Créer la session" });
+
+  await page.mouse.wheel(0, 2_000);
+  await page.mouse.wheel(0, 2_000);
+
+  await expect
+    .poll(async () => page.evaluate(() => window.scrollY), {
+      timeout: 5_000,
+    })
+    .toBeGreaterThan(0);
+
+  await expect(createSessionButton).toBeVisible();
+});
