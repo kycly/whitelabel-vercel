@@ -286,7 +286,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         {state.data ? (
           <div className={`rounded-2xl border px-5 py-4 text-sm ${resultTone(state.data)}`}>
             <p className="font-semibold">workflowStatus: {workflowStatusValue(state.data.workflowStatus)}</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid gap-3">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>

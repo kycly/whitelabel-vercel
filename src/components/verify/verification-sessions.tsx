@@ -242,7 +242,7 @@ export function VerificationSessions() {
 
   return (
     <ProtectedScreenShell backHref="/welcome" preferBackHref title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:p-5">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex h-11 items-center">
             <p className="text-sm font-medium text-[var(--foreground)]">Mes vérifications</p>
@@ -287,37 +287,37 @@ export function VerificationSessions() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-3 gap-2">
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.all}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                <History className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.all}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <History className="size-3.5" />
               </div>
             </div>
           </div>
 
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.pending + state.meta.statusCounts.processing}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                <Clock3 className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.pending + state.meta.statusCounts.processing}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <Clock3 className="size-3.5" />
               </div>
             </div>
           </div>
 
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.completed}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <CheckCircle2 className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.completed}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <CheckCircle2 className="size-3.5" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:grid-cols-2">
+      <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <label className="block">
           <select
             aria-label="Filtrer par statut"

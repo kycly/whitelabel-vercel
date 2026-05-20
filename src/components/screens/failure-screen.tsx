@@ -27,7 +27,7 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
           </div>
         </div>
 
-        <div className={[surfaceInfoPanelClassName, "grid gap-4 sm:grid-cols-2"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "grid gap-4"].join(" ")}>
           <div>
             <p className="font-medium text-[var(--foreground)]">Session ID</p>
             <p className="break-all">{sessionId ?? "—"}</p>

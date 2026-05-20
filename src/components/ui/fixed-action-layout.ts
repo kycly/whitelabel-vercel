@@ -33,7 +33,7 @@ export const featureActionCardClassName =
   "rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 transition hover:bg-white";
 
 export const metricCardClassName =
-  "min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-4";
+  "min-h-20 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-3";
 
 export const surfaceInfoCardClassName =
   "rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-5 py-4 text-sm text-[var(--muted-foreground)]";

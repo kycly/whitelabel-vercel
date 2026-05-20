@@ -364,7 +364,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
 
           <div className="space-y-3 border-t border-[var(--border)] pt-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Besoins optionnels</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
               {OPTIONAL_CONTEXT_GROUPS.map(({ id, label }) => {
                 const checked = isGroupActive(id, activeFields);
 
@@ -409,7 +409,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       <X className="size-4" />
                     </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3">
                     <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Pays</span>
                       <select
@@ -466,7 +466,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       </label>
                     ) : null}
 
-                    <label className="space-y-2 text-sm text-[var(--muted-foreground)] md:col-span-2">
+                    <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Segment</span>
                       <select
                         className={formFieldClassName({ hasError: Boolean(errors.segment) })}
@@ -504,7 +504,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       <X className="size-4" />
                     </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3">
                     <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Scénario</span>
                       <select
@@ -586,7 +586,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
 
                   <div className="space-y-3">
                     {form.customContextEntries.map((entry, index) => (
-                      <div key={`${index}-${entry.key}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                      <div key={`${index}-${entry.key}`} className="grid gap-3">
                         <input
                           className={formFieldClassName({ hasError: Boolean(errors[`customContextEntries.${index}.key`]) })}
                           placeholder="Clé"
