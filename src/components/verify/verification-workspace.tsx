@@ -7,7 +7,7 @@ import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell
 import {
   checklistCardClassName,
   destructiveIconButtonClassName,
-  fixedFooterActionsClassName,
+  fixedFooterSafeAreaClassName,
   formFieldClassName,
   primaryCtaClassName,
   scrollablePanelBodyClassName,
@@ -337,11 +337,11 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
       preferBackHref
       title="Contexte"
       maxWidthClassName="sm:max-w-[430px]"
-      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      lockViewportScroll
       panelClassName="flex h-full flex-col gap-4 !pt-0"
     >
       <form className="flex h-full min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-        <div ref={scrollContainerRef} className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div ref={scrollContainerRef} data-testid="session-context-scroll-body" className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
         <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
           <div className="relative mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-light)]">
             <FileText className="h-7 w-7 text-brand" strokeWidth={1.7} aria-hidden="true" />
@@ -677,7 +677,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
           </div>
         ) : null}
 
-        <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
+        <div className={fixedFooterSafeAreaClassName}>
           <button
             type="submit"
             disabled={submitting}

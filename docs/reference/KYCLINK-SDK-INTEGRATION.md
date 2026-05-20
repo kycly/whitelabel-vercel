@@ -44,6 +44,7 @@ Regle UI mobile-first associee:
 
 - `SESSION_PREPARE` et `SESSION_GATE` restent des etats transitoires courts, centres et sobres
 - l'ecran `KYC_LINK` maximise la hauteur utile de l'iframe
+- le viewport du shell reste verrouille pour eviter tout scroll du document concurrent au parcours embarque
 - aucun padding ou chrome concurrent ne doit reduire artificiellement l'espace du parcours embarque
 
 ---

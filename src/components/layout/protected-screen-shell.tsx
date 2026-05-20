@@ -9,6 +9,7 @@ type ProtectedScreenShellProps = {
   maxWidthClassName?: string;
   panelClassName?: string;
   pageClassName?: string;
+  lockViewportScroll?: boolean;
   title?: string;
   backHref: string;
   preferBackHref?: boolean;
@@ -21,14 +22,22 @@ export function ProtectedScreenShell({
   maxWidthClassName = "max-w-4xl",
   panelClassName,
   pageClassName,
+  lockViewportScroll = false,
   title,
   backHref,
   preferBackHref = false,
   showBack = true,
   showLogout = true,
 }: ProtectedScreenShellProps) {
+  const resolvedPageClassName = [
+    lockViewportScroll ? "[&_main]:overflow-y-hidden [&_main]:overscroll-none" : null,
+    pageClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <PageShell className={pageClassName} maxWidthClassName={maxWidthClassName}>
+    <PageShell className={resolvedPageClassName} maxWidthClassName={maxWidthClassName}>
       <SurfacePanel>
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)]/80 px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5">
           {showBack ? (

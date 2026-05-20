@@ -77,7 +77,7 @@ export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRun
       showBack={false}
       showLogout={false}
       maxWidthClassName="sm:max-w-5xl"
-      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      lockViewportScroll
       panelClassName="flex min-h-0 flex-1 flex-col !px-0 !pb-0 !pt-0"
     >
         <div ref={iframeContainerRef} className="flex min-h-0 flex-1 overflow-hidden border-y border-[var(--border)] bg-[var(--background)] sm:rounded-b-[1.75rem] sm:border-x">

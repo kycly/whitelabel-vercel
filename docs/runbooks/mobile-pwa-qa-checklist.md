@@ -1,6 +1,6 @@
 # Runbook — QA mobile et PWA
 
-Ce runbook sert a verifier le refactor mobile-first et la couche PWA minimale de `whitelabel-vercel`.
+Ce runbook sert a verifier le shell mobile-first et la couche PWA minimale de `whitelabel-vercel`.
 
 Il couvre uniquement ce repo.
 
@@ -58,7 +58,7 @@ Executer au minimum:
 - aucune zone blanche parasite n'apparait en haut ou en bas
 - les safe areas ne coupent ni header ni CTA
 - le desktop reste une version mobile aeree, pas une vue differente
-- aucun ecran protege ne cree un double scroll entre shell et contenu principal
+- aucun ecran protege ne laisse le document global defiler quand un body scrollable interne est prevu
 
 ## Checklist login et auth
 
@@ -73,7 +73,7 @@ Executer au minimum:
 - `External ID` et `Notification SMS` restent visibles sans scroller loin
 - le bouton de generation d'`External ID` reste atteignable en mobile
 - le footer `Creer la session` reste visible ou atteignable avec le clavier ouvert
-- l'ouverture des groupes optionnels n'introduit pas de double scroll
+- l'ouverture des groupes optionnels conserve le scroll dans le body interne de `SESSION_CONTEXT`
 - la suppression d'un groupe ne casse pas la position courante de lecture
 
 ## Checklist tunnel KYC
@@ -106,7 +106,7 @@ Executer au minimum:
 
 Refuser la livraison si l'un de ces cas apparait:
 
-- scroll imbrique dans le tunnel principal
+- conflit de scroll entre document, shell et body principal d'un ecran critique
 - CTA masque par le clavier mobile
 - regression Safari iPhone sur le parcours KYC
 - perte d'espace utile dans l'iframe
@@ -115,11 +115,11 @@ Refuser la livraison si l'un de ces cas apparait:
 
 ## Decision actuelle
 
-Le premier lot PWA retenu dans `whitelabel-vercel` comprend:
+La configuration PWA retenue dans `whitelabel-vercel` comprend:
 
 - metadata mobile/PWA
 - manifest dedie
 - icones statiques
 - aucun service worker
 
-Toute extension future du perimetre PWA doit repasser par [../reference/PWA-MOBILE-FIRST-REFACTOR.md](../reference/PWA-MOBILE-FIRST-REFACTOR.md).
+Toute extension future du perimetre PWA doit repasser par [../reference/PWA-MOBILE-FIRST-CONTRACT.md](../reference/PWA-MOBILE-FIRST-CONTRACT.md).

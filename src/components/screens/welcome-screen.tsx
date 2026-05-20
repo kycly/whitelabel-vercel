@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2, FileText, History, Info, ScanFace, ShieldChec
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   featureActionCardClassName,
-  fixedFooterActionsClassName,
+  fixedFooterSafeAreaClassName,
   primaryCtaClassName,
   scrollablePanelBodyClassName,
   stepCardClassName,
@@ -16,7 +16,7 @@ type WelcomeScreenProps = {
 
 export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) {
   return (
-    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" showBack={false} maxWidthClassName="sm:max-w-[430px]" panelClassName="flex h-full flex-col gap-4 !pt-0">
+    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" showBack={false} maxWidthClassName="sm:max-w-[430px]" lockViewportScroll panelClassName="flex h-full flex-col gap-4 !pt-0">
       <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
         <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
           <div className="relative mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--surface-light)]">
@@ -83,7 +83,7 @@ export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) 
         </div>
       </div>
 
-      <div className={[fixedFooterActionsClassName, "animate-fade-in pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")} style={{ animationDelay: "0.3s" }}>
+      <div className={[fixedFooterSafeAreaClassName, "animate-fade-in"].join(" ")} style={{ animationDelay: "0.3s" }}>
         <Link href="/verify" className={primaryCtaClassName}>
           Commencer
           <ArrowRight className="size-4" />

@@ -30,7 +30,7 @@ Documentation de cadrage:
 - UX metadata de session: [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
 - guide d'integration React: [docs/reference/KYCLINK-SDK-INTEGRATION.md](docs/reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [docs/reference/UI-ESTHETIC-CANON.md](docs/reference/UI-ESTHETIC-CANON.md)
-- reference du refactor PWA mobile-first: [docs/reference/PWA-MOBILE-FIRST-REFACTOR.md](docs/reference/PWA-MOBILE-FIRST-REFACTOR.md)
+- reference du contrat PWA mobile-first: [docs/reference/PWA-MOBILE-FIRST-CONTRACT.md](docs/reference/PWA-MOBILE-FIRST-CONTRACT.md)
 - consignes locales agent: [AGENTS.md](AGENTS.md)
 
 ## Decision J1

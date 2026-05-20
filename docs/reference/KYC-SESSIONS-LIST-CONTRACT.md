@@ -28,6 +28,7 @@ Regles UI mobile-first associees:
 
 - les 3 cartes metriques de synthese restent sur une meme ligne
 - la page reste une seule colonne de lecture, y compris sur desktop ou elle doit seulement paraitre plus aeree
+- le corps de page defile dans une zone interne dediee, sans scroll parasite du document
 - les actions rapides `Actualiser` et `Nouvelle verification` conservent un format compact de 44px de hauteur
 
 ## Regles d'acces

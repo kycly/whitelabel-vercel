@@ -2,6 +2,8 @@ export const scrollablePanelBodyClassName = "min-h-0 flex-1 overflow-y-auto over
 
 export const fixedFooterActionsClassName = "shrink-0 border-t border-[var(--border)]/80 bg-[var(--background)] pt-4";
 
+export const fixedFooterSafeAreaClassName = `${fixedFooterActionsClassName} pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]`;
+
 export const primaryCtaClassName =
   "flex min-h-14 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand px-5 text-base font-semibold tracking-[0.01em] text-white shadow-[0_18px_40px_-24px_rgba(37,99,235,0.9)] transition-all hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70";
 

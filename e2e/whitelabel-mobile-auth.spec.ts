@@ -218,12 +218,11 @@ test("fait defiler la page contexte quand des champs optionnels apparaissent", a
     await addPairButton.click();
   }
 
-  const scrollContainer = page.locator("form > div").first();
+  const scrollContainer = page.getByTestId("session-context-scroll-body");
   const layoutMetrics = await page.evaluate(() => {
     const main = document.querySelector("main");
 
     return {
-      windowScrollY: window.scrollY,
       viewportHeight: window.innerHeight,
       documentHeight: document.documentElement.scrollHeight,
       mainOverflowY: main ? getComputedStyle(main).overflowY : null,

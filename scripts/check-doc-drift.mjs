@@ -70,8 +70,8 @@ const facetRules = [
       /^src\/components\/verify\/verification-(run-screen|prepare-screen|workspace|complete|sessions)\.tsx$/,
       /^src\/components\/screens\/(welcome|login|failure)-screen\.tsx$/,
     ],
-    primaryDocPatterns: [/^docs\/reference\/PWA-MOBILE-FIRST-REFACTOR\.md$/],
-    primaryDocs: ["docs/reference/PWA-MOBILE-FIRST-REFACTOR.md"],
+    primaryDocPatterns: [/^docs\/reference\/PWA-MOBILE-FIRST-CONTRACT\.md$/],
+    primaryDocs: ["docs/reference/PWA-MOBILE-FIRST-CONTRACT.md"],
     secondaryDocs: ["docs/reference/UI-ESTHETIC-CANON.md", "docs/reference/KYCLINK-SDK-INTEGRATION.md"],
   },
   {

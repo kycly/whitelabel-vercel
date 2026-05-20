@@ -11,7 +11,7 @@ import {
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
-  fixedFooterActionsClassName,
+  fixedFooterSafeAreaClassName,
   formFieldClassName,
   inlinePrimaryButtonClassName,
   metricCardClassName,
@@ -248,7 +248,7 @@ export function VerificationSessions() {
       preferBackHref
       title="Historique"
       maxWidthClassName="sm:max-w-[430px]"
-      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      lockViewportScroll
       panelClassName="flex h-full flex-col gap-4 !pt-0"
     >
       <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
@@ -455,7 +455,7 @@ export function VerificationSessions() {
       ) : null}
       </div>
 
-      <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
+      <div className={fixedFooterSafeAreaClassName}>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
         <p>
           Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}

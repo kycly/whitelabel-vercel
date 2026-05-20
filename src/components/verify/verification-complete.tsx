@@ -11,7 +11,7 @@ import {
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
-  fixedFooterActionsClassName,
+  fixedFooterSafeAreaClassName,
   infoAlertClassName,
   primaryIconButtonClassName,
   scrollablePanelBodyClassName,
@@ -37,18 +37,6 @@ type ResultState = {
   isPolling: boolean;
   attemptCount: number;
   countdownSeconds: number;
-  attemptHistory: PollAttempt[];
-};
-
-type PollAttempt = {
-  attempt: number;
-  checkedAt: string;
-  outcome: "success" | "error";
-  status: KycSessionResult["status"] | null;
-  completed: boolean | null;
-  workflowStatus: KycSessionResult["workflowStatus"];
-  nextPollInSeconds: number | null;
-  message: string;
 };
 
 const FIRST_POLL_DELAY_SECONDS = 10;
@@ -65,13 +53,12 @@ function nextPollDelayMs(attempt: number): number {
 }
 
 function pollingMessage(countdownSeconds: number, attemptCount: number): string {
-  const nextAttempt = Math.min(attemptCount + 1, MAX_POLL_ATTEMPTS);
-
   if (attemptCount === 0) {
-    return `Le premier appel backend partira dans ${countdownSeconds}s minimum.`;
+    return `Vérification en cours — premier appel dans ${countdownSeconds}s.`;
   }
 
-  return `Le poll ${nextAttempt}/${MAX_POLL_ATTEMPTS} partira dans ${countdownSeconds}s.`;
+  const remaining = MAX_POLL_ATTEMPTS - attemptCount;
+  return `Vérification en cours — prochain appel dans ${countdownSeconds}s (${remaining} restant${remaining > 1 ? "s" : ""}).`;
 }
 
 function statusTone(status: KycSessionResult["status"]): string {
@@ -98,7 +85,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
     isPolling: false,
     attemptCount: 0,
     countdownSeconds: FIRST_POLL_DELAY_SECONDS,
-    attemptHistory: [],
   });
 
   useEffect(() => {
@@ -168,21 +154,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             isPolling: false,
             error: null,
             attemptCount: attempt,
-            attemptHistory: [
-              ...current.attemptHistory,
-              {
-                attempt,
-                checkedAt: new Date().toISOString(),
-                outcome: "success",
-                status: parsed.status,
-                completed: parsed.completed,
-                workflowStatus: parsed.workflowStatus,
-                nextPollInSeconds: parsed.completed ? null : nextDelaySeconds,
-                message: parsed.completed
-                  ? "Le backend a confirme un statut final pour cette session."
-                  : "Lecture backend reussie, mais aucun statut final n'est encore disponible.",
-              },
-            ],
           }));
 
           if (parsed.completed) {
@@ -198,19 +169,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             error: error instanceof Error ? error.message : "Lecture impossible.",
             isPolling: false,
             attemptCount: attempt,
-            attemptHistory: [
-              ...current.attemptHistory,
-              {
-                attempt,
-                checkedAt: new Date().toISOString(),
-                outcome: "error",
-                status: null,
-                completed: null,
-                workflowStatus: null,
-                nextPollInSeconds: nextDelaySeconds,
-                message: error instanceof Error ? error.message : "Lecture impossible.",
-              },
-            ],
           }));
         }
 
@@ -255,7 +213,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
       preferBackHref
       title="Résultat"
       maxWidthClassName="sm:max-w-[430px]"
-      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      lockViewportScroll
       panelClassName="flex h-full flex-col gap-4 !pt-0"
     >
         <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
@@ -319,7 +277,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
         </div>
 
-        <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
+        <div className={fixedFooterSafeAreaClassName}>
           <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
           <button
             type="button"
@@ -331,7 +289,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
                 attemptCount: 0,
                 countdownSeconds: 0,
                 isPolling: false,
-                attemptHistory: [],
               }));
               setPollGeneration((current) => current + 1);
             }}

@@ -89,6 +89,7 @@ Contraintes de densite:
 - chaque groupe ouvert peut etre retire via une action de suppression discrete
 - le vocabulaire visuel reprend integration-node: hero centre compact, carte `surface-light`, champs hauts et CTA plein bleu
 - l'icone retour de `SESSION_CONTEXT` renvoie directement vers `WELCOME`
+- le document global ne doit pas scroller: la lecture reste dans un body interne dedie au formulaire
 - le CTA principal reste isole dans un footer bas distinct, toujours atteignable en mobile avec clavier ouvert
 
 ## 1. Scenario
