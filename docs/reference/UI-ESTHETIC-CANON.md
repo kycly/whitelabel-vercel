@@ -206,6 +206,7 @@ Regles visuelles et UX a conserver:
 - chaque ligne de session conserve aussi une action textuelle `Voir le résultat`
 - `COMPLETE` privilegie aussi des actions utilitaires en icones avec `title`/`aria-label`, avec sortie positive explicite vers l'accueil quand disponible
 - `ACCESS_DENIED` et `FAILURE` restent centrés sur un message unique et une sortie claire
+- la microcopy visible doit rester propre en JSX React, y compris pour les apostrophes et textes editoriaux, afin d'eviter tout contournement de lint ou derive de rendu
 
 ## Regles d'implementation
 

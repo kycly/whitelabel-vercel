@@ -131,6 +131,8 @@ Cet écran doit:
 
 Si ce point n'est pas traité correctement, la PWA sera esthétiquement meilleure mais fonctionnellement moins bonne.
 
+Les ecrans transitoires adjacents `SESSION_PREPARE` et `SESSION_GATE` doivent rester tres courts, centres et sans bruit editorial pour ne pas voler de hauteur utile ni d'attention au tunnel principal.
+
 ## 8. Fichiers cibles du refactor
 
 Shell et layout:

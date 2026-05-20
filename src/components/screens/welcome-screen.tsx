@@ -26,7 +26,7 @@ export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) 
               <ShieldCheck className="h-5 w-5 text-green-500" aria-hidden="true" />
             </div>
           </div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Vérification d'identité</p>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Vérification d&apos;identité</p>
           <h2 className="mb-1 text-center text-2xl font-semibold text-[var(--foreground)]">Nouvelle vérification</h2>
           <p className="max-w-xs text-center text-sm text-[var(--muted-foreground)]">Lancez un parcours KYC clair, sécurisé et prêt à être repris si nécessaire.</p>
           <p className="mt-2 text-center text-xs tracking-wide text-[var(--muted-foreground)]">{userLabel}</p>

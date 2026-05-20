@@ -95,7 +95,7 @@ export function VerificationPrepareScreen() {
         </div>
         <div className={[surfaceInfoCardClassName, "w-full max-w-sm rounded-3xl px-5 py-4"].join(" ")}>
           <p className="font-medium text-[var(--foreground)]">Préparation de votre session</p>
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">Création de l'accès KYC et ouverture du parcours en cours.</p>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">Création de l&apos;accès KYC et ouverture du parcours en cours.</p>
         </div>
     </ProtectedScreenShell>
   );

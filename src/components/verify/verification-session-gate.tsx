@@ -129,7 +129,7 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
               Chargement du parcours sécurisé.
             </div>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Reprise de la session et vérification de l'accès en cours.
+              Reprise de la session et vérification de l&apos;accès en cours.
             </p>
           </div>
       </ProtectedScreenShell>
