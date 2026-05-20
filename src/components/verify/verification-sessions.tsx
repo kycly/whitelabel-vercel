@@ -241,10 +241,11 @@ export function VerificationSessions() {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
+    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Historique" maxWidthClassName="sm:max-w-[430px]" panelClassName="space-y-4 !pt-0">
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex h-11 items-center">
+          <div className="space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Historique KYC</p>
             <p className="text-sm font-medium text-[var(--foreground)]">Mes vérifications</p>
           </div>
 
@@ -317,7 +318,7 @@ export function VerificationSessions() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
+      <div className="grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <label className="block">
           <select
             aria-label="Filtrer par statut"
@@ -356,7 +357,7 @@ export function VerificationSessions() {
       </div>
 
       {state.isLoading ? (
-        <div className={[surfaceInfoPanelClassName, "flex items-center gap-3"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
           <LoaderCircle className="size-4 animate-spin" />
           Lecture des verifications en cours.
         </div>
@@ -367,7 +368,7 @@ export function VerificationSessions() {
       ) : null}
 
       {isInitialEmpty ? (
-        <div className={[surfaceInfoPanelClassName, "px-6 py-8"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "rounded-3xl px-6 py-8"].join(" ")}>
           <p className="font-medium text-[var(--foreground)]">Aucune verification.</p>
           <Link
             href="/verify"
@@ -380,7 +381,7 @@ export function VerificationSessions() {
       ) : null}
 
       {isFilterEmpty ? (
-        <div className={[surfaceInfoPanelClassName, "flex items-center justify-between gap-4 px-6 py-6"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "flex items-center justify-between gap-4 rounded-3xl px-6 py-6"].join(" ")}>
           <p className="font-medium text-[var(--foreground)]">Aucune verification pour ce filtre.</p>
           <button
             type="button"
@@ -396,12 +397,12 @@ export function VerificationSessions() {
       ) : null}
 
       {state.data.length > 0 ? (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {state.data.map((item) => {
             const resumeHref = `/verify/session?sessionId=${encodeURIComponent(item.sessionId)}`;
 
             return (
-              <article key={item.sessionId} className="rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
+              <article key={item.sessionId} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-1">
                     <h2 className="truncate text-base font-semibold text-[var(--foreground)]">{item.externalId ?? item.sessionId}</h2>
@@ -443,7 +444,7 @@ export function VerificationSessions() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
         <p>
           Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
         </p>

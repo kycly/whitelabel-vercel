@@ -71,12 +71,19 @@ export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRun
   }
 
   return (
-    <ProtectedScreenShell backHref="/verify" title="Parcours" showBack={false} showLogout={false} maxWidthClassName="max-w-5xl" panelClassName="flex flex-1 flex-col pt-2">
-        <div ref={iframeContainerRef} className="flex-1 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
+    <ProtectedScreenShell
+      backHref="/verify"
+      title="Parcours"
+      showBack={false}
+      showLogout={false}
+      maxWidthClassName="sm:max-w-5xl"
+      panelClassName="flex min-h-0 flex-1 flex-col !px-0 !pb-0 !pt-0"
+    >
+        <div ref={iframeContainerRef} className="flex min-h-0 flex-1 overflow-hidden border-y border-[var(--border)] bg-[var(--background)] sm:rounded-b-[1.75rem] sm:border-x">
           <KycLink
             kyclinkUrl={kyclinkUrl}
-            className="min-h-full w-full border-0 bg-white"
-            height={736}
+            className="h-full min-h-full w-full border-0 bg-white"
+            height="100%"
             onReady={() => {
               stopHandshake();
             }}

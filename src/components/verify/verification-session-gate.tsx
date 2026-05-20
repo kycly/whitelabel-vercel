@@ -115,10 +115,22 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
 
   if (state.status === "loading") {
     return (
-      <ProtectedScreenShell backHref="/verify" title="Parcours" showBack={false} showLogout={false} maxWidthClassName="max-w-5xl" panelClassName="flex flex-1 flex-col justify-center space-y-4">
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
-            <LoaderCircle className="size-4 animate-spin" />
-            Chargement du parcours.
+      <ProtectedScreenShell
+        backHref="/verify"
+        title="Parcours"
+        showBack={false}
+        showLogout={false}
+        maxWidthClassName="sm:max-w-5xl"
+        panelClassName="flex min-h-0 flex-1 flex-col justify-center !pt-0"
+      >
+          <div className="mx-auto flex w-full max-w-md flex-col gap-3 text-center">
+            <div className={[surfaceInfoCardClassName, "flex items-center justify-center gap-3 rounded-3xl px-5 py-4 text-[var(--foreground)]"].join(" ")}>
+              <LoaderCircle className="size-4 animate-spin text-brand" />
+              Chargement du parcours sécurisé.
+            </div>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Reprise de la session et vérification de l'accès en cours.
+            </p>
           </div>
       </ProtectedScreenShell>
     );

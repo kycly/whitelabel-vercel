@@ -27,6 +27,13 @@ Principe de sobriete a conserver:
 - une action principale visible par ecran
 - pas de panneaux lateraux persistants pour rappeler des informations deja connues
 
+Directive de style non negociable:
+
+- ne jamais produire une interface “AI vibe coding like”, c'est-a-dire generique, interchangeable ou reconnaissable comme issue d'un template IA par defaut
+- refuser les effets visuels standardises sans rapport avec le produit
+- refuser les compositions qui ressemblent a une landing page SaaS ou a un prototype no-code
+- chercher une identite calme, specifique a un parcours de verification d'identite, sobre et premium sans sur-style
+
 ## Tokens visuels
 
 Ces tokens doivent exister localement dans la feuille de style globale du projet.
@@ -226,3 +233,4 @@ Regles visuelles et UX a conserver:
 - les ecrans principaux restent visuellement dans la meme famille que integration-node
 - aucun ecran de parcours ne depasse un bloc principal concurrentiel
 - aucun ecran ne melange formulaire, creation de session et iframe dans la meme vue
+- aucun ecran ne doit donner l'impression d'un template visuel generique ou d'un rendu “AI-first” depersonnalise

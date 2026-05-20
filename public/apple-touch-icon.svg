@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title desc">
+  <title>KYCLY Whitelabel</title>
+  <desc>Icône Apple touch pour le whitelabel KYC KYCLY.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eff6ff" />
+      <stop offset="100%" stop-color="#dbeafe" />
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="42" fill="url(#bg)" />
+  <rect x="31" y="31" width="118" height="118" rx="32" fill="#ffffff" stroke="#bfdbfe" stroke-width="6" />
+  <path d="M90 50l33 12v27c0 25-13 42-33 52-20-10-33-27-33-52V62l33-12z" fill="#2563eb" />
+  <path d="M74 91l10 10 22-25" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="10" />
+</svg>

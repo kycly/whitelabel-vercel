@@ -312,20 +312,23 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Contexte" maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-4">
+    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Contexte" maxWidthClassName="sm:max-w-[430px]" panelClassName="flex h-full flex-col gap-4 !pt-0">
       <form className="flex h-full min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-        <div className={scrollablePanelBodyClassName}>
-        <div className="mb-6 flex animate-fade-in flex-col items-center justify-center text-center">
-          <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface-light)]">
-            <FileText className="h-9 w-9 text-brand" strokeWidth={1.7} aria-hidden="true" />
+        <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
+          <div className="relative mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-light)]">
+            <FileText className="h-7 w-7 text-brand" strokeWidth={1.7} aria-hidden="true" />
             <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
               <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
             </div>
           </div>
-          <h2 className="mb-1 text-xl font-bold text-[var(--foreground)]">Contexte de vérification</h2>
+          <h2 className="mb-1 text-lg font-semibold text-[var(--foreground)]">Contexte de vérification</h2>
+          <p className="max-w-xs text-sm text-[var(--muted-foreground)]">
+            Préparez seulement les informations utiles au lancement du parcours.
+          </p>
         </div>
 
-        <div className="space-y-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <div className="space-y-6 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-5 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <div className="grid gap-4">
             <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <span className="font-medium">External ID</span>
@@ -647,7 +650,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
           </div>
         ) : null}
 
-        <div className={fixedFooterActionsClassName}>
+        <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
           <button
             type="submit"
             disabled={submitting}

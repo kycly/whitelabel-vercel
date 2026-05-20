@@ -84,9 +84,10 @@ La page reste volontairement legere.
 - pas d'informations de compte tant que l'utilisateur n'est pas authentifie
 - conserver le meme langage visuel que le reste du scaffold
 - mobile-first, carte de connexion centree, contenu simple
-- reprendre le meme frame mobile et le meme hero que integration-node
+- reprendre le meme frame mobile et le meme hero que integration-node, mais dans une version plus compacte et moins demonstrative
 - afficher une icone retour uniquement sur les sous-etapes du formulaire quand elle sert a revenir dans le flux local
 - la deconnexion reste reservee aux ecrans proteges, pas a `LOGIN`
+- conserver un header court avec separateur discret et ne jamais laisser le hero pousser le formulaire sous la ligne de flottaison mobile
 
 ## Etats a prevoir
 
@@ -103,6 +104,7 @@ La page reste volontairement legere.
 - un seul indicateur de progression visible
 - aucun detail technique sur la verification serveur ou le scope demo
 - aucun bouton retour ni deconnexion concurrente dans le header
+- carte compacte, centree, sans decor additionnel ni second CTA
 
 ## Regles specifiques `ACCESS_DENIED`
 
@@ -110,6 +112,7 @@ La page reste volontairement legere.
 - aucune explication technique sur les claims ou le scoping partner-node
 - aucune navigation generique concurrente dans le header
 - une seule sortie explicite de deconnexion dans le contenu
+- ton produit calme, sans ecran d'erreur agressif ni hero inutile
 
 ## Decision de navigation
 

@@ -179,6 +179,7 @@ Conclusion operatoire:
 
 - `pnpm install` doit reconfigurer les hooks localement
 - un push est bloque si la doc canonique n'est pas alignee ou si un marqueur `ck_live_*` apparait dans les surfaces applicatives
+- les changements sur le shell mobile-first, l'installabilite PWA ou l'ergonomie du tunnel KYC critique doivent aussi mettre a jour [../reference/PWA-MOBILE-FIRST-REFACTOR.md](../reference/PWA-MOBILE-FIRST-REFACTOR.md)
 
 Artefacts recommandés:
 

@@ -82,6 +82,10 @@ Contraintes:
 
 Le canon local a maintenir se trouve dans [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md).
 
+Le cadrage du refactor mobile-first et de la couche PWA minimale se trouve dans [reference/PWA-MOBILE-FIRST-REFACTOR.md](reference/PWA-MOBILE-FIRST-REFACTOR.md).
+
+La checklist de validation mobile/PWA post-refactor se trouve dans [runbooks/mobile-pwa-qa-checklist.md](runbooks/mobile-pwa-qa-checklist.md).
+
 ## Variables d'environnement cibles
 
 Variables publiques:
@@ -224,3 +228,4 @@ Le projet couvre maintenant ce socle executable:
 - contrat de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)
+- reference du refactor PWA mobile-first: [reference/PWA-MOBILE-FIRST-REFACTOR.md](reference/PWA-MOBILE-FIRST-REFACTOR.md)

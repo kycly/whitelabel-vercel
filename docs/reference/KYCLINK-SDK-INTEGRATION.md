@@ -40,6 +40,12 @@ Pour `whitelabel-vercel`, la reprise et le refresh ne doivent plus dependre d'un
 - redirige vers `FAILURE` si la session est `EXPIRED` ou introuvable
 - ne depend jamais d'une session KYC active prealablement sauvegardee en `sessionStorage`
 
+Regle UI mobile-first associee:
+
+- `SESSION_PREPARE` et `SESSION_GATE` restent des etats transitoires courts, centres et sobres
+- l'ecran `KYC_LINK` maximise la hauteur utile de l'iframe
+- aucun padding ou chrome concurrent ne doit reduire artificiellement l'espace du parcours embarque
+
 ---
 
 ## 2. Prerequis

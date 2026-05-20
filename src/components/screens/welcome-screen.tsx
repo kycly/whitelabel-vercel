@@ -16,21 +16,23 @@ type WelcomeScreenProps = {
 
 export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) {
   return (
-    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" showBack={false} maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-8">
-      <div className={scrollablePanelBodyClassName}>
-        <div className="mb-6 flex animate-fade-in flex-col items-center justify-center">
-          <div className="relative mb-5 flex h-36 w-36 items-center justify-center rounded-full bg-[var(--surface-light)]">
-            <div className="absolute inset-0 rounded-full bg-blue-100 opacity-20 scale-110" />
-            <ScanFace className="h-16 w-16 text-brand" strokeWidth={1.5} aria-hidden="true" />
-            <div className="absolute -right-2 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
+    <ProtectedScreenShell backHref="/auth/logout" title="Accueil" showBack={false} maxWidthClassName="sm:max-w-[430px]" panelClassName="flex h-full flex-col gap-4 !pt-0">
+      <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
+          <div className="relative mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--surface-light)]">
+            <div className="absolute inset-0 scale-105 rounded-full bg-blue-100 opacity-25" />
+            <ScanFace className="h-11 w-11 text-brand" strokeWidth={1.5} aria-hidden="true" />
+            <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
               <ShieldCheck className="h-5 w-5 text-green-500" aria-hidden="true" />
             </div>
           </div>
-          <h2 className="mb-1 text-center text-2xl font-bold text-brand">Nouvelle vérification</h2>
-          <p className="text-center text-xs tracking-wide text-[var(--muted-foreground)]">{userLabel}</p>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Vérification d'identité</p>
+          <h2 className="mb-1 text-center text-2xl font-semibold text-[var(--foreground)]">Nouvelle vérification</h2>
+          <p className="max-w-xs text-center text-sm text-[var(--muted-foreground)]">Lancez un parcours KYC clair, sécurisé et prêt à être repris si nécessaire.</p>
+          <p className="mt-2 text-center text-xs tracking-wide text-[var(--muted-foreground)]">{userLabel}</p>
         </div>
 
-        <div className="mb-4 space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <div className="mb-4 space-y-4 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-5 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Avant de commencer</p>
             <div className="mb-1.5 flex items-center gap-2">
@@ -81,7 +83,7 @@ export function WelcomeScreen({ userLabel, demoAccountId }: WelcomeScreenProps) 
         </div>
       </div>
 
-      <div className={[fixedFooterActionsClassName, "animate-fade-in"].join(" ")} style={{ animationDelay: "0.3s" }}>
+      <div className={[fixedFooterActionsClassName, "animate-fade-in pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")} style={{ animationDelay: "0.3s" }}>
         <Link href="/verify" className={primaryCtaClassName}>
           Commencer
           <ArrowRight className="size-4" />

@@ -60,6 +60,21 @@ const facetRules = [
     secondaryDocs: ["docs/PARCOURS-J1.md", "README.md"],
   },
   {
+    key: "pwa-mobile-first",
+    label: "Shell PWA mobile-first et ergonomie du tunnel critique",
+    changePatterns: [
+      /^app\/layout\.tsx$/,
+      /^app\/(manifest\.ts|manifest\.json)$/,
+      /^src\/components\/layout\/(page-shell|protected-screen-shell)\.tsx$/,
+      /^src\/components\/ui\/fixed-action-layout\.ts$/,
+      /^src\/components\/verify\/verification-(run-screen|prepare-screen|workspace|complete|sessions)\.tsx$/,
+      /^src\/components\/screens\/(welcome|login|failure)-screen\.tsx$/,
+    ],
+    primaryDocPatterns: [/^docs\/reference\/PWA-MOBILE-FIRST-REFACTOR\.md$/],
+    primaryDocs: ["docs/reference/PWA-MOBILE-FIRST-REFACTOR.md"],
+    secondaryDocs: ["docs/reference/UI-ESTHETIC-CANON.md", "docs/reference/KYCLINK-SDK-INTEGRATION.md"],
+  },
+  {
     key: "ci-governance",
     label: "CI, hooks Git et gouvernance du repo",
     changePatterns: [

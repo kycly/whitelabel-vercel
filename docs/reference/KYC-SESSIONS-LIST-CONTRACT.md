@@ -24,6 +24,12 @@ Consequences:
 
 La reprise effective ne se fait pas directement depuis cette reponse. L'UI utilise `sessionId`, puis relit la session canonique via `GET /api/kyc/session/:sessionId` avant d'ouvrir KycLink.
 
+Regles UI mobile-first associees:
+
+- les 3 cartes metriques de synthese restent sur une meme ligne
+- la page reste une seule colonne de lecture, y compris sur desktop ou elle doit seulement paraitre plus aeree
+- les actions rapides `Actualiser` et `Nouvelle verification` conservent un format compact de 44px de hauteur
+
 ## Regles d'acces
 
 La route actuelle doit:

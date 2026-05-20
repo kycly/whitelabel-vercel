@@ -87,8 +87,9 @@ Contraintes de densite:
 - l'activation passe par une checklist `Besoins optionnels`, pas par un lien ou un accordeon editorial
 - les champs additionnels apparaissent inline dans le meme bloc, uniquement apres activation d'un groupe
 - chaque groupe ouvert peut etre retire via une action de suppression discrete
-- le vocabulaire visuel reprend integration-node: hero centre, carte `surface-light`, champs hauts et CTA plein bleu
+- le vocabulaire visuel reprend integration-node: hero centre compact, carte `surface-light`, champs hauts et CTA plein bleu
 - l'icone retour de `SESSION_CONTEXT` renvoie directement vers `WELCOME`
+- le CTA principal reste isole dans un footer bas distinct, toujours atteignable en mobile avec clavier ouvert
 
 ## 1. Scenario
 

@@ -252,17 +252,17 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
       backHref="/sessions"
       preferBackHref
       title="Résultat"
-      maxWidthClassName="max-w-4xl"
-      panelClassName="space-y-5 pt-4"
+      maxWidthClassName="sm:max-w-[430px]"
+      panelClassName="space-y-4 !pt-0"
     >
         {state.data ? (
-          <div className={surfaceInfoCardClassName}>
+          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
             <p>status: {state.data.status}</p>
           </div>
         ) : null}
 
         {state.countdownSeconds > 0 ? (
-          <div className={infoAlertClassName}>
+          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
             <Clock3 className="mt-0.5 size-5 shrink-0" />
             <div>
               <p>{pollingMessage(state.countdownSeconds, state.attemptCount)}</p>
@@ -271,7 +271,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.isPolling ? (
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
+          <div className={[surfaceInfoCardClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
             <LoaderCircle className="size-4 animate-spin" />
             Lecture du resultat en cours.
           </div>
@@ -284,9 +284,10 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-2xl border px-5 py-4 text-sm ${resultTone(state.data)}`}>
+          <div className={`rounded-3xl border px-5 py-5 text-sm ${resultTone(state.data)}`}>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">Decision backend</p>
             <p className="font-semibold">workflowStatus: {workflowStatusValue(state.data.workflowStatus)}</p>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 grid gap-3 rounded-2xl bg-white/55 p-4">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>
@@ -313,7 +314,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
           <button
             type="button"
             onClick={() => {
