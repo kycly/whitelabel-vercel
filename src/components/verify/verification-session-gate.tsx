@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
+import { redirectToLogout } from "@/auth/cognito-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { VerificationRunScreen } from "@/components/verify/verification-run-screen";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
@@ -52,6 +53,11 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
           | { code?: string; message?: string };
 
         if (!response.ok) {
+          if (response.status === 401 || ("code" in payload && payload.code === "UNAUTHORIZED")) {
+            redirectToLogout();
+            return;
+          }
+
           const code = payload && "code" in payload && typeof payload.code === "string"
             ? payload.code
             : "SESSION_FETCH_FAILED";

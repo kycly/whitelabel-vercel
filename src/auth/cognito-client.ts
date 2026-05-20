@@ -53,6 +53,11 @@ export function cognitoSignOut(): void {
   pendingNewPasswordUser = null;
 }
 
+export function redirectToLogout(): void {
+  cognitoSignOut();
+  window.location.assign("/auth/logout");
+}
+
 export async function getExistingSession(): Promise<CognitoAuthResult | null> {
   return new Promise((resolve) => {
     const user = userPool.getCurrentUser();

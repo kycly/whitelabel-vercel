@@ -2,22 +2,32 @@
 
 import { useEffect } from "react";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
+import { redirectToLogout } from "@/auth/cognito-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readErrorPayload(response: Response): Promise<{ message: string; code: string | null }> {
   const raw = await response.text();
 
   if (!raw) {
-    return "Creation impossible.";
+    return {
+      message: "Creation impossible.",
+      code: null,
+    };
   }
 
   try {
-    const parsed = JSON.parse(raw) as { message?: string };
-    return parsed.message ?? "Creation impossible.";
+    const parsed = JSON.parse(raw) as { message?: string; code?: string };
+    return {
+      message: parsed.message ?? "Creation impossible.",
+      code: parsed.code ?? null,
+    };
   } catch {
-    return raw;
+    return {
+      message: raw,
+      code: null,
+    };
   }
 }
 
@@ -43,7 +53,14 @@ export function VerificationPrepareScreen() {
         });
 
         if (!response.ok) {
-          throw new Error(await readErrorMessage(response));
+          const payload = await readErrorPayload(response);
+
+          if (response.status === 401 || payload.code === "UNAUTHORIZED") {
+            redirectToLogout();
+            return;
+          }
+
+          throw new Error(payload.message);
         }
 
         const createdSession = (await response.json()) as {
