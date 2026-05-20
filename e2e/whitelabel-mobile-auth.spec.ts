@@ -218,6 +218,7 @@ test("fait defiler la page contexte quand des champs optionnels apparaissent", a
     await addPairButton.click();
   }
 
+  const scrollContainer = page.locator("form > div").first();
   const layoutMetrics = await page.evaluate(() => {
     const main = document.querySelector("main");
 
@@ -229,19 +230,28 @@ test("fait defiler la page contexte quand des champs optionnels apparaissent", a
     };
   });
 
-  expect(layoutMetrics.documentHeight).toBeGreaterThan(layoutMetrics.viewportHeight);
+  const scrollContainerMetrics = await scrollContainer.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    scrollTop: element.scrollTop,
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+
+  expect(layoutMetrics.documentHeight).toBe(layoutMetrics.viewportHeight);
   expect(layoutMetrics.mainOverflowY).toBe("hidden");
+  expect(scrollContainerMetrics.scrollHeight).toBeGreaterThan(scrollContainerMetrics.clientHeight);
+  expect(scrollContainerMetrics.overflowY).toBe("auto");
 
   const createSessionButton = page.getByRole("button", { name: "Créer la session" });
+  await expect(createSessionButton).toBeVisible();
 
-  await page.mouse.wheel(0, 2_000);
-  await page.mouse.wheel(0, 2_000);
+  await scrollContainer.evaluate((element) => {
+    element.scrollTo({ top: element.scrollHeight, behavior: "instant" });
+  });
 
   await expect
-    .poll(async () => page.evaluate(() => window.scrollY), {
+    .poll(async () => scrollContainer.evaluate((element) => element.scrollTop), {
       timeout: 5_000,
     })
     .toBeGreaterThan(0);
-
-  await expect(createSessionButton).toBeVisible();
 });

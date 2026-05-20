@@ -16,7 +16,7 @@ export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[
         paddingLeft: "env(safe-area-inset-left, 0px)",
       }}
       className={[
-        "min-h-[100dvh] w-full bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-6 lg:p-8",
+        "h-[100dvh] w-full overflow-hidden bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-6 lg:p-8",
         className,
       ]
         .filter(Boolean)
@@ -24,7 +24,7 @@ export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[
     >
       <div
         className={[
-          "flex min-h-[100dvh] w-full flex-col overflow-hidden bg-[var(--background)] sm:h-[850px] sm:w-full sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
+          "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)] sm:h-full sm:max-h-[850px] sm:w-full sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
           maxWidthClassName,
         ]
           .filter(Boolean)

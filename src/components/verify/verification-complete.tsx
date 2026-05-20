@@ -11,8 +11,10 @@ import {
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
+  fixedFooterActionsClassName,
   infoAlertClassName,
   primaryIconButtonClassName,
+  scrollablePanelBodyClassName,
   secondaryIconButtonClassName,
   surfaceInfoCardClassName,
   successIconButtonClassName,
@@ -253,8 +255,10 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
       preferBackHref
       title="Résultat"
       maxWidthClassName="sm:max-w-[430px]"
-      panelClassName="space-y-4 !pt-0"
+      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
     >
+        <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
         {state.data ? (
           <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
             <p>status: {state.data.status}</p>
@@ -313,8 +317,10 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             Aucun statut final n&apos;a encore ete confirme.
           </div>
         ) : null}
+        </div>
 
-        <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
+        <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
+          <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
           <button
             type="button"
             onClick={() => {
@@ -368,6 +374,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
               <span className="sr-only">Retour accueil</span>
             </Link>
           ) : null}
+          </div>
         </div>
     </ProtectedScreenShell>
   );

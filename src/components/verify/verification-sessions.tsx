@@ -11,11 +11,13 @@ import {
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
+  fixedFooterActionsClassName,
   formFieldClassName,
   inlinePrimaryButtonClassName,
   metricCardClassName,
   secondaryButtonClassName,
   primaryIconButtonClassName,
+  scrollablePanelBodyClassName,
   secondaryIconButtonClassName,
   surfaceInfoPanelClassName,
 } from "@/components/ui/fixed-action-layout";
@@ -241,8 +243,16 @@ export function VerificationSessions() {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" preferBackHref title="Historique" maxWidthClassName="sm:max-w-[430px]" panelClassName="space-y-4 !pt-0">
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
+    <ProtectedScreenShell
+      backHref="/welcome"
+      preferBackHref
+      title="Historique"
+      maxWidthClassName="sm:max-w-[430px]"
+      pageClassName="[&_main]:overflow-y-hidden [&_main]:overscroll-none"
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
+    >
+      <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Historique KYC</p>
@@ -443,8 +453,10 @@ export function VerificationSessions() {
           })}
         </div>
       ) : null}
+      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
+      <div className={[fixedFooterActionsClassName, "pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)]"].join(" ")}>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
         <p>
           Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
         </p>
@@ -478,6 +490,7 @@ export function VerificationSessions() {
             <span className="sr-only">Page suivante</span>
           </button>
         </div>
+      </div>
       </div>
     </ProtectedScreenShell>
   );
