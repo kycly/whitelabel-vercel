@@ -328,7 +328,7 @@ Cet exemple montre le vrai chemin d'integration:
 - le composant React rend ensuite `<KycLink />`
 
 ```tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KycLink } from "@kycly/link/react";
 import type {
   KycLinkCompletePayload,
@@ -342,9 +342,12 @@ type KycLinkSession = {
   expiresAt: string;
 };
 
+const PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE = "kyclink:parent-origin:init";
+
 export function KycLinkPage({ userId }: { userId: string }) {
   const [session, setSession] = useState<KycLinkSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const iframeContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -388,6 +391,49 @@ export function KycLinkPage({ userId }: { userId: string }) {
     };
   }, [userId]);
 
+  const kyclinkOrigin = useMemo(
+    () => (session ? new URL(session.kyclinkUrl).origin : null),
+    [session],
+  );
+
+  const stopHandshake = useCallback((intervalId: number | null) => {
+    if (intervalId !== null) {
+      window.clearInterval(intervalId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session || !kyclinkOrigin) {
+      return;
+    }
+
+    const container = iframeContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const iframe = container.querySelector("iframe");
+    if (!(iframe instanceof HTMLIFrameElement)) {
+      return;
+    }
+
+    const message = {
+      type: PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE,
+      sessionId: session.sessionId,
+    };
+
+    const sendHandshake = () => {
+      iframe.contentWindow?.postMessage(message, kyclinkOrigin);
+    };
+
+    sendHandshake();
+    const intervalId = window.setInterval(sendHandshake, 500);
+
+    return () => {
+      stopHandshake(intervalId);
+    };
+  }, [kyclinkOrigin, session, stopHandshake]);
+
   if (error) {
     return <p>Erreur KYC: {error}</p>;
   }
@@ -397,27 +443,31 @@ export function KycLinkPage({ userId }: { userId: string }) {
   }
 
   return (
-    <KycLink
-      kyclinkUrl={session.kyclinkUrl}
-      height="700px"
-      className="kyc-iframe"
-      style={{ borderRadius: "12px" }}
-      onReady={() => {
-        console.log("KycLink pret");
-      }}
-      onStep={(step: KycLinkStep) => {
-        console.log("KycLink step:", step);
-      }}
-      onComplete={(result: KycLinkCompletePayload) => {
-        console.log("Parcours termine:", result.sessionId, result.status);
-      }}
-      onError={(payload: KycLinkErrorPayload) => {
-        console.error("KycLink error:", payload.code, payload.message);
-      }}
-    />
+    <div ref={iframeContainerRef}>
+      <KycLink
+        kyclinkUrl={session.kyclinkUrl}
+        height="700px"
+        className="kyc-iframe"
+        style={{ borderRadius: "12px" }}
+        onReady={() => {
+          console.log("KycLink pret");
+        }}
+        onStep={(step: KycLinkStep) => {
+          console.log("KycLink step:", step);
+        }}
+        onComplete={(result: KycLinkCompletePayload) => {
+          console.log("Parcours termine:", result.sessionId, result.status);
+        }}
+        onError={(payload: KycLinkErrorPayload) => {
+          console.error("KycLink error:", payload.code, payload.message);
+        }}
+      />
+    </div>
   );
 }
 ```
+
+Le host React doit maintenant emettre ce handshake `kyclink:parent-origin:init` vers l'iframe. KycLink valide `event.origin` contre la `parentOrigin` stockee cote backend; `document.referrer` n'est plus la preuve de securite retenue.
 
 ### 4.3 — Ce que signifie `onComplete`
 

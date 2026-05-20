@@ -2,9 +2,13 @@
 
 import { KycLink } from "@kycly/link/react";
 import type { KycLinkErrorPayload } from "@kycly/link";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { withKyclinkOriginDebug } from "@/lib/kyclink-url";
+import {
+  createParentOriginHandshakeMessage,
+  resolveKyclinkOrigin,
+} from "@/lib/kyclink-embed";
 
 type VerificationRunScreenProps = {
   sessionId: string;
@@ -13,7 +17,40 @@ type VerificationRunScreenProps = {
 
 export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRunScreenProps) {
   const router = useRouter();
-  const debugKyclinkUrl = withKyclinkOriginDebug(kyclinkUrl);
+  const iframeContainerRef = useRef<HTMLDivElement | null>(null);
+  const handshakeIntervalRef = useRef<number | null>(null);
+  const kyclinkOrigin = useMemo(() => resolveKyclinkOrigin(kyclinkUrl), [kyclinkUrl]);
+
+  const stopHandshake = useCallback(() => {
+    if (handshakeIntervalRef.current !== null) {
+      window.clearInterval(handshakeIntervalRef.current);
+      handshakeIntervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    stopHandshake();
+
+    const container = iframeContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const iframe = container.querySelector("iframe");
+    if (!(iframe instanceof HTMLIFrameElement)) {
+      return;
+    }
+
+    const message = createParentOriginHandshakeMessage(sessionId);
+    const sendHandshake = () => {
+      iframe.contentWindow?.postMessage(message, kyclinkOrigin);
+    };
+
+    sendHandshake();
+    handshakeIntervalRef.current = window.setInterval(sendHandshake, 500);
+
+    return stopHandshake;
+  }, [kyclinkOrigin, sessionId, stopHandshake]);
 
   function redirectToFailure(payload: KycLinkErrorPayload) {
     const query = new URLSearchParams();
@@ -35,15 +72,20 @@ export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRun
 
   return (
     <ProtectedScreenShell backHref="/verify" title="Parcours" showBack={false} showLogout={false} maxWidthClassName="max-w-5xl" panelClassName="flex flex-1 flex-col pt-2">
-        <div className="flex-1 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
+        <div ref={iframeContainerRef} className="flex-1 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
           <KycLink
-            kyclinkUrl={debugKyclinkUrl}
+            kyclinkUrl={kyclinkUrl}
             className="min-h-full w-full border-0 bg-white"
             height={736}
+            onReady={() => {
+              stopHandshake();
+            }}
             onComplete={(payload) => {
+              stopHandshake();
               router.push(`/complete?sessionId=${encodeURIComponent(payload.sessionId)}`);
             }}
             onError={(payload) => {
+              stopHandshake();
               redirectToFailure(payload);
             }}
           />
