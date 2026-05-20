@@ -616,7 +616,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
 
                   <div className="space-y-3">
                     {form.customContextEntries.map((entry, index) => (
-                      <div key={`${index}-${entry.key}`} className="grid gap-3">
+                      <div key={index} className="grid gap-3">
                         <input
                           className={formFieldClassName({ hasError: Boolean(errors[`customContextEntries.${index}.key`]) })}
                           placeholder="Clé"
