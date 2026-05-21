@@ -49,10 +49,12 @@ Il doit:
 - verrouiller le viewport du shell pour réserver la hauteur utile au conteneur iframe
 - rester lisible en navigateur mobile comme en mode installé
 - préserver strictement le handshake parent-origin existant
+- supprimer tout header, titre éditorial, bouton retour ou action de déconnexion concurrente pendant l'affichage réel de l'iframe
+- conserver le même contrat de tunnel sur tous les breakpoints, sans variante desktop dédiée du parcours
 
 Les écrans `WELCOME`, `SESSION_CONTEXT`, `SESSIONS` et `COMPLETE` suivent le même principe: header fixe, body interne scrollable, footer ou actions séparés du contenu principal.
 
-`SESSION_PREPARE` et `SESSION_GATE` restent courts, centrés et sans bruit éditorial.
+`SESSION_PREPARE` et `SESSION_GATE` restent courts, centrés et sans bruit éditorial. `SESSION_GATE` ne doit pas réintroduire le titre de parcours quand il prépare l'ouverture de l'iframe.
 
 Politique d'erreur protégée associée:
 
@@ -127,6 +129,7 @@ Refuser la livraison si l'un des symptômes suivants apparaît:
 - régression de hauteur ou de scroll sur l'écran KYC
 - CTA masqué par le clavier mobile
 - double scroll dans le tunnel
+- bandeau, titre ou chrome résiduel au-dessus de l'iframe pendant `KYC_LINK`
 - écran protégé laissé actif avec simple bannière d'erreur alors qu'une redirection de sécurité devait se produire
 - service worker interférant avec auth ou KYC
 - apparition d'une variante desktop séparée

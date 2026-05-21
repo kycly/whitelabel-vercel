@@ -67,6 +67,7 @@ Regles specifiques:
 - `WELCOME` n'affiche pas d'icone retour
 - `KYC_LINK` n'affiche pas d'icone retour
 - `KYC_LINK` n'affiche pas non plus d'action de deconnexion
+- `KYC_LINK` n'affiche pas non plus de titre d'ecran, de header ou de bordure concurrente au-dessus de l'iframe
 - `SESSION_CONTEXT`, `SESSION_PREPARE`, `COMPLETE` et `SESSIONS` utilisent une icone retour a destination canonique par etape, sans dependre de l'historique navigateur
 - l'icone retour de `COMPLETE` renvoie vers `SESSIONS`
 - les ecrans proteges ne conservent une deconnexion iconique en haut a droite que lorsqu'elle reste utile au flux
@@ -110,7 +111,7 @@ L'ecran `SESSION_CONTEXT` est l'etape la plus minimale du parcours:
 - `WELCOME` ne montre que l'identite utile et les actions principales, sans details techniques de compte demo
 - l'acces a l'historique de sessions doit etre visible directement dans le bloc principal de `WELCOME`, comme une action secondaire claire et non comme un simple lien de pied de page
 - `SESSION_PREPARE` ne montre qu'un loader et une phrase courte
-- `KYC_LINK` privilegie l'iframe et supprime les titres concurrents
+- `KYC_LINK` privilegie l'iframe, supprime tout titre concurrent et occupe seul la hauteur utile du shell
 - `COMPLETE` et `SESSIONS` gardent des actions courtes et des resumees lisibles, sans sur-explication
 - `WELCOME`, `SESSIONS` et `COMPLETE` reutilisent le meme contrat: header fixe, body interne scrollable, actions separees du contenu principal
 - `workflowStatus = null` est rendu cote UI comme `TRAIT. EN COURS`

@@ -82,6 +82,7 @@ Executer au minimum:
 - `SESSION_GATE` reste un etat de reprise compact et sans bruit visuel
 - `KYC_LINK` maximise la hauteur utile de l'iframe
 - aucun padding ou bandeau ne reduit artificiellement l'espace du parcours
+- aucun titre `Parcours` ni header applicatif ne reapparait pendant `KYC_LINK`
 - aucun bouton retour ou deconnexion ne reapparait dans `KYC_LINK`
 - le parcours reprend toujours correctement une session `ACTIVE`
 

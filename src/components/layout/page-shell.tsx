@@ -4,9 +4,10 @@ type PageShellProps = {
   children: ReactNode;
   className?: string;
   maxWidthClassName?: string;
+  fullViewport?: boolean;
 };
 
-export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[430px]" }: PageShellProps) {
+export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[430px]", fullViewport = false }: PageShellProps) {
   return (
     <div
       style={{
@@ -16,7 +17,9 @@ export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[
         paddingLeft: "env(safe-area-inset-left, 0px)",
       }}
       className={[
-        "h-[100dvh] w-full overflow-hidden bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-6 lg:p-8",
+        fullViewport
+          ? "h-[100dvh] w-full overflow-hidden bg-[var(--background)] p-0"
+          : "h-[100dvh] w-full overflow-hidden bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-6 lg:p-8",
         className,
       ]
         .filter(Boolean)
@@ -24,7 +27,9 @@ export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[
     >
       <div
         className={[
-          "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)] sm:h-full sm:max-h-[850px] sm:w-full sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
+          fullViewport
+            ? "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)]"
+            : "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)] sm:h-full sm:max-h-[850px] sm:w-full sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
           maxWidthClassName,
         ]
           .filter(Boolean)

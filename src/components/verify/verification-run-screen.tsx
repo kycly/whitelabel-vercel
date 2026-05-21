@@ -73,14 +73,15 @@ export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRun
   return (
     <ProtectedScreenShell
       backHref="/verify"
-      title="Parcours"
+      fullViewport
       showBack={false}
+      showHeader={false}
       showLogout={false}
-      maxWidthClassName="sm:max-w-5xl"
+      maxWidthClassName="w-full"
       lockViewportScroll
       panelClassName="flex min-h-0 flex-1 flex-col !px-0 !pb-0 !pt-0"
     >
-        <div ref={iframeContainerRef} className="flex min-h-0 flex-1 overflow-hidden border-y border-[var(--border)] bg-[var(--background)] sm:rounded-b-[1.75rem] sm:border-x">
+        <div ref={iframeContainerRef} className="flex min-h-0 flex-1 overflow-hidden bg-white">
           <KycLink
             kyclinkUrl={kyclinkUrl}
             className="h-full min-h-full w-full border-0 bg-white"

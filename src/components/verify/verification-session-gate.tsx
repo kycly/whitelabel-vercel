@@ -105,13 +105,14 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
     return (
       <ProtectedScreenShell
         backHref="/verify"
-        title="Parcours"
+        fullViewport
         showBack={false}
+        showHeader={false}
         showLogout={false}
-        maxWidthClassName="sm:max-w-5xl"
-        panelClassName="flex min-h-0 flex-1 flex-col justify-center !pt-0"
+        maxWidthClassName="w-full"
+        panelClassName="flex min-h-0 flex-1 flex-col justify-center px-6 text-center"
       >
-          <div className="mx-auto flex w-full max-w-md flex-col gap-3 text-center">
+          <div className="mx-auto flex w-full max-w-sm flex-col gap-3 text-center">
             <div className={[surfaceInfoCardClassName, "flex items-center justify-center gap-3 rounded-3xl px-5 py-4 text-[var(--foreground)]"].join(" ")}>
               <LoaderCircle className="size-4 animate-spin text-brand" />
               Chargement du parcours sécurisé.
