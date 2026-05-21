@@ -145,7 +145,7 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
 
   await page.waitForURL(/\/verify\/prepare$/, { timeout: 30_000 });
   await page.waitForURL(new RegExp(`/verify/session\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Parcours" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Parcours" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Déconnexion" })).toHaveCount(0);
 
