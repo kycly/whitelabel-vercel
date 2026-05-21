@@ -184,6 +184,18 @@ Regle de navigation associee:
 
 Le verdict final de reprise reste toutefois porte par `GET /api/kyc/session/:sessionId`, afin d'eviter toute dependance a l'etat local du navigateur.
 
+## Politique d'erreur protegee commune
+
+La liste `Mes verifications` ne gere plus separement le logout ni les redirections d'erreur.
+
+Decision commune retenue:
+
+1. `401` ou `UNAUTHORIZED` -> effacement du cookie de session locale si l'upstream rejette le JWT Cognito, puis logout client centralise
+2. `403 ACCESS_DENIED` -> redirection vers `/access-denied`
+3. indisponibilite de lecture qualifiee -> redirection vers `/failure` avec le code canonique `SESSIONS_FETCH_FAILED`
+
+Cette meme politique s'applique aussi aux autres ecrans KYC proteges (`SESSION_PREPARE`, `SESSION_GATE`, `COMPLETE`).
+
 ## Erreurs cibles
 
 ### 401
@@ -194,6 +206,12 @@ Le verdict final de reprise reste toutefois porte par `GET /api/kyc/session/:ses
   "code": "UNAUTHORIZED"
 }
 ```
+
+Comportement attendu:
+
+- pas de persistance sur l'ecran `Mes verifications` avec un simple message inline quand la session Cognito a expire
+- effacement du cookie de session locale si le rejet vient de `partner-node`
+- repli vers le flux de logout commun
 
 ### 403
 
@@ -212,6 +230,8 @@ La route devra preferer une remontee lisible des erreurs `partner-node` utiles a
 - `code`
 
 Sans rewriter silencieusement une erreur de scope demo, de quota demo ou de configuration runtime.
+
+Le frontend applique ensuite le mapping protege commun plutot qu'une logique locale specifique a la page.
 
 ## Regle de separation a ne pas casser
 

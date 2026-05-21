@@ -215,7 +215,7 @@ Le projet couvre maintenant ce socle executable:
 3. historique `SESSIONS` scope au `demo_account_id` courant
 4. reprise canonique robuste via `GET /api/kyc/session/:sessionId`
 5. lecture resultat robuste sans dependre du stockage navigateur
-6. erreurs hors KYC harmonisees pour expiration, session introuvable et indisponibilite de reprise
+6. pipeline d'erreur protege commun sur les routes app: `401 -> logout`, `ACCESS_DENIED -> /access-denied`, erreurs KYC qualifiees -> `/failure`
 7. smokes Playwright sur tunnel principal, historique et parcours mobile protege
 
 ## Documentation de reference

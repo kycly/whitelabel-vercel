@@ -11,6 +11,8 @@ import {
   cognitoStartForgotPassword,
   getExistingSession,
 } from "@/auth/cognito-client";
+import { AppError } from "@/lib/app-error";
+import { requestInlineJson } from "@/lib/app-client";
 import { PageShell } from "@/components/layout/page-shell";
 import { BackIconButton } from "@/components/navigation/back-icon-button";
 import {
@@ -93,20 +95,15 @@ function mapForgotPasswordError(error: unknown): string {
 }
 
 async function createServerSession(idToken: string) {
-  const response = await fetch("/api/auth/session", {
+  await requestInlineJson("/api/auth/session", {
     method: "POST",
     headers: {
       "content-type": "application/json",
     },
     body: JSON.stringify({ idToken }),
+  }, {
+    defaultMessage: "La session Cognito n'a pas pu etre validee.",
   });
-
-  if (response.ok) {
-    return;
-  }
-
-  const payload = (await response.json().catch(() => null)) as { message?: string; code?: string } | null;
-  throw new Error(payload?.message ?? payload?.code ?? "INVALID_COGNITO_SESSION");
 }
 
 export function LoginScreen() {
@@ -144,7 +141,7 @@ export function LoginScreen() {
         cognitoSignOut();
 
         if (active) {
-          setError(mapAuthError(restoreError));
+          setError(mapAuthError(restoreError instanceof AppError ? new Error(restoreError.message) : restoreError));
         }
       } finally {
         if (active) {

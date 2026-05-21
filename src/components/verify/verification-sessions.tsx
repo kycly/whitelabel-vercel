@@ -21,7 +21,8 @@ import {
   secondaryIconButtonClassName,
   surfaceInfoPanelClassName,
 } from "@/components/ui/fixed-action-layout";
-import { getAppErrorMessage } from "@/lib/app-error";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
 type SessionStatus = "pending" | "processing" | "completed";
 type SessionWorkflowStatus = WorkflowStatus;
@@ -175,34 +176,14 @@ export function VerificationSessions() {
           searchParams.set("workflowStatus", workflowStatus);
         }
 
-        const response = await fetch(`/api/kyc/sessions?${searchParams.toString()}`, {
+        const sessions = await requestProtectedJson<SessionsResponse>(`/api/kyc/sessions?${searchParams.toString()}`, {
           method: "GET",
           cache: "no-store",
           signal: controller.signal,
+        }, {
+          defaultMessage: "Lecture impossible.",
+          defaultFailureCode: "SESSIONS_FETCH_FAILED",
         });
-
-        const payload = (await response.json()) as unknown;
-
-        if (!response.ok) {
-          const message =
-            payload &&
-            typeof payload === "object" &&
-            "message" in payload &&
-            typeof payload.message === "string"
-              ? payload.message
-              : "Lecture impossible.";
-          const code =
-            payload &&
-            typeof payload === "object" &&
-            "code" in payload &&
-            typeof payload.code === "string"
-              ? payload.code
-              : undefined;
-
-          throw new Error(getAppErrorMessage(code, message));
-        }
-
-        const sessions = payload as SessionsResponse;
 
         setState({
           data: sessions.data,
@@ -215,10 +196,14 @@ export function VerificationSessions() {
           return;
         }
 
+        if (handleAppError(error)) {
+          return;
+        }
+
         setState((current) => ({
           ...current,
           isLoading: false,
-          error: error instanceof Error ? error.message : "Lecture impossible.",
+          error: errorMessage(error, "Lecture impossible."),
         }));
       }
     }

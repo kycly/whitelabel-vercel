@@ -74,6 +74,13 @@ Regles specifiques:
 - les labels editoriaux de type `WELCOME`, `COMPLETE`, `SESSIONS` ou `KYC_LINK` ne doivent pas etre affiches comme titres d'ecran
 - les ecrans proteges a contenu long ou a footer persistant verrouillent le viewport du shell et deleguent le defilement a un body interne dedie
 
+Politique d'erreur protegee associee:
+
+- `LOGIN` conserve des erreurs inline locales pour l'authentification et la restauration de session
+- les routes protegees utilisent un pipeline commun: `401 -> logout`, `ACCESS_DENIED -> ecran dedie`, erreurs de parcours -> `/failure`
+- `SESSION_PREPARE` et `SESSION_GATE` ne doivent pas afficher de banner inline concurrente quand une redirection protegee doit se produire
+- `SESSIONS` et `COMPLETE` peuvent afficher un message inline seulement pour une indisponibilite restant sur l'ecran, jamais pour une expiration de session Cognito
+
 Pour l'authentification, cette logique s'applique aussi au formulaire de connexion direct:
 
 - carte unique et centree
@@ -114,6 +121,7 @@ L'ecran `SESSION_CONTEXT` est l'etape la plus minimale du parcours:
 - `COMPLETE` privilegie aussi des actions utilitaires en icones avec `title`/`aria-label`, avec sortie positive explicite vers l'accueil quand disponible
 - `ACCESS_DENIED` et `FAILURE` restent centrés sur un message unique et une sortie claire
 - la microcopy visible doit rester propre en JSX React, y compris pour les apostrophes et textes editoriaux, afin d'eviter tout contournement de lint ou derive de rendu
+- la gestion des erreurs protegees ne doit pas etre reimplementee ecran par ecran si un helper de decision commun existe deja
 
 ## Regles d'implementation
 

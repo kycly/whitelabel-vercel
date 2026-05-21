@@ -77,6 +77,17 @@ Cette route pilote l'entree `/verify/session?sessionId=...` avec les regles suiv
 4. `404 KYCLINK_SESSION_NOT_FOUND` -> rediriger vers `/failure` avec code `SESSION_NOT_FOUND`
 5. erreur upstream non qualifiee -> rediriger vers `/failure` avec code `SESSION_FETCH_FAILED`
 
+## Politique d'erreur protegee commune
+
+Le frontend ne reinterprete plus cette route ecran par ecran.
+
+Decision commune retenue pour les routes protegees:
+
+1. `401` ou `UNAUTHORIZED` -> la route renvoie une erreur structuree, efface la session applicative locale si l'echec vient de l'upstream, puis le client declenche le logout centralise
+2. `403 ACCESS_DENIED` -> le client redirige vers `/access-denied`
+3. `404 KYCLINK_SESSION_NOT_FOUND` -> le client redirige vers `/failure` avec le code canonique `SESSION_NOT_FOUND`
+4. autre erreur qualifiee -> le client redirige vers `/failure` avec le code canonique `SESSION_FETCH_FAILED`
+
 ## Erreurs cibles
 
 ### 401
@@ -87,6 +98,12 @@ Cette route pilote l'entree `/verify/session?sessionId=...` avec les regles suiv
   "code": "UNAUTHORIZED"
 }
 ```
+
+Comportement attendu:
+
+- pas de banner inline sur l'ecran `/verify/session`
+- effacement du cookie de session locale si `partner-node` rejette le JWT Cognito en upstream
+- repli vers le flux de logout client commun
 
 ### 403
 
@@ -114,6 +131,8 @@ La route doit preferer une remontee lisible des erreurs `partner-node` utiles au
 - `code`
 
 Sans fallback implicite vers `GET /api/kyc/sessions` ni transformation silencieuse en session vide.
+
+Le frontend applique ensuite la meme politique protegee que pour `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId/result` et `GET /api/kyc/sessions`.
 
 ## Regle de separation a ne pas casser
 

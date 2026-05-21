@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readSession } from "@/auth/session";
 import { env } from "@/config/env";
 import { createKycSession, KycSessionError } from "@/server/kyclink";
+import { createKycErrorResponse, createUnauthorizedKycResponse } from "@/server/kyc-route-response";
 import { resolveParentOrigin } from "@/server/request-origin";
 import { sessionContextSchema } from "@/lib/verification";
 
@@ -9,13 +10,7 @@ export async function POST(request: Request) {
   const session = await readSession();
 
   if (!session) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized.",
-        code: "UNAUTHORIZED",
-      },
-      { status: 401 },
-    );
+    return createUnauthorizedKycResponse();
   }
 
   if (!session.canAccess || !session.demoAccountId) {
@@ -55,13 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     if (error instanceof KycSessionError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-          code: error.code,
-        },
-        { status: error.statusCode },
-      );
+      return createKycErrorResponse(error);
     }
 
     return NextResponse.json(

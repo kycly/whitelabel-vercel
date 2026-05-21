@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
-import { redirectToLogout } from "@/auth/cognito-client";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { VerificationRunScreen } from "@/components/verify/verification-run-screen";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
@@ -42,40 +42,18 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
 
     async function loadSession() {
       try {
-        const response = await fetch(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
+        const session = await requestProtectedJson<CanonicalSession>(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
           method: "GET",
           cache: "no-store",
           signal: controller.signal,
+        }, {
+          defaultMessage: "La reprise de session est temporairement indisponible.",
+          defaultFailureCode: "SESSION_FETCH_FAILED",
+          failureCodeMap: {
+            KYCLINK_SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
+          },
+          sessionId,
         });
-
-        const payload = (await response.json()) as
-          | CanonicalSession
-          | { code?: string; message?: string };
-
-        if (!response.ok) {
-          if (response.status === 401 || ("code" in payload && payload.code === "UNAUTHORIZED")) {
-            redirectToLogout();
-            return;
-          }
-
-          const code = payload && "code" in payload && typeof payload.code === "string"
-            ? payload.code
-            : "SESSION_FETCH_FAILED";
-          const message = payload && "message" in payload && typeof payload.message === "string"
-            ? payload.message
-            : "La reprise de session est temporairement indisponible.";
-
-          router.replace(
-            failureHref({
-              sessionId,
-              code: code === "KYCLINK_SESSION_NOT_FOUND" ? "SESSION_NOT_FOUND" : "SESSION_FETCH_FAILED",
-              message,
-            }),
-          );
-          return;
-        }
-
-        const session = payload as CanonicalSession;
 
         if (session.sessionState === "COMPLETED") {
           router.replace(`/complete?sessionId=${encodeURIComponent(sessionId)}`);
@@ -97,8 +75,12 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
           status: "ready",
           kyclinkUrl: session.kyclinkUrl,
         });
-      } catch {
+      } catch (error) {
         if (controller.signal.aborted) {
+          return;
+        }
+
+        if (handleAppError(error)) {
           return;
         }
 

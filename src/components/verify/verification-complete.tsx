@@ -20,7 +20,8 @@ import {
   successIconButtonClassName,
   warningAlertClassName,
 } from "@/components/ui/fixed-action-layout";
-import { getAppErrorMessage } from "@/lib/app-error";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
 type KycSessionResult = {
   sessionId: string;
@@ -129,24 +130,18 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         }));
 
         try {
-          const response = await fetch(`/api/kyc/session/${encodeURIComponent(sessionId)}/result`, {
+          const parsed = await requestProtectedJson<KycSessionResult>(`/api/kyc/session/${encodeURIComponent(sessionId)}/result`, {
             method: "GET",
             cache: "no-store",
+          }, {
+            defaultMessage: "Lecture impossible.",
+            defaultFailureCode: "SESSION_RESULT_FETCH_FAILED",
+            sessionId,
           });
-
-          const payload = (await response.json()) as KycSessionResult | { message?: string; code?: string };
-
-          if (!response.ok) {
-            const message = payload && "message" in payload && payload.message ? payload.message : "Lecture impossible.";
-            const code = payload && "code" in payload && typeof payload.code === "string" ? payload.code : undefined;
-            throw new Error(getAppErrorMessage(code, message));
-          }
 
           if (cancelled) {
             return;
           }
-
-          const parsed = payload as KycSessionResult;
 
           setState((current) => ({
             ...current,
@@ -164,9 +159,13 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             return;
           }
 
+          if (handleAppError(error)) {
+            return;
+          }
+
           setState((current) => ({
             ...current,
-            error: error instanceof Error ? error.message : "Lecture impossible.",
+            error: errorMessage(error, "Lecture impossible."),
             isPolling: false,
             attemptCount: attempt,
           }));

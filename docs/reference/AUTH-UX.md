@@ -142,6 +142,21 @@ Implications UX:
 - la reconnexion doit paraitre immediate si une session Cognito existe deja cote navigateur
 - la deconnexion efface la session Cognito locale puis la session applicative
 
+## Politique d'erreur commune
+
+Le scaffold distingue maintenant deux familles d'erreurs:
+
+- les erreurs de bootstrap d'authentification restent locales a `LOGIN` et s'affichent inline dans la carte de connexion
+- les erreurs des routes protegees utilisent un contrat commun `{ message, code }` et une decision client unique
+
+Regles de decision retenues:
+
+- `401` ou `UNAUTHORIZED` sur une route protegee -> fermeture de la session locale puis redirection vers `LOGIN` via le flux de logout
+- `403 ACCESS_DENIED` -> redirection vers `ACCESS_DENIED`
+- erreur protegee qualifiee hors auth -> redirection vers `FAILURE` avec un code canonique de parcours
+
+Cette separation permet de garder des messages utiles sur `LOGIN` sans repliquer de logique de logout ou de redirection dans chaque ecran KYC.
+
 ## Comportement recommande
 
 ### Cas normal
@@ -172,6 +187,7 @@ Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 ### Cas non autorise
 
 - apres auth valide mais sans scope demo resolu par partner-node, le parcours va vers `ACCESS_DENIED`
+- apres expiration ou invalidation de la session Cognito sur une route protegee, le parcours ne reste pas sur l'ecran courant et replie vers `LOGIN` via le logout centralise
 
 ## Structure d'interface recommandee
 

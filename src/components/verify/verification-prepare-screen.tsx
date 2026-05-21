@@ -2,34 +2,11 @@
 
 import { useEffect } from "react";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
-import { redirectToLogout } from "@/auth/cognito-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
-
-async function readErrorPayload(response: Response): Promise<{ message: string; code: string | null }> {
-  const raw = await response.text();
-
-  if (!raw) {
-    return {
-      message: "Creation impossible.",
-      code: null,
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as { message?: string; code?: string };
-    return {
-      message: parsed.message ?? "Creation impossible.",
-      code: parsed.code ?? null,
-    };
-  } catch {
-    return {
-      message: raw,
-      code: null,
-    };
-  }
-}
 
 export function VerificationPrepareScreen() {
   useEffect(() => {
@@ -44,28 +21,16 @@ export function VerificationPrepareScreen() {
       }
 
       try {
-        const response = await fetch("/api/kyc/session", {
+        const createdSession = await requestProtectedJson<{ sessionId: string }>("/api/kyc/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(draft),
+        }, {
+          defaultMessage: "Creation impossible.",
+          defaultFailureCode: "SESSION_PREPARE_FAILED",
         });
-
-        if (!response.ok) {
-          const payload = await readErrorPayload(response);
-
-          if (response.status === 401 || payload.code === "UNAUTHORIZED") {
-            redirectToLogout();
-            return;
-          }
-
-          throw new Error(payload.message);
-        }
-
-        const createdSession = (await response.json()) as {
-          sessionId: string;
-        };
 
         if (cancelled) {
           return;
@@ -78,7 +43,11 @@ export function VerificationPrepareScreen() {
           return;
         }
 
-        const message = reason instanceof Error ? reason.message : "Creation impossible.";
+        if (handleAppError(reason)) {
+          return;
+        }
+
+        const message = errorMessage(reason, "Creation impossible.");
         const query = new URLSearchParams({
           code: "SESSION_PREPARE_FAILED",
           message,
