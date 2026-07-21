@@ -227,9 +227,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
-- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
-- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
+- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 ### Environment `Production`
@@ -240,9 +238,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_API_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
-- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`, ou vide pour replier sur `KYCLY_API_BASE_URL`
-- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`
+- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Invariant obligatoire:
@@ -284,8 +280,7 @@ Dans l'app client Cognito dediee a `whitelabel-vercel`, verifier:
 - [ ] activer les previews Vercel
 - [ ] charger toutes les variables `Preview`
 - [ ] charger toutes les variables `Production`
-- [ ] verifier que `KYCLY_API_BASE_URL` pointe sur `partner-node sandbox` pour `/kyclink/*`
-- [ ] verifier que `KYCLY_ME_BASE_URL` pointe sur l'hote exposant `/demo/me`
+- [ ] verifier que `KYCLY_BASE_URL` pointe sur `partner-node sandbox` pour `/kyclink/*`
 - [ ] verifier qu'aucune ancienne variable de mapping demo n'est definie
 
 ---
