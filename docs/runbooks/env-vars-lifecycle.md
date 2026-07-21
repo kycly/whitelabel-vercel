@@ -213,6 +213,15 @@ Regle J1 retenue:
 
 Cette variable ne doit pas pointer vers `partner-node production` tant qu'une decision explicite ne modifie pas le blueprint du projet.
 
+**Contournement Cloudflare (interim, cf. [ADR-005](../architecture/decisions/005-partner-node-direct-ip-cloudflare-bypass.md))** :
+Cloudflare (qui protege partner-node) **bloque les requetes serveur venant de Vercel/AWS**, y compris le
+premier appel post-login `GET /demo/me` — ce qui provoquait un `ACCESS_DENIED` juste apres l'auth. Pour
+debloquer, `KYCLY_BASE_URL` pointe actuellement sur l'**IP publique directe de partner-node**, en
+contournant Cloudflare. Consequences a surveiller : perte des protections Cloudflare (WAF/DDoS/bot),
+exposition de l'IP d'origine, verification TLS `https://<ip>` a controler, mise a jour manuelle si l'IP
+change. **Cible** : revenir au hostname une fois la policy Cloudflare Access/WAF correctement ouverte pour
+Vercel sur tous les chemins (`/demo/me`, `/kyclink/*`).
+
 ### `DEFAULT_KYCLINK_THEME`
 
 Role:
@@ -240,6 +249,10 @@ Regles retenues:
 - ne jamais exposer ces valeurs au navigateur (variables serveur uniquement)
 - implementation : `src/config/partner-access.ts` (`buildPartnerAccessHeaders`), injecte dans
   `src/server/kyclink.ts` et `src/auth/cognito.ts`
+- **etat actuel** : le service token n'a pas suffi a debloquer les appels ; on utilise le contournement
+  IP directe (cf. [ADR-005](../architecture/decisions/005-partner-node-direct-ip-cloudflare-bypass.md)).
+  Tant que `KYCLY_BASE_URL` pointe sur l'IP directe, ces variables sont **sans effet** (aucun Cloudflare
+  dans le chemin) mais restent en place pour le retour au hostname.
 
 ---
 
