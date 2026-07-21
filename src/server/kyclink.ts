@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/config/env";
+import { buildPartnerAccessHeaders } from "@/config/partner-access";
 import {
   buildSessionMetadata,
   normalizeExternalId,
@@ -121,7 +122,7 @@ async function fetchUpstreamKycSessionsPage(params: {
   limit: number;
   offset: number;
 }): Promise<z.infer<typeof upstreamKycSessionSchema>[]> {
-  const endpoint = new URL("/kyclink/sessions", `${env.server.kyclySessionBaseUrl}/`);
+  const endpoint = new URL("/kyclink/sessions", `${env.server.kyclyBaseUrl}/`);
   endpoint.searchParams.set("limit", String(params.limit));
   endpoint.searchParams.set("offset", String(params.offset));
 
@@ -129,6 +130,7 @@ async function fetchUpstreamKycSessionsPage(params: {
     method: "GET",
     headers: {
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });
@@ -172,7 +174,7 @@ export async function createKycSession(params: {
   input: SessionContextInput;
   parentOrigin: string;
 }): Promise<CreatedKycSession> {
-  const endpoint = new URL("/kyclink/create", `${env.server.kyclyApiBaseUrl}/`).toString();
+  const endpoint = new URL("/kyclink/create", `${env.server.kyclyBaseUrl}/`).toString();
   const payload = {
     externalId: normalizeExternalId(params.input.referenceClient),
     parentOrigin: params.parentOrigin,
@@ -184,6 +186,7 @@ export async function createKycSession(params: {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     body: JSON.stringify(payload),
     cache: "no-store",
@@ -216,11 +219,12 @@ export async function fetchKycSessionResult(params: {
   cognitoIdToken: string;
   sessionId: string;
 }): Promise<KycSessionResult> {
-  const endpoint = new URL(`/kyclink/${params.sessionId}/result`, `${env.server.kyclyApiBaseUrl}/`).toString();
+  const endpoint = new URL(`/kyclink/${params.sessionId}/result`, `${env.server.kyclyBaseUrl}/`).toString();
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });
@@ -252,11 +256,12 @@ export async function fetchKycSession(params: {
   cognitoIdToken: string;
   sessionId: string;
 }): Promise<KycSession> {
-  const endpoint = new URL(`/kyclink/${params.sessionId}`, `${env.server.kyclyApiBaseUrl}/`).toString();
+  const endpoint = new URL(`/kyclink/${params.sessionId}`, `${env.server.kyclyBaseUrl}/`).toString();
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });

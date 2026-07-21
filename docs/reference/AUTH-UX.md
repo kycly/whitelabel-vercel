@@ -175,7 +175,6 @@ Le contrat J1 suppose au minimum:
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `NEXT_PUBLIC_AWS_REGION`
 - `APP_SESSION_SECRET`
-- `KYCLY_ME_BASE_URL`
 
 Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 
