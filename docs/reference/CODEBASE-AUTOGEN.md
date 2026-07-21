@@ -11,13 +11,13 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 56 |
+| Fichiers code scannes | 58 |
 | Routes detectees | 19 |
 | Hooks detectes | 0 |
 | Composants detectes | 17 |
-| Exports detectes | 111 |
-| Fichiers de tests detectes | 3 |
-| Variables d'environnement detectees | 9 |
+| Exports detectes | 112 |
+| Fichiers de tests detectes | 4 |
+| Variables d'environnement detectees | 11 |
 
 ## Scripts npm/pnpm (package.json)
 
@@ -42,6 +42,8 @@
 ## Variables d'environnement (detectees dans le code)
 
 - APP_SESSION_SECRET
+- CF_ACCESS_CLIENT_ID
+- CF_ACCESS_CLIENT_SECRET
 - DEFAULT_KYCLINK_THEME
 - KYCLY_API_BASE_URL
 - KYCLY_ME_BASE_URL
@@ -185,6 +187,7 @@ _Aucun hook detecte._
 | function | VerificationSessions | src/components/verify/verification-sessions.tsx |
 | function | VerificationWorkspace | src/components/verify/verification-workspace.tsx |
 | const | env | src/config/env.ts |
+| function | buildPartnerAccessHeaders | src/config/partner-access.ts |
 | type | ActiveVerificationSession | src/lib/active-verification-session.ts |
 | function | clearActiveVerificationSession | src/lib/active-verification-session.ts |
 | function | readActiveVerificationSession | src/lib/active-verification-session.ts |
@@ -218,6 +221,7 @@ _Aucun hook detecte._
 ## Fichiers de tests
 
 - src/auth/cognito.test.ts
+- src/config/partner-access.test.ts
 - src/server/kyc-session-route.test.ts
 - src/server/kyclink.test.ts
 

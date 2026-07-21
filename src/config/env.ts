@@ -47,5 +47,9 @@ export const env = {
       "https://api.kycly.sn",
     ),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
+    // Service token Cloudflare Access pour débloquer les appels serveur vers partner-node
+    // (voir src/config/partner-access.ts). Optionnels : absents = aucun en-tête ajouté.
+    cfAccessClientId: process.env.CF_ACCESS_CLIENT_ID,
+    cfAccessClientSecret: process.env.CF_ACCESS_CLIENT_SECRET,
   },
 } as const;

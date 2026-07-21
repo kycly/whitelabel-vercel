@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/config/env";
+import { buildPartnerAccessHeaders } from "@/config/partner-access";
 import {
   buildSessionMetadata,
   normalizeExternalId,
@@ -110,6 +111,7 @@ async function fetchUpstreamKycSessionsPage(params: {
     method: "GET",
     headers: {
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });
@@ -165,6 +167,7 @@ export async function createKycSession(params: {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     body: JSON.stringify(payload),
     cache: "no-store",
@@ -202,6 +205,7 @@ export async function fetchKycSessionResult(params: {
     method: "GET",
     headers: {
       Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });

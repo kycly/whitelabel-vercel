@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { env } from "@/config/env";
+import { buildPartnerAccessHeaders } from "@/config/partner-access";
 
 export type VerifiedIdentityClaims = {
   sub: string;
@@ -62,6 +63,7 @@ export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<Se
     method: "GET",
     headers: {
       Authorization: `Bearer ${idToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
     },
     cache: "no-store",
   });

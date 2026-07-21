@@ -9,6 +9,11 @@ La regle produit est simple:
 - elle ouvre l'authentification Cognito sans exposer de details IAM inutiles
 - elle collecte email et mot de passe directement dans l'app, comme partner-node
 
+> Note infrastructure : la resolution du compte demo apres login (`GET /demo/me`, `src/auth/cognito.ts`)
+> est un appel **serveur** vers partner-node, protege par Cloudflare Access. Il porte, en plus du
+> `Authorization: Bearer <JWT Cognito>`, les en-tetes de service token `CF-Access-Client-Id` /
+> `CF-Access-Client-Secret` (cf. [../runbooks/env-vars-lifecycle.md](../runbooks/env-vars-lifecycle.md)).
+
 ## Role de la page
 
 La page `LOGIN` a quatre objectifs:

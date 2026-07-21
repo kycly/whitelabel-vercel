@@ -67,6 +67,9 @@ sequenceDiagram
   partner-node** (cf. ADR [003](../decisions/003-ck-demo-selection-partner-node.md)).
 - **Base URL** : `env.server.kyclyApiBaseUrl` (défaut `https://api.kycly.sn`), doit pointer
   `partner-node sandbox` (invariant sandbox-only).
+- **Cloudflare Access** : partner-node étant protégé par Cloudflare, les appels serveur portent aussi
+  les en-têtes de service token `CF-Access-Client-Id` / `CF-Access-Client-Secret`
+  (`src/config/partner-access.ts`, env `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`).
 - **Repli résultat** : un `404` sur `/kyclink/:id/result` déclenche une reconstruction depuis
   `GET /kyclink/sessions` (fallback serveur, pas de persistance locale).
 

@@ -23,6 +23,7 @@ Frontend React
 Backend applicatif
   -> POST https://api.kycly.sn/kyclink/create
   -> Authorization: Bearer <cognito-id-token>
+  -> CF-Access-Client-Id / CF-Access-Client-Secret (service token Cloudflare Access)
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
 Frontend React

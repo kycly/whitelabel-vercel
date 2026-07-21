@@ -128,6 +128,8 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | `KYCLY_SESSION_BASE_URL` | URL du host `partner-node` appele cote serveur pour `GET /kyclink/sessions`; replie sur `KYCLY_API_BASE_URL` si vide |
 | `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
+| `CF_ACCESS_CLIENT_ID` | Client ID du service token Cloudflare Access (appels serveur vers partner-node) |
+| `CF_ACCESS_CLIENT_SECRET` | Client Secret du service token Cloudflare Access |
 
 ---
 
@@ -235,6 +237,24 @@ Role:
 Valeur par defaut retenue:
 
 - `kycly-light`
+
+### `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`
+
+Role:
+
+- `partner-node` est protege par Cloudflare : les requetes serveur-a-serveur venant de Vercel/AWS
+  sont bloquees sauf si elles presentent un **service token Cloudflare Access**. whitelabel envoie
+  donc, sur ses appels serveur vers partner-node (`/demo/me`, `/kyclink/*`), les en-tetes
+  `CF-Access-Client-Id` / `CF-Access-Client-Secret`.
+
+Regles retenues:
+
+- couple genere cote Cloudflare Zero Trust (Access > Service Auth), scope aux endpoints partner-node necessaires
+- present dans Vercel `Preview` et `Production` si partner-node est derriere Cloudflare Access
+- **optionnels** : si l'un des deux manque, aucun en-tete n'est ajoute (dev local / partner-node non protege)
+- ne jamais exposer ces valeurs au navigateur (variables serveur uniquement)
+- implementation : `src/config/partner-access.ts` (`buildPartnerAccessHeaders`), injecte dans
+  `src/server/kyclink.ts` et `src/auth/cognito.ts`
 
 ---
 

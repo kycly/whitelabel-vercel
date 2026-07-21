@@ -8,6 +8,8 @@ vi.mock("@/config/env", () => ({
       kyclyApiBaseUrl: "https://api.kycly.test",
       kyclySessionBaseUrl: "https://session.kycly.test",
       defaultKycLinkTheme: "kycly-light",
+      cfAccessClientId: "test-cf-id.access",
+      cfAccessClientSecret: "test-cf-secret",
     },
   },
 }));
@@ -78,6 +80,8 @@ describe("server/kyclink", () => {
     expect(url).toBe("https://api.kycly.test/kyclink/create");
     expect(init.method).toBe("POST");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
+    expect((init.headers as Record<string, string>)["CF-Access-Client-Id"]).toBe("test-cf-id.access");
+    expect((init.headers as Record<string, string>)["CF-Access-Client-Secret"]).toBe("test-cf-secret");
     expect(body.externalId).toBe("cust_0042");
     expect(body.parentOrigin).toBe("https://app.example.com");
     expect(body.metadata.routingContext.journey).toBe("onboarding");
