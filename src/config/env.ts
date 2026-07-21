@@ -35,17 +35,9 @@ export const env = {
   },
   server: {
     sessionSecret: resolveSessionSecret(appEnv),
-    kyclyApiBaseUrl: resolveBaseUrl(process.env.KYCLY_API_BASE_URL, "https://api.kycly.sn"),
-    kyclySessionBaseUrl: resolveBaseUrl(
-      process.env.KYCLY_SESSION_BASE_URL,
-      process.env.KYCLY_API_BASE_URL,
-      "https://api.kycly.sn",
-    ),
-    kyclyMeBaseUrl: resolveBaseUrl(
-      process.env.KYCLY_ME_BASE_URL,
-      process.env.KYCLY_API_BASE_URL,
-      "https://api.kycly.sn",
-    ),
+    // Hôte unique partner-node : un seul base URL, appelé avec l'endpoint voulu à chaque fois
+    // (`/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`).
+    kyclyBaseUrl: resolveBaseUrl(process.env.KYCLY_BASE_URL, "https://api.kycly.sn"),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
     // Service token Cloudflare Access pour débloquer les appels serveur vers partner-node
     // (voir src/config/partner-access.ts). Optionnels : absents = aucun en-tête ajouté.

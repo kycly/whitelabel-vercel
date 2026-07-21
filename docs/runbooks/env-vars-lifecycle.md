@@ -124,9 +124,7 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
-| `KYCLY_API_BASE_URL` | URL du runtime `partner-node` appele cote serveur pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` |
-| `KYCLY_SESSION_BASE_URL` | URL du host `partner-node` appele cote serveur pour `GET /kyclink/sessions`; replie sur `KYCLY_API_BASE_URL` si vide |
-| `KYCLY_ME_BASE_URL` | URL du host `partner-node` expose pour `/demo/me` |
+| `KYCLY_BASE_URL` | URL unique du runtime `partner-node`, appelee cote serveur avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 | `CF_ACCESS_CLIENT_ID` | Client ID du service token Cloudflare Access (appels serveur vers partner-node) |
 | `CF_ACCESS_CLIENT_SECRET` | Client Secret du service token Cloudflare Access |
@@ -187,11 +185,11 @@ Regles retenues:
 - ne pas confondre avec `GH_PACKAGES_TOKEN`, qui sert a la CI GitHub Actions
 - ne jamais exposer cette valeur dans le client
 
-### `KYCLY_API_BASE_URL`
+### `KYCLY_BASE_URL`
 
 Role:
 
-- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- URL **unique** du backend KYC `partner-node`, appelee par les route handlers Next.js pour **tous** les endpoints : `/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`
 
 Regle J1 retenue:
 
@@ -199,34 +197,6 @@ Regle J1 retenue:
 - `Production` -> runtime `partner-node sandbox`
 
 Cette variable ne doit pas pointer vers `partner-node production` tant qu'une decision explicite ne modifie pas le blueprint du projet.
-
-### `KYCLY_SESSION_BASE_URL`
-
-Role:
-
-- URL du host appele par les route handlers Next.js pour `GET /kyclink/sessions`
-
-Regle J1 retenue:
-
-- `Preview` -> host exposant `GET /kyclink/sessions`
-- `Production` -> host exposant `GET /kyclink/sessions`
-
-Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe la liste de sessions du reste des routes `partner-node`.
-
-Si elle est vide, l'application replie explicitement sur `KYCLY_API_BASE_URL`.
-
-### `KYCLY_ME_BASE_URL`
-
-Role:
-
-- URL du host appele par les route handlers Next.js pour resoudre `/demo/me`
-
-Regle J1 retenue:
-
-- `Preview` -> host exposant `/demo/me`
-- `Production` -> host exposant `/demo/me`
-
-Cette variable peut differer de `KYCLY_API_BASE_URL` si l'exposition reseau separe `/demo/me` du reste des routes `partner-node`.
 
 ### `DEFAULT_KYCLINK_THEME`
 
@@ -302,8 +272,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN` si l'installation locale doit resoudre `@kycly/link`
-- `KYCLY_API_BASE_URL`
-- `KYCLY_ME_BASE_URL`
+- `KYCLY_BASE_URL`
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Preview
@@ -314,8 +283,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN`
-- `KYCLY_API_BASE_URL` -> sandbox
-- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
+- `KYCLY_BASE_URL` -> sandbox
 - `DEFAULT_KYCLINK_THEME`
 
 ### Vercel Production
@@ -326,8 +294,7 @@ La separation retenue porte sur le runtime de l'application, pas sur la cible me
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
 - `NODE_AUTH_TOKEN`
-- `KYCLY_API_BASE_URL` -> sandbox
-- `KYCLY_ME_BASE_URL` -> host exposant `/demo/me`
+- `KYCLY_BASE_URL` -> sandbox
 - `DEFAULT_KYCLINK_THEME`
 
 ---
@@ -343,9 +310,7 @@ Variables minimales retenues dans la CI:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET` de validation
-- `KYCLY_API_BASE_URL` de validation
-- `KYCLY_SESSION_BASE_URL` de validation
-- `KYCLY_ME_BASE_URL` de validation
+- `KYCLY_BASE_URL` de validation
 
 Secrets CI retenus:
 
@@ -368,23 +333,13 @@ Effet attendu:
 
 - les sessions applicatives precedentes deviennent invalides
 
-### `KYCLY_API_BASE_URL`
+### `KYCLY_BASE_URL`
 
 Procedure retenue:
 
 1. mettre a jour la variable dans Vercel
 2. redeployer
 3. verifier creation et lecture de session
-
-### `KYCLY_ME_BASE_URL`
-
-Procedure retenue:
-
-1. mettre a jour la variable dans Vercel
-2. redeployer
-3. verifier login et resolution du scope demo
-
----
 
 ## Verification apres changement de variables
 
@@ -405,8 +360,7 @@ Apres tout changement sur les variables structurantes, verifier:
 - [ ] renseigner `Production` dans Vercel
 - [ ] verifier la coherence region / user pool / app client id
 - [ ] charger `GH_PACKAGES_TOKEN` dans GitHub Actions
-- [ ] verifier que `KYCLY_API_BASE_URL` cible `partner-node sandbox`
-- [ ] verifier que `KYCLY_ME_BASE_URL` cible l'hote exposant `/demo/me`
+- [ ] verifier que `KYCLY_BASE_URL` cible `partner-node sandbox`
 
 ---
 

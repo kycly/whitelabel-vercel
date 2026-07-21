@@ -5,8 +5,7 @@ vi.mock("@/config/env", () => ({
     public: {},
     server: {
       sessionSecret: "test-secret",
-      kyclyApiBaseUrl: "https://api.kycly.test",
-      kyclySessionBaseUrl: "https://session.kycly.test",
+      kyclyBaseUrl: "https://api.kycly.test",
       defaultKycLinkTheme: "kycly-light",
       cfAccessClientId: "test-cf-id.access",
       cfAccessClientSecret: "test-cf-secret",
@@ -167,7 +166,7 @@ describe("server/kyclink", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1/result");
-    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://session.kycly.test/kyclink/sessions?limit=50&offset=0");
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://api.kycly.test/kyclink/sessions?limit=50&offset=0");
   });
 
   it("uses the sessions list endpoint and result endpoint together to compute canonical filtered history", async () => {

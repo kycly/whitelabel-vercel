@@ -65,9 +65,7 @@ Claims minimum attendus:
 - le frontend ne voit jamais le JWT Cognito brut une fois la session applicative etablie
 - le backend verifie l'acces via `partner-node /demo/me` avant toute creation de session
 - le backend reutilise l'id token Cognito verifie pour authentifier les appels `partner-node /kyclink/*`
-- `KYCLY_API_BASE_URL` doit cibler le runtime sandbox de partner-node pour la creation de session et les lectures detaillees `/kyclink/*`
-- `KYCLY_SESSION_BASE_URL` peut cibler un host distinct pour `GET /kyclink/sessions`; si absente, l'app replie sur `KYCLY_API_BASE_URL`
-- `KYCLY_ME_BASE_URL` doit cibler l'hote exposant `/demo/me`
+- `KYCLY_BASE_URL` doit cibler le runtime sandbox de partner-node pour la creation de session et les lectures detaillees `/kyclink/*`
 - l'app n'utilise ni la base ni le backend runtime de partner-node
 
 ## Canon UI/UX local
@@ -93,9 +91,7 @@ Variables publiques:
 
 Variables serveur:
 
-- KYCLY_API_BASE_URL
-- KYCLY_SESSION_BASE_URL
-- KYCLY_ME_BASE_URL
+- KYCLY_BASE_URL
 - DEFAULT_KYCLINK_THEME
 
 Politique J1:

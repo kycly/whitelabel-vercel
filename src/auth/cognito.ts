@@ -58,7 +58,7 @@ export function identityFromIdTokenPayload(payload: JWTPayload): VerifiedIdentit
 }
 
 export async function resolvePartnerDemoAccess(idToken: string): Promise<Pick<SessionClaims, "demoAccountId" | "canAccess">> {
-  const endpoint = new URL("/demo/me", `${env.server.kyclyMeBaseUrl}/`).toString();
+  const endpoint = new URL("/demo/me", `${env.server.kyclyBaseUrl}/`).toString();
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {

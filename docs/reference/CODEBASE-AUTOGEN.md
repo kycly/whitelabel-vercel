@@ -17,7 +17,7 @@
 | Composants detectes | 17 |
 | Exports detectes | 112 |
 | Fichiers de tests detectes | 4 |
-| Variables d'environnement detectees | 11 |
+| Variables d'environnement detectees | 9 |
 
 ## Scripts npm/pnpm (package.json)
 
@@ -45,9 +45,7 @@
 - CF_ACCESS_CLIENT_ID
 - CF_ACCESS_CLIENT_SECRET
 - DEFAULT_KYCLINK_THEME
-- KYCLY_API_BASE_URL
-- KYCLY_ME_BASE_URL
-- KYCLY_SESSION_BASE_URL
+- KYCLY_BASE_URL
 - NEXT_PUBLIC_APP_ENV
 - NEXT_PUBLIC_AWS_REGION
 - NEXT_PUBLIC_COGNITO_APP_CLIENT_ID
