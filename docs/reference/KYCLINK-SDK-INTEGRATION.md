@@ -138,11 +138,11 @@ Contraintes utiles:
 
 ### 2.2 — Instance backend actuelle
 
-Pour cette app, `KYCLY_API_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`.
+Pour cette app, `KYCLY_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`.
 
-La lecture de liste `GET /kyclink/sessions` peut pointer vers un host distinct, configure dans `KYCLY_SESSION_BASE_URL`. Si cette variable reste vide, l'app replie sur `KYCLY_API_BASE_URL`.
+La lecture de liste `GET /kyclink/sessions` utilise le meme `KYCLY_BASE_URL` (hote unique partner-node).
 
-La resolution du scope demo via `/demo/me` peut pointer vers un host distinct, configure dans `KYCLY_ME_BASE_URL`.
+La resolution du scope demo via `/demo/me` utilise le meme `KYCLY_BASE_URL`.
 
 Si vous voulez figer strictement l'origine parent transmise a KycLink, configurez aussi `APP_CANONICAL_ORIGIN`. Sinon, `whitelabel-vercel` derive `parentOrigin` cote serveur depuis `x-forwarded-host` / `x-forwarded-proto`, puis `host`. Le header navigateur `Origin` n'est plus la source de verite.
 
@@ -251,7 +251,7 @@ export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
   resolvedParentOrigin: string,
   cognitoIdToken: string,
-  baseUrl = process.env.KYCLY_API_BASE_URL ?? "https://api.kycly.sn",
+  baseUrl = process.env.KYCLY_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
   const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
   const payload = {
@@ -280,11 +280,11 @@ Dans `whitelabel-vercel`, cette fonction n'utilise pas une variable unique de ty
 Le flux retenu est le suivant:
 
 1. verifier le JWT Cognito cote serveur
-2. appeler `GET /demo/me` sur `KYCLY_ME_BASE_URL`
+2. appeler `GET /demo/me` sur `KYCLY_BASE_URL`
 3. recuperer le `demoAccountId` courant
 4. conserver l'id token Cognito dans la session HTTP-only signee
 5. resoudre `parentOrigin` cote serveur (origine canonique configuree, sinon headers forwardes / host)
-6. appeler `POST /kyclink/create` sur `KYCLY_API_BASE_URL` avec ce token et cette `parentOrigin`
+6. appeler `POST /kyclink/create` sur `KYCLY_BASE_URL` avec ce token et cette `parentOrigin`
 
 ### 3.3 — Route a exposer dans votre propre backend
 

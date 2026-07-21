@@ -60,7 +60,7 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 ## Demarrage local
 
 1. copier `.env.example` vers `.env.local`
-2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `APP_CANONICAL_ORIGIN` si vous voulez figer l'origine d'embarquement KycLink, `KYCLY_API_BASE_URL`, `KYCLY_SESSION_BASE_URL` si la liste de sessions passe par un host distinct, et `KYCLY_ME_BASE_URL`
+2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `APP_CANONICAL_ORIGIN` si vous voulez figer l'origine d'embarquement KycLink, et `KYCLY_BASE_URL`
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
@@ -97,9 +97,7 @@ Variables serveur:
 
 - `APP_SESSION_SECRET`
 - `APP_CANONICAL_ORIGIN` pour imposer l'origine parent canonique forwardee a `partner-node /kyclink/create`; si vide, l'app derive l'origine cote serveur depuis les headers forwardes (`x-forwarded-host` / `x-forwarded-proto`) puis `host`
-- `KYCLY_API_BASE_URL` vers le runtime sandbox de `partner-node` pour la creation de session et les lectures detaillees `/kyclink/*`
-- `KYCLY_SESSION_BASE_URL` vers le host exposant `GET /kyclink/sessions`; si vide, l'app replie sur `KYCLY_API_BASE_URL`
-- `KYCLY_ME_BASE_URL` vers l'hote exposant `/demo/me`, par exemple `https://me.kycly.sn`
+- `KYCLY_BASE_URL` vers le runtime sandbox de `partner-node` pour la creation de session et les lectures detaillees `/kyclink/*`
 
 La session applicative conserve aussi l'id token Cognito cote serveur, dans le cookie HTTP-only signe, pour authentifier les appels `partner-node /kyclink/*` sans exposer ce token au frontend.
 
