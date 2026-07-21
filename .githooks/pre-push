@@ -4,6 +4,15 @@ set -eu
 echo "[pre-push] Checking canonical docs drift..."
 pnpm -s docs:check
 
+echo "[pre-push] Checking docs truth..."
+pnpm -s docs:truth
+
+echo "[pre-push] Checking docs structure..."
+pnpm -s docs:structure
+
+echo "[pre-push] Checking code docs up to date..."
+pnpm -s docs:codegen:check
+
 echo "[pre-push] Guard sandbox-only manifests..."
 pnpm -s guard:sandbox-only
 

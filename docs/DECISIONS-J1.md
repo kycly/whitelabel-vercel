@@ -4,6 +4,11 @@ Ce document ferme les arbitrages indispensables pour demarrer l'implementation d
 
 Il sert de source de verite quand plusieurs documents formulaient la meme idee de maniere differente.
 
+> Ces arbitrages sont désormais formalisés en **ADR** dans
+> [architecture/decisions/](architecture/decisions/README.md) : ADR-001 (flux Cognito direct),
+> ADR-002 (sandbox-only / `ck_demo_*`), ADR-003 (sélection de clé côté partner-node),
+> ADR-004 (déploiement Vercel Git Integration). Ce document reste la référence narrative J1.
+
 ## D1 — Nature de l'independance de l'app
 
 whitelabel-vercel est:

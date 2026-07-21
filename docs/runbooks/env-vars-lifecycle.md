@@ -238,6 +238,22 @@ Valeur par defaut retenue:
 
 ---
 
+## Variables retirees (a purger de Vercel)
+
+Ces variables ont existe sur le projet Vercel mais **ne sont plus lues par le code**. Elles doivent
+etre supprimees des environnements Vercel `Preview` et `Production` pour eviter toute confusion.
+
+| Variable | Statut | Raison |
+|---|---|---|
+| `DEMO_ACCOUNT_KEY_MAP` | orpheline | La selection de cle `ck_demo_*` est passee cote `partner-node` au refacto « direct cognito flow » (#2). L'app ne maintient plus de map locale. Voir ADR-003. |
+| `APP_CANONICAL_ORIGIN` | orpheline | Aucune occurrence dans le code ou la doc ; posee manuellement sur Vercel, jamais consommee par le runtime actuel. |
+
+Verification : `grep -rn "process.env" src app` ne reference aucune de ces deux variables. La liste
+canonique des variables reellement utilisees est celle des sections « Variables publiques » et
+« Variables serveur » ci-dessus.
+
+---
+
 ## Separation Preview / Production
 
 La separation retenue porte sur le runtime de l'application, pas sur la cible metier.

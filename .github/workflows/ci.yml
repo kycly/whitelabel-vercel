@@ -59,6 +59,15 @@ jobs:
       - name: Check docs drift
         run: pnpm docs:check
 
+      - name: Check docs truth
+        run: pnpm docs:truth
+
+      - name: Check docs structure
+        run: pnpm docs:structure
+
+      - name: Check code docs up to date
+        run: pnpm docs:codegen:check
+
       - name: Guard sandbox-only
         run: pnpm guard:sandbox-only
 
