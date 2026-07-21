@@ -40,7 +40,25 @@ test.beforeEach(async ({ context, baseURL, page }) => {
       body: JSON.stringify({
         sessionId: SESSION_ID,
         kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
-        expiresAt: "2026-05-18T12:00:00.000Z",
+        expiresAt: "2099-05-18T12:00:00.000Z",
+      }),
+    });
+  });
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sessionId: SESSION_ID,
+        externalId: "cust_mobile_001",
+        kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
+        status: "pending",
+        expiresAt: "2099-05-18T12:00:00.000Z",
+        completedAt: null,
+        workflowStatus: null,
+        sessionState: "ACTIVE",
+        resumeAvailable: true,
       }),
     });
   });
@@ -57,9 +75,9 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             status: "pending",
             completed: false,
             completedAt: null,
-            expiresAt: "2026-05-18T12:00:00.000Z",
+            expiresAt: "2099-05-18T12:00:00.000Z",
             createdAt: "2026-05-18T11:50:00.000Z",
-            validationStatus: null,
+            workflowStatus: null,
           },
         ],
         meta: {
@@ -73,11 +91,13 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             processing: 0,
             completed: 0,
           },
-          decisionCounts: {
+          workflowCounts: {
             all: 1,
+            PENDING: 0,
+            IN_REVIEW: 0,
+            ESCALATED: 0,
             APPROVED: 0,
             REJECTED: 0,
-            REVIEW: 0,
           },
         },
       }),
@@ -94,7 +114,7 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         status: "completed",
         completed: true,
         completedAt: "2026-05-18T12:03:00.000Z",
-        validationStatus: "APPROVED",
+        workflowStatus: "APPROVED",
       }),
     });
   });
@@ -105,10 +125,18 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
 
   await page.goto("/welcome");
   await expect(page.getByRole("heading", { name: "Accueil" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
 
   const welcomeCta = page.getByRole("link", { name: "Commencer" });
   await expect(welcomeCta).toBeVisible();
   expect((await welcomeCta.boundingBox())?.height).toBe(56);
+
+  await welcomeCta.click();
+  await expect(page).toHaveURL(/\/verify$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Contexte de vérification")).toBeVisible();
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
 
   await welcomeCta.click();
   await expect(page).toHaveURL(/\/verify$/);
@@ -143,15 +171,24 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await createSessionButton.click();
   await page.waitForURL(/\/verify\/prepare$/, { timeout: 30_000 });
   await page.waitForURL(new RegExp(`/verify/session\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Parcours" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Parcours" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Déconnexion" })).toHaveCount(0);
 
   await page.goto("/sessions");
   await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
   await expect(page.getByText("cust_mobile_001")).toBeVisible();
+  await expect(page.getByText("TRAIT. EN COURS")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Reprendre" })).toBeVisible();
   expect((await page.getByRole("button", { name: "Actualiser" }).boundingBox())?.height).toBe(44);
   expect((await page.getByRole("link", { name: "Nouvelle vérification" }).boundingBox())?.height).toBe(44);
+  await page.getByRole("button", { name: "Retour" }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
 
-  await page.getByRole("link", { name: /Voir la session cust_mobile_001/ }).click();
+  await page.goto("/sessions");
+  await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Voir le résultat/i }).click();
   await page.waitForURL(new RegExp(`/complete\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
 
@@ -159,7 +196,61 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   expect((await refreshResultButton.boundingBox())?.height).toBe(44);
   await refreshResultButton.click();
 
-  await expect(page.getByText("Decision favorable confirmee")).toBeVisible();
-  await expect(page.getByText("Approuve")).toBeVisible();
+  await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
+  await expect(page.getByText("status: completed")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
+});
+
+test("fait defiler la page contexte quand des champs optionnels apparaissent", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto("/verify");
+  await expect(page).toHaveURL(/\/verify$/);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Contexte de vérification")).toBeVisible();
+
+  for (const label of ["Contexte métier", "Contexte routage", "Email", "Contexte libre"]) {
+    await page.getByRole("checkbox", { name: label }).check();
+  }
+
+  const addPairButton = page.getByRole("button", { name: "Ajouter une paire" });
+  for (let index = 0; index < 3; index += 1) {
+    await addPairButton.click();
+  }
+
+  const scrollContainer = page.getByTestId("session-context-scroll-body");
+  const layoutMetrics = await page.evaluate(() => {
+    const main = document.querySelector("main");
+
+    return {
+      viewportHeight: window.innerHeight,
+      documentHeight: document.documentElement.scrollHeight,
+      mainOverflowY: main ? getComputedStyle(main).overflowY : null,
+    };
+  });
+
+  const scrollContainerMetrics = await scrollContainer.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    scrollTop: element.scrollTop,
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+
+  expect(layoutMetrics.documentHeight).toBe(layoutMetrics.viewportHeight);
+  expect(layoutMetrics.mainOverflowY).toBe("hidden");
+  expect(scrollContainerMetrics.scrollHeight).toBeGreaterThan(scrollContainerMetrics.clientHeight);
+  expect(scrollContainerMetrics.overflowY).toBe("auto");
+
+  const createSessionButton = page.getByRole("button", { name: "Créer la session" });
+  await expect(createSessionButton).toBeVisible();
+
+  await scrollContainer.evaluate((element) => {
+    element.scrollTo({ top: element.scrollHeight, behavior: "instant" });
+  });
+
+  await expect
+    .poll(async () => scrollContainer.evaluate((element) => element.scrollTop), {
+      timeout: 5_000,
+    })
+    .toBeGreaterThan(0);
 });

@@ -17,13 +17,15 @@ export function AuthLoadingScreen({ target }: { target: string }) {
     <ProtectedScreenShell
       backHref="/auth/logout"
       title="Redirection"
+      showBack={false}
       showLogout={false}
-      maxWidthClassName="max-w-3xl"
-      panelClassName="flex flex-1 flex-col justify-center text-center"
+      maxWidthClassName="sm:max-w-[430px]"
+      panelClassName="flex flex-1 flex-col justify-center !pt-0 text-center"
     >
       <div className="flex flex-1 items-center justify-center">
-        <div className={[surfaceInfoCardClassName, "animate-scale-in"].join(" ")}>
-          <div className="inline-flex items-center gap-3">
+        <div className={[surfaceInfoCardClassName, "animate-scale-in rounded-3xl px-5 py-4"].join(" ")}>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Session</p>
+          <div className="inline-flex items-center gap-3 text-[var(--foreground)]">
             <LoaderCircle className="size-4 animate-spin text-brand" />
             Redirection en cours...
           </div>

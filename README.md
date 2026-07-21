@@ -24,11 +24,13 @@ Documentation de cadrage:
 - cycle de vie des variables: [docs/runbooks/env-vars-lifecycle.md](docs/runbooks/env-vars-lifecycle.md)
 - gouvernance GitHub et configuration Vercel: [docs/runbooks/repository-governance-setup.md](docs/runbooks/repository-governance-setup.md)
 - procedure ecran par ecran GitHub et Vercel: [docs/runbooks/remote-setup-clickpath.md](docs/runbooks/remote-setup-clickpath.md)
+- checklist QA mobile et PWA: [docs/runbooks/mobile-pwa-qa-checklist.md](docs/runbooks/mobile-pwa-qa-checklist.md)
 - contrat de liste des verifications: [docs/reference/KYC-SESSIONS-LIST-CONTRACT.md](docs/reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - UX page de connexion: [docs/reference/AUTH-UX.md](docs/reference/AUTH-UX.md)
 - UX metadata de session: [docs/reference/SESSION-CONTEXT-UX.md](docs/reference/SESSION-CONTEXT-UX.md)
 - guide d'integration React: [docs/reference/KYCLINK-SDK-INTEGRATION.md](docs/reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [docs/reference/UI-ESTHETIC-CANON.md](docs/reference/UI-ESTHETIC-CANON.md)
+- reference du contrat PWA mobile-first: [docs/reference/PWA-MOBILE-FIRST-CONTRACT.md](docs/reference/PWA-MOBILE-FIRST-CONTRACT.md)
 - consignes locales agent: [AGENTS.md](AGENTS.md)
 
 ## Decision J1
@@ -58,7 +60,7 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 ## Demarrage local
 
 1. copier `.env.example` vers `.env.local`
-2. renseigner les variables Cognito, `APP_SESSION_SECRET` et `KYCLY_BASE_URL`
+2. renseigner les variables Cognito, `APP_SESSION_SECRET`, `APP_CANONICAL_ORIGIN` si vous voulez figer l'origine d'embarquement KycLink, et `KYCLY_BASE_URL`
 3. lancer `pnpm install`
 4. lancer `pnpm dev`
 
@@ -94,9 +96,12 @@ Variables publiques:
 Variables serveur:
 
 - `APP_SESSION_SECRET`
-- `KYCLY_BASE_URL` vers le runtime sandbox de `partner-node` : URL unique appelee pour tous les endpoints (`/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`)
+- `APP_CANONICAL_ORIGIN` pour imposer l'origine parent canonique forwardee a `partner-node /kyclink/create`; si vide, l'app derive l'origine cote serveur depuis les headers forwardes (`x-forwarded-host` / `x-forwarded-proto`) puis `host`
+- `KYCLY_BASE_URL` vers le runtime sandbox de `partner-node` pour la creation de session et les lectures detaillees `/kyclink/*`
 
 La session applicative conserve aussi l'id token Cognito cote serveur, dans le cookie HTTP-only signe, pour authentifier les appels `partner-node /kyclink/*` sans exposer ce token au frontend.
+
+Pour eviter une divergence de `parentOrigin` entre navigateurs, webviews ou alias Vercel, la source de verite est desormais cote serveur: utilisez de preference `APP_CANONICAL_ORIGIN` des qu'un host public stable existe.
 
 ## Note d'implementation
 

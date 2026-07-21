@@ -40,8 +40,12 @@ Regles:
 - `SESSION_PREPARE` cree la session cote serveur dans une page intermediaire dediee
 - `KYC_LINK` affiche uniquement l'iframe et les actions minimales associees
 - `COMPLETE` relit le backend pour recuperer le resultat final sans recharger le formulaire
-- chaque etape expose une icone retour unique en haut a gauche avec repli explicite
-- les ecrans proteges du parcours conservent la deconnexion en haut a droite
+- `WELCOME` n'expose pas d'icone retour
+- `SESSION_CONTEXT` expose une icone retour avec repli explicite vers `WELCOME`
+- `SESSION_CONTEXT` force ce retour vers `WELCOME`, sans dependre de l'historique navigateur
+- `KYC_LINK` n'expose pas d'icone retour
+- `KYC_LINK` n'expose pas non plus de deconnexion
+- la reprise sur `/verify/session?sessionId=...` relit la session canonique via `/api/kyc/session/:sessionId` avant d'afficher l'iframe
 
 ## Pourquoi cette approche
 
@@ -63,6 +67,8 @@ Premier niveau visible:
 1. `External ID`
 2. `Notification SMS`
 
+Le champ `External ID` reste editable librement, mais doit aussi proposer une generation instantanee via une icone discrete sans label visible.
+
 Second niveau sur action explicite de l'utilisateur:
 
 - `Contexte metier`
@@ -81,8 +87,10 @@ Contraintes de densite:
 - l'activation passe par une checklist `Besoins optionnels`, pas par un lien ou un accordeon editorial
 - les champs additionnels apparaissent inline dans le meme bloc, uniquement apres activation d'un groupe
 - chaque groupe ouvert peut etre retire via une action de suppression discrete
-- le vocabulaire visuel reprend integration-node: hero centre, carte `surface-light`, champs hauts et CTA plein bleu
-- l'icone retour de `SESSION_CONTEXT` renvoie vers `WELCOME` si l'historique n'est pas exploitable
+- le vocabulaire visuel reprend integration-node: hero centre compact, carte `surface-light`, champs hauts et CTA plein bleu
+- l'icone retour de `SESSION_CONTEXT` renvoie directement vers `WELCOME`
+- le document global ne doit pas scroller: la lecture reste dans un body interne dedie au formulaire
+- le CTA principal reste isole dans un footer bas distinct, toujours atteignable en mobile avec clavier ouvert
 
 ## 1. Scenario
 
@@ -114,6 +122,12 @@ Options recommandees:
 ## 2. Contexte de verification
 
 Le noyau du parcours ne montre plus qu'un identifiant et un canal SMS. Le reste du contexte est extensible a la demande.
+
+Regle UX complementaire pour `External ID`:
+
+- saisie libre toujours autorisee
+- generation possible en un clic via une icone adjacente
+- valeur generee prefixee par `KYCLY_`, suivie de 8 caracteres alphanumeriques lisibles, sans caracteres ambigus
 
 ### Champs retenus
 

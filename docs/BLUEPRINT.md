@@ -42,11 +42,11 @@ Utilisateur
 7. Le backend resout le droit d'acces a l'app et le compte demo cible via `partner-node /demo/me`.
 8. Le backend derive `externalId` a partir de la reference client.
 9. Le backend reutilise l'id token Cognito stocke dans la session HTTP-only.
-10. Le backend derive aussi `parentOrigin` depuis la requete HTTP puis appelle `partner-node` pour creer la session.
+10. Le backend resout aussi `parentOrigin` cote serveur depuis une origine canonique configuree, sinon depuis les headers forwardes / le host de la requete, puis appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
 13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
-14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `validationStatus`.
+14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId/result` et remonte `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`.
 15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `COMPLETE`.
 
 ## Contrat d'autorisation minimal
@@ -79,6 +79,10 @@ Contraintes:
 - toute divergence visuelle volontaire doit etre explicite et documentee localement
 
 Le canon local a maintenir se trouve dans [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md).
+
+Le contrat mobile-first et la couche PWA minimale se trouvent dans [reference/PWA-MOBILE-FIRST-CONTRACT.md](reference/PWA-MOBILE-FIRST-CONTRACT.md).
+
+La checklist de validation mobile/PWA se trouve dans [runbooks/mobile-pwa-qa-checklist.md](runbooks/mobile-pwa-qa-checklist.md).
 
 ## Variables d'environnement cibles
 
@@ -159,6 +163,7 @@ whitelabel-vercel/
 - POST /auth/logout
 - GET /api/me
 - POST /api/kyc/session
+- GET /api/kyc/session/:sessionId
 - GET /api/kyc/session/:sessionId/result
 - GET /api/kyc/sessions
 
@@ -167,11 +172,12 @@ Responsabilites:
 - POST /api/auth/session verifie l'id token Cognito et etablit la session applicative via cookie serveur
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
-- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, derive aussi l'origin parent a partir de la requete HTTP, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
-- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend, avec repli sur l'index des sessions si la route detail upstream repond `404`
+- POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, resout l'origin parent cote serveur a partir d'une origine canonique configuree ou des headers proxy / host, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
+- GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour relire la session canonique et decide si la reprise reste autorisee
+- GET /api/kyc/session/:sessionId/result valide la session utilisateur, appelle partner-node pour lire le resultat courant et renvoie l'etat KYC consolide au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 
-Le contrat de cette route est detaille dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
+Les contrats de ces routes sont detailles dans [reference/KYC-SESSION-CONTRACT.md](reference/KYC-SESSION-CONTRACT.md) et [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 
 ## Ce qu'on ne fait pas au J1
 
@@ -192,9 +198,9 @@ Ajouter une persistance dediee seulement si l'un des besoins suivants devient re
 
 Avant toute persistance locale, l'evolution deja retenue est:
 
-1. exposer un proxy serveur `GET /api/kyc/sessions`
-2. consommer `partner-node sandbox /kyclink/sessions`
-3. conserver `partner-node` comme source canonique des sessions demo
+1. exposer un proxy serveur `GET /api/kyc/session/:sessionId`
+2. exposer un proxy serveur `GET /api/kyc/sessions`
+3. consommer `partner-node` comme source canonique des sessions demo
 
 ## Etat implemente a date
 
@@ -203,8 +209,10 @@ Le projet couvre maintenant ce socle executable:
 1. login Cognito direct et session applicative HTTP-only
 2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> COMPLETE`
 3. historique `SESSIONS` scope au `demo_account_id` courant
-4. lecture resultat robuste avec fallback serveur sur l'index des sessions
-5. smokes Playwright sur tunnel principal, fallback logout et parcours mobile protege
+4. reprise canonique robuste via `GET /api/kyc/session/:sessionId`
+5. lecture resultat robuste sans dependre du stockage navigateur
+6. pipeline d'erreur protege commun sur les routes app: `401 -> logout`, `ACCESS_DENIED -> /access-denied`, erreurs KYC qualifiees -> `/failure`
+7. smokes Playwright sur tunnel principal, historique et parcours mobile protege
 
 ## Documentation de reference
 
@@ -212,6 +220,8 @@ Le projet couvre maintenant ce socle executable:
 - parcours J1: [PARCOURS-J1.md](PARCOURS-J1.md)
 - UX page de connexion: [reference/AUTH-UX.md](reference/AUTH-UX.md)
 - UX metadata de session: [reference/SESSION-CONTEXT-UX.md](reference/SESSION-CONTEXT-UX.md)
+- contrat de lecture canonique d'une session: [reference/KYC-SESSION-CONTRACT.md](reference/KYC-SESSION-CONTRACT.md)
 - contrat de liste des verifications: [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md)
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)
+- reference du contrat PWA mobile-first: [reference/PWA-MOBILE-FIRST-CONTRACT.md](reference/PWA-MOBILE-FIRST-CONTRACT.md)

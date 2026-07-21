@@ -123,8 +123,9 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | Variable | Description |
 |---|---|
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
+| `APP_CANONICAL_ORIGIN` | origin canonique optionnelle transmise comme `parentOrigin` a `partner-node /kyclink/create`; si vide, l'app derive l'origin cote serveur depuis les headers forwardes puis `host` |
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
-| `KYCLY_BASE_URL` | URL unique du runtime `partner-node`, appelee cote serveur avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions` |
+| `KYCLY_BASE_URL` | URL unique du runtime `partner-node`, appelee cote serveur avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}`, `/kyclink/{id}/result`, `/kyclink/sessions` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 | `CF_ACCESS_CLIENT_ID` | Client ID du service token Cloudflare Access (appels serveur vers partner-node) |
 | `CF_ACCESS_CLIENT_SECRET` | Client Secret du service token Cloudflare Access |
@@ -173,6 +174,20 @@ Regles retenues:
 - hors environnement `local`, l'application doit echouer au demarrage si `APP_SESSION_SECRET` est absent ou reste sur un placeholder
 - ne jamais exposer cette valeur dans le client
 
+### `APP_CANONICAL_ORIGIN`
+
+Role:
+
+- figer l'origine parent envoyee a `partner-node /kyclink/create`
+
+Regles retenues:
+
+- valeur optionnelle mais recommandee des qu'un host public stable existe
+- doit etre une origin bare (`https://app.example.com`), sans path, query string ni hash
+- si elle est vide, l'application derive `parentOrigin` cote serveur depuis `x-forwarded-host` / `x-forwarded-proto`, puis `host`
+- ne jamais utiliser le header navigateur `Origin` comme source de verite
+- en cas de previews ou d'alias multiples, definir explicitement cette variable elimine les divergences Safari / Android / webview
+
 ### `NODE_AUTH_TOKEN`
 
 Role:
@@ -189,7 +204,7 @@ Regles retenues:
 
 Role:
 
-- URL **unique** du backend KYC `partner-node`, appelee par les route handlers Next.js pour **tous** les endpoints : `/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`
+- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 
 Regle J1 retenue:
 
@@ -225,22 +240,6 @@ Regles retenues:
 - ne jamais exposer ces valeurs au navigateur (variables serveur uniquement)
 - implementation : `src/config/partner-access.ts` (`buildPartnerAccessHeaders`), injecte dans
   `src/server/kyclink.ts` et `src/auth/cognito.ts`
-
----
-
-## Variables retirees (a purger de Vercel)
-
-Ces variables ont existe sur le projet Vercel mais **ne sont plus lues par le code**. Elles doivent
-etre supprimees des environnements Vercel `Preview` et `Production` pour eviter toute confusion.
-
-| Variable | Statut | Raison |
-|---|---|---|
-| `DEMO_ACCOUNT_KEY_MAP` | orpheline | La selection de cle `ck_demo_*` est passee cote `partner-node` au refacto « direct cognito flow » (#2). L'app ne maintient plus de map locale. Voir ADR-003. |
-| `APP_CANONICAL_ORIGIN` | orpheline | Aucune occurrence dans le code ou la doc ; posee manuellement sur Vercel, jamais consommee par le runtime actuel. |
-
-Verification : `grep -rn "process.env" src app` ne reference aucune de ces deux variables. La liste
-canonique des variables reellement utilisees est celle des sections « Variables publiques » et
-« Variables serveur » ci-dessus.
 
 ---
 

@@ -5,18 +5,27 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
+  type WorkflowStatus,
+  workflowStatusTone,
+  workflowStatusValue,
+} from "@/components/verify/workflow-status";
+import {
   errorAlertClassName,
-  featureActionCardClassName,
+  fixedFooterSafeAreaClassName,
   formFieldClassName,
   inlinePrimaryButtonClassName,
   metricCardClassName,
+  secondaryButtonClassName,
   primaryIconButtonClassName,
+  scrollablePanelBodyClassName,
   secondaryIconButtonClassName,
   surfaceInfoPanelClassName,
 } from "@/components/ui/fixed-action-layout";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
 type SessionStatus = "pending" | "processing" | "completed";
-type DecisionStatus = "APPROVED" | "REJECTED" | "REVIEW";
+type SessionWorkflowStatus = WorkflowStatus;
 
 type SessionsResponse = {
   data: Array<{
@@ -27,7 +36,7 @@ type SessionsResponse = {
     completedAt: string | null;
     expiresAt: string | null;
     createdAt: string;
-    validationStatus: "APPROVED" | "REJECTED" | "REVIEW" | null;
+    workflowStatus: SessionWorkflowStatus | null;
   }>;
   meta: {
     returned: number;
@@ -40,11 +49,13 @@ type SessionsResponse = {
       processing: number;
       completed: number;
     };
-    decisionCounts: {
+    workflowCounts: {
       all: number;
+      PENDING: number;
+      IN_REVIEW: number;
+      ESCALATED: number;
       APPROVED: number;
       REJECTED: number;
-      REVIEW: number;
     };
   };
 };
@@ -60,16 +71,18 @@ const PAGE_SIZE = 20;
 
 const STATUS_OPTIONS: Array<{ label: string; value: SessionStatus | "all" }> = [
   { label: "Toutes", value: "all" },
-  { label: "En attente", value: "pending" },
-  { label: "En analyse", value: "processing" },
-  { label: "Terminees", value: "completed" },
+  { label: "pending", value: "pending" },
+  { label: "processing", value: "processing" },
+  { label: "completed", value: "completed" },
 ];
 
-const DECISION_OPTIONS: Array<{ label: string; value: DecisionStatus | "all" }> = [
-  { label: "Toutes les decisions", value: "all" },
-  { label: "Favorables", value: "APPROVED" },
-  { label: "Rejetees", value: "REJECTED" },
-  { label: "En revue", value: "REVIEW" },
+const WORKFLOW_OPTIONS: Array<{ label: string; value: SessionWorkflowStatus | "all" }> = [
+  { label: "Tous les statuts metier", value: "all" },
+  { label: "PENDING", value: "PENDING" },
+  { label: "IN_REVIEW", value: "IN_REVIEW" },
+  { label: "ESCALATED", value: "ESCALATED" },
+  { label: "APPROVED", value: "APPROVED" },
+  { label: "REJECTED", value: "REJECTED" },
 ];
 
 function statusTone(status: string): string {
@@ -84,40 +97,8 @@ function statusTone(status: string): string {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function decisionTone(validationStatus: SessionsResponse["data"][number]["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "border-amber-200 bg-amber-50 text-amber-800";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-700";
-}
-
-function decisionLabel(item: SessionsResponse["data"][number]): string {
-  if (item.validationStatus === "APPROVED") {
-    return "Approuve";
-  }
-
-  if (item.validationStatus === "REJECTED") {
-    return "Rejete";
-  }
-
-  if (item.validationStatus === "REVIEW") {
-    return "En revue";
-  }
-
-  if (item.completed) {
-    return "Decision en attente";
-  }
-
-  return "En cours";
+function workflowLabel(item: SessionsResponse["data"][number]): string {
+  return workflowStatusValue(item.workflowStatus);
 }
 
 function formatDate(value: string | null): string {
@@ -131,9 +112,18 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
+function isResumableSession(item: SessionsResponse["data"][number]): boolean {
+  if (item.completed || !item.expiresAt) {
+    return false;
+  }
+
+  const expiresAtMs = Date.parse(item.expiresAt);
+  return !Number.isNaN(expiresAtMs) && expiresAtMs > Date.now();
+}
+
 export function VerificationSessions() {
   const [status, setStatus] = useState<SessionStatus | "all">("all");
-  const [decisionStatus, setDecisionStatus] = useState<DecisionStatus | "all">("all");
+  const [workflowStatus, setWorkflowStatus] = useState<SessionWorkflowStatus | "all">("all");
   const [offset, setOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<SessionsState>({
@@ -149,11 +139,13 @@ export function VerificationSessions() {
         processing: 0,
         completed: 0,
       },
-      decisionCounts: {
+      workflowCounts: {
         all: 0,
+        PENDING: 0,
+        IN_REVIEW: 0,
+        ESCALATED: 0,
         APPROVED: 0,
         REJECTED: 0,
-        REVIEW: 0,
       },
     },
     isLoading: true,
@@ -180,31 +172,18 @@ export function VerificationSessions() {
           searchParams.set("status", status);
         }
 
-        if (decisionStatus !== "all") {
-          searchParams.set("decisionStatus", decisionStatus);
+        if (workflowStatus !== "all") {
+          searchParams.set("workflowStatus", workflowStatus);
         }
 
-        const response = await fetch(`/api/kyc/sessions?${searchParams.toString()}`, {
+        const sessions = await requestProtectedJson<SessionsResponse>(`/api/kyc/sessions?${searchParams.toString()}`, {
           method: "GET",
           cache: "no-store",
           signal: controller.signal,
+        }, {
+          defaultMessage: "Lecture impossible.",
+          defaultFailureCode: "SESSIONS_FETCH_FAILED",
         });
-
-        const payload = (await response.json()) as unknown;
-
-        if (!response.ok) {
-          const message =
-            payload &&
-            typeof payload === "object" &&
-            "message" in payload &&
-            typeof payload.message === "string"
-              ? payload.message
-              : "Lecture impossible.";
-
-          throw new Error(message);
-        }
-
-        const sessions = payload as SessionsResponse;
 
         setState({
           data: sessions.data,
@@ -217,10 +196,14 @@ export function VerificationSessions() {
           return;
         }
 
+        if (handleAppError(error)) {
+          return;
+        }
+
         setState((current) => ({
           ...current,
           isLoading: false,
-          error: error instanceof Error ? error.message : "Lecture impossible.",
+          error: errorMessage(error, "Lecture impossible."),
         }));
       }
     }
@@ -230,25 +213,34 @@ export function VerificationSessions() {
     return () => {
       controller.abort();
     };
-  }, [decisionStatus, offset, reloadKey, status]);
+  }, [offset, reloadKey, status, workflowStatus]);
 
   const canGoBack = offset > 0;
   const canGoNext = state.meta.offset + state.meta.returned < state.meta.total;
-  const hasActiveFilter = status !== "all" || decisionStatus !== "all";
+  const hasActiveFilter = status !== "all" || workflowStatus !== "all";
   const isFilterEmpty = !state.isLoading && !state.error && state.data.length === 0 && hasActiveFilter;
   const isInitialEmpty = !state.isLoading && !state.error && state.data.length === 0 && !hasActiveFilter;
 
   function resetFilters() {
     setStatus("all");
-    setDecisionStatus("all");
+    setWorkflowStatus("all");
     setOffset(0);
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Historique" maxWidthClassName="max-w-5xl" panelClassName="space-y-6 pt-4">
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:p-5">
+    <ProtectedScreenShell
+      backHref="/welcome"
+      preferBackHref
+      title="Historique"
+      maxWidthClassName="sm:max-w-[430px]"
+      lockViewportScroll
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
+    >
+      <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex h-11 items-center">
+          <div className="space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Historique KYC</p>
             <p className="text-sm font-medium text-[var(--foreground)]">Mes vérifications</p>
           </div>
 
@@ -291,37 +283,37 @@ export function VerificationSessions() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-3 gap-2">
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.all}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                <History className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.all}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <History className="size-3.5" />
               </div>
             </div>
           </div>
 
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.pending + state.meta.statusCounts.processing}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                <Clock3 className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.pending + state.meta.statusCounts.processing}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <Clock3 className="size-3.5" />
               </div>
             </div>
           </div>
 
           <div className={metricCardClassName}>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-3xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.completed}</p>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <CheckCircle2 className="size-4" />
+              <p className="text-2xl font-bold text-[var(--foreground)]">{state.meta.statusCounts.completed}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <CheckCircle2 className="size-3.5" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 sm:grid-cols-2">
+      <div className="grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
         <label className="block">
           <select
             aria-label="Filtrer par statut"
@@ -342,17 +334,17 @@ export function VerificationSessions() {
 
         <label className="block">
           <select
-            aria-label="Filtrer par décision"
-            value={decisionStatus}
+            aria-label="Filtrer par statut metier"
+            value={workflowStatus}
             onChange={(event) => {
-              setDecisionStatus(event.target.value as DecisionStatus | "all");
+              setWorkflowStatus(event.target.value as SessionWorkflowStatus | "all");
               setOffset(0);
             }}
             className={formFieldClassName({ compact: true })}
           >
-            {DECISION_OPTIONS.map((option) => (
+            {WORKFLOW_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label} ({state.meta.decisionCounts[option.value]})
+                {option.label} ({state.meta.workflowCounts[option.value]})
               </option>
             ))}
           </select>
@@ -360,7 +352,7 @@ export function VerificationSessions() {
       </div>
 
       {state.isLoading ? (
-        <div className={[surfaceInfoPanelClassName, "flex items-center gap-3"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
           <LoaderCircle className="size-4 animate-spin" />
           Lecture des verifications en cours.
         </div>
@@ -371,7 +363,7 @@ export function VerificationSessions() {
       ) : null}
 
       {isInitialEmpty ? (
-        <div className={[surfaceInfoPanelClassName, "px-6 py-8"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "rounded-3xl px-6 py-8"].join(" ")}>
           <p className="font-medium text-[var(--foreground)]">Aucune verification.</p>
           <Link
             href="/verify"
@@ -384,7 +376,7 @@ export function VerificationSessions() {
       ) : null}
 
       {isFilterEmpty ? (
-        <div className={[surfaceInfoPanelClassName, "flex items-center justify-between gap-4 px-6 py-6"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "flex items-center justify-between gap-4 rounded-3xl px-6 py-6"].join(" ")}>
           <p className="font-medium text-[var(--foreground)]">Aucune verification pour ce filtre.</p>
           <button
             type="button"
@@ -400,42 +392,56 @@ export function VerificationSessions() {
       ) : null}
 
       {state.data.length > 0 ? (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {state.data.map((item) => {
+            const resumeHref = `/verify/session?sessionId=${encodeURIComponent(item.sessionId)}`;
+
             return (
-              <article key={item.sessionId} className="rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
+              <article key={item.sessionId} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-1">
                     <h2 className="truncate text-base font-semibold text-[var(--foreground)]">{item.externalId ?? item.sessionId}</h2>
                     <p className="text-xs text-[var(--muted-foreground)]">{formatDate(item.createdAt)}</p>
                   </div>
-
-                  <Link
-                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
-                    aria-label={`Voir la session ${item.externalId ?? item.sessionId}`}
-                    title="Voir la session"
-                    className={secondaryIconButtonClassName}
-                  >
-                    <ArrowUpRight className="size-4" />
-                    <span className="sr-only">Voir la session</span>
-                  </Link>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]">
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {item.status}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${decisionTone(item.validationStatus)}`}>
-                    {decisionLabel(item)}
+                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${workflowStatusTone(item.workflowStatus)}`}>
+                    {workflowLabel(item)}
                   </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {isResumableSession(item) ? (
+                    <Link
+                      href={resumeHref}
+                      className={inlinePrimaryButtonClassName}
+                    >
+                      Reprendre
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  ) : null}
+
+                  <Link
+                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
+                    className={secondaryButtonClassName}
+                  >
+                    Voir le résultat
+                    <ArrowUpRight className="size-4" />
+                  </Link>
                 </div>
               </article>
             );
           })}
         </div>
       ) : null}
+      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
+      <div className={fixedFooterSafeAreaClassName}>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4 text-sm text-[var(--muted-foreground)]">
         <p>
           Page {Math.floor(state.meta.offset / PAGE_SIZE) + 1} · {state.meta.returned} / {state.meta.total}
         </p>
@@ -469,6 +475,7 @@ export function VerificationSessions() {
             <span className="sr-only">Page suivante</span>
           </button>
         </div>
+      </div>
       </div>
     </ProtectedScreenShell>
   );

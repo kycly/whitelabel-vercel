@@ -226,6 +226,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 - `DEFAULT_KYCLINK_THEME` si necessaire
@@ -237,6 +238,7 @@ Appliquer au minimum:
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
 - `APP_SESSION_SECRET`
+- `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
 - `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
 - `DEFAULT_KYCLINK_THEME` si necessaire

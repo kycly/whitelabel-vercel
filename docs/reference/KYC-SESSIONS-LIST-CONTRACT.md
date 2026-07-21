@@ -4,6 +4,8 @@ Ce document fige le contrat de la route `GET /api/kyc/sessions` dans `whitelabel
 
 Le but est simple: permettre a un utilisateur identifie de lister ses verifications demo sans introduire de persistance locale dediee dans l'app.
 
+Cette liste sert aussi de point d'entree pour reprendre une session KYC incomplete encore valide.
+
 ## Source canonique
 
 La source canonique reste `partner-node` sandbox via `GET /kyclink/sessions`.
@@ -16,8 +18,18 @@ Consequences:
 
 - pas de base locale dediee dans `whitelabel-vercel`
 - pas de liste cross-environnement
+- quand `workflowStatus = null`, le rendu UI attendu cote whitelabel est le libelle `TRAIT. EN COURS`
 - pas de liste cross-compte demo
 - pas d'exposition des champs techniques inutiles a l'utilisateur final
+
+La reprise effective ne se fait pas directement depuis cette reponse. L'UI utilise `sessionId`, puis relit la session canonique via `GET /api/kyc/session/:sessionId` avant d'ouvrir KycLink.
+
+Regles UI mobile-first associees:
+
+- les 3 cartes metriques de synthese restent sur une meme ligne
+- la page reste une seule colonne de lecture, y compris sur desktop ou elle doit seulement paraitre plus aeree
+- le corps de page defile dans une zone interne dediee, sans scroll parasite du document
+- les actions rapides `Actualiser` et `Nouvelle verification` conservent un format compact de 44px de hauteur
 
 ## Regles d'acces
 
@@ -34,7 +46,7 @@ Si l'un de ces prealables echoue, la route ne doit jamais tenter de fallback ver
 ## Requete cible
 
 ```http
-GET /api/kyc/sessions?limit=20&offset=0&status=completed&decisionStatus=APPROVED
+GET /api/kyc/sessions?limit=20&offset=0&status=completed&workflowStatus=APPROVED
 ```
 
 ### Query params
@@ -44,14 +56,14 @@ GET /api/kyc/sessions?limit=20&offset=0&status=completed&decisionStatus=APPROVED
 | `limit` | `number` | `20` | entier positif, max `50` |
 | `offset` | `number` | `0` | entier >= `0` |
 | `status` | `string` | — | optionnel, filtre borne aux valeurs UI utiles `pending`, `processing`, `completed` |
-| `decisionStatus` | `string` | — | optionnel, filtre borne a `APPROVED`, `REJECTED`, `REVIEW` |
+| `workflowStatus` | `string` | — | optionnel, filtre borne a `PENDING`, `IN_REVIEW`, `ESCALATED`, `APPROVED`, `REJECTED` |
 
 Choix volontaires:
 
 - `limit` est plus strict que le max backend actuel pour garder une pagination simple cote whitelabel
 - aucun tri client expose: l'ordre canonique reste `created_at DESC`
 - aucun filtre par date, `externalId` ou texte libre au premier jet
-- les filtres `status` et `decisionStatus` sont appliques cote API whitelabel avant pagination finale
+- les filtres `status` et `workflowStatus` sont appliques cote API whitelabel avant pagination finale
 
 ## Reponse cible
 
@@ -68,7 +80,7 @@ Choix volontaires:
       "completedAt": "2026-04-08T10:05:00Z",
       "expiresAt": "2026-04-08T14:00:00Z",
       "createdAt": "2026-04-08T10:00:00Z",
-      "validationStatus": "APPROVED"
+      "workflowStatus": "APPROVED"
     }
   ],
   "meta": {
@@ -82,11 +94,13 @@ Choix volontaires:
       "processing": 0,
       "completed": 1
     },
-    "decisionCounts": {
+    "workflowCounts": {
       "all": 1,
+      "PENDING": 0,
+      "IN_REVIEW": 0,
+      "ESCALATED": 0,
       "APPROVED": 1,
-      "REJECTED": 0,
-      "REVIEW": 0
+      "REJECTED": 0
     }
   }
 }
@@ -103,7 +117,7 @@ Choix volontaires:
 | `completedAt` | `string \| null` | `completed_at` | horodatage de completion connu localement |
 | `expiresAt` | `string \| null` | `expires_at` | expiration de l'URL KycLink |
 | `createdAt` | `string` | `created_at` | ordre de tri canonique |
-| `validationStatus` | `"APPROVED" \| "REJECTED" \| "REVIEW" \| null` | enrichissement par lecture detaillee | lu via `GET /kyclink/:sessionId/result` quand la session est terminee |
+| `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflow_status` | projection brute du statut metier local issu de `partner-node verifications_local.status` |
 
 ### Meta
 
@@ -114,7 +128,7 @@ Choix volontaires:
 | `offset` | `number` | offset applique |
 | `total` | `number` | nombre total d'elements apres filtres API et avant pagination |
 | `statusCounts` | `object` | compteurs utilises par les chips de filtre statut |
-| `decisionCounts` | `object` | compteurs utilises par les chips de filtre decision |
+| `workflowCounts` | `object` | compteurs utilises par les chips de filtre statut metier |
 
 Choix volontaires:
 
@@ -123,8 +137,8 @@ Choix volontaires:
 
 Les compteurs sont calcules par `whitelabel-vercel` sur sa projection derivee:
 
-- `statusCounts` respecte le filtre `decisionStatus` courant
-- `decisionCounts` respecte le filtre `status` courant
+- `statusCounts` respecte le filtre `workflowStatus` courant
+- `workflowCounts` respecte le filtre `status` courant
 
 ## Projection volontairement minimale
 
@@ -145,14 +159,42 @@ Raison:
 
 ## Limites fonctionnelles assumees
 
-`validationStatus` n'est pas porte par `partner-node /kyclink/sessions` lui-meme.
+`workflowStatus` est porte directement par `partner-node /kyclink/sessions` sous le nom `workflow_status`.
 
-La route whitelabel l'enrichit donc uniquement pour les sessions deja terminees via une lecture detaillee secondaire sur `GET /kyclink/:sessionId/result`.
+La route whitelabel ne synthétise plus de statut metier et ne derive plus de decision depuis une lecture detaillee secondaire.
 
 Consequences:
 
-- la liste reste une projection derivee, pas un miroir brut du contrat de listing de `partner-node`
-- une session terminee peut encore remonter `validationStatus = null` si la decision detaillee n'est pas encore disponible
+- la liste reste une projection minimale, mais le statut metier affiche est un miroir direct de `partner-node`
+- une session peut encore remonter `workflowStatus = null` tant qu'aucune verification locale n'est encore rattachee a ce `session_id`
+
+## Regle de reprise UI
+
+L'ecran `Mes verifications` applique la regle suivante:
+
+1. afficher `Reprendre` si `completed = false`
+2. exiger `expiresAt` non nul
+3. exiger `expiresAt > now`
+4. pointer vers `/verify/session?sessionId=...`
+
+Regle de navigation associee:
+
+- le retour de `Mes verifications` renvoie explicitement vers `WELCOME`
+- cette navigation ne depend pas de l'historique navigateur
+
+Le verdict final de reprise reste toutefois porte par `GET /api/kyc/session/:sessionId`, afin d'eviter toute dependance a l'etat local du navigateur.
+
+## Politique d'erreur protegee commune
+
+La liste `Mes verifications` ne gere plus separement le logout ni les redirections d'erreur.
+
+Decision commune retenue:
+
+1. `401` ou `UNAUTHORIZED` -> effacement du cookie de session locale si l'upstream rejette le JWT Cognito, puis logout client centralise
+2. `403 ACCESS_DENIED` -> redirection vers `/access-denied`
+3. indisponibilite de lecture qualifiee -> redirection vers `/failure` avec le code canonique `SESSIONS_FETCH_FAILED`
+
+Cette meme politique s'applique aussi aux autres ecrans KYC proteges (`SESSION_PREPARE`, `SESSION_GATE`, `COMPLETE`).
 
 ## Erreurs cibles
 
@@ -164,6 +206,12 @@ Consequences:
   "code": "UNAUTHORIZED"
 }
 ```
+
+Comportement attendu:
+
+- pas de persistance sur l'ecran `Mes verifications` avec un simple message inline quand la session Cognito a expire
+- effacement du cookie de session locale si le rejet vient de `partner-node`
+- repli vers le flux de logout commun
 
 ### 403
 
@@ -182,6 +230,8 @@ La route devra preferer une remontee lisible des erreurs `partner-node` utiles a
 - `code`
 
 Sans rewriter silencieusement une erreur de scope demo, de quota demo ou de configuration runtime.
+
+Le frontend applique ensuite le mapping protege commun plutot qu'une logique locale specifique a la page.
 
 ## Regle de separation a ne pas casser
 

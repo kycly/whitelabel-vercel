@@ -1,13 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, FileText, LoaderCircle, Plus, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ArrowRight, Dices, FileText, LoaderCircle, Plus, ShieldCheck, X } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   checklistCardClassName,
   destructiveIconButtonClassName,
-  fixedFooterActionsClassName,
+  fixedFooterSafeAreaClassName,
   formFieldClassName,
   primaryCtaClassName,
   scrollablePanelBodyClassName,
@@ -63,8 +63,19 @@ function isGroupActive(group: OptionalContextGroup, activeFields: Record<Optiona
   return GROUP_FIELDS[group].some((field) => activeFields[field]);
 }
 
+const EXTERNAL_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const EXTERNAL_ID_PREFIX = "KYCLY_";
+
+function generateExternalId(length = 8): string {
+  const randomBytes = new Uint8Array(length);
+  crypto.getRandomValues(randomBytes);
+
+  return EXTERNAL_ID_PREFIX + Array.from(randomBytes, (value) => EXTERNAL_ID_ALPHABET[value & 31]).join("");
+}
+
 export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   const router = useRouter();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<SessionContextInput>(() => ({
     ...defaultSessionContext,
     notificationEmail: "",
@@ -87,6 +98,23 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   const hasAdvancedCapacity = form.customContextEntries.length < MAX_CUSTOM_CONTEXT_ENTRIES;
   const hasOptionalFieldsVisible = Object.values(activeFields).some(Boolean);
   const hasInlineErrors = Object.keys(errors).length > 0;
+
+  function scrollContextBodyToBottom() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const container = scrollContainerRef.current;
+
+        if (!container) {
+          return;
+        }
+
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    });
+  }
 
   function updateVerificationType(value: SessionContextInput["verificationType"]) {
     setForm((current) => ({
@@ -132,6 +160,8 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     for (const field of GROUP_FIELDS[group]) {
       activateField(field);
     }
+
+    scrollContextBodyToBottom();
   }
 
   function deactivateField(field: OptionalField) {
@@ -250,6 +280,17 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
     }));
   }
 
+  function handleGenerateReferenceClient() {
+    const nextValue = generateExternalId();
+
+    setForm((current) => ({
+      ...current,
+      referenceClient: nextValue,
+    }));
+
+    clearFieldErrors(["referenceClient"]);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -291,30 +332,51 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
   }
 
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Contexte" maxWidthClassName="max-w-2xl" panelClassName="flex h-full flex-col pt-4">
+    <ProtectedScreenShell
+      backHref="/welcome"
+      preferBackHref
+      title="Contexte"
+      maxWidthClassName="sm:max-w-[430px]"
+      lockViewportScroll
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
+    >
       <form className="flex h-full min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-        <div className={scrollablePanelBodyClassName}>
-        <div className="mb-6 flex animate-fade-in flex-col items-center justify-center text-center">
-          <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface-light)]">
-            <FileText className="h-9 w-9 text-brand" strokeWidth={1.7} aria-hidden="true" />
+        <div ref={scrollContainerRef} data-testid="session-context-scroll-body" className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
+          <div className="relative mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-light)]">
+            <FileText className="h-7 w-7 text-brand" strokeWidth={1.7} aria-hidden="true" />
             <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
               <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
             </div>
           </div>
-          <h2 className="mb-1 text-xl font-bold text-[var(--foreground)]">Contexte de vérification</h2>
+          <h2 className="mb-1 text-lg font-semibold text-[var(--foreground)]">Contexte de vérification</h2>
+          <p className="max-w-xs text-sm text-[var(--muted-foreground)]">
+            Préparez seulement les informations utiles au lancement du parcours.
+          </p>
         </div>
 
-        <div className="space-y-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <div className="space-y-6 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-5 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <div className="grid gap-4">
             <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <span className="font-medium">External ID</span>
-              <input
-                className={formFieldClassName({ hasError: Boolean(errors.referenceClient) })}
-                maxLength={128}
-                placeholder="cust_0042"
-                value={form.referenceClient}
-                onChange={(event) => updateField("referenceClient", event.target.value)}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  className={formFieldClassName({ hasError: Boolean(errors.referenceClient) })}
+                  maxLength={128}
+                  placeholder="cust_0042"
+                  value={form.referenceClient}
+                  onChange={(event) => updateField("referenceClient", event.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateReferenceClient}
+                  aria-label="Générer un external ID"
+                  title="Générer un external ID"
+                  className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] transition hover:bg-white"
+                >
+                  <Dices className="size-5" aria-hidden="true" />
+                </button>
+              </div>
               {errors.referenceClient ? <p className="text-sm text-red-600">{errors.referenceClient}</p> : null}
             </label>
 
@@ -332,7 +394,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
 
           <div className="space-y-3 border-t border-[var(--border)] pt-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Besoins optionnels</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
               {OPTIONAL_CONTEXT_GROUPS.map(({ id, label }) => {
                 const checked = isGroupActive(id, activeFields);
 
@@ -377,7 +439,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       <X className="size-4" />
                     </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3">
                     <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Pays</span>
                       <select
@@ -434,7 +496,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       </label>
                     ) : null}
 
-                    <label className="space-y-2 text-sm text-[var(--muted-foreground)] md:col-span-2">
+                    <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Segment</span>
                       <select
                         className={formFieldClassName({ hasError: Boolean(errors.segment) })}
@@ -472,7 +534,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
                       <X className="size-4" />
                     </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3">
                     <label className="space-y-2 text-sm text-[var(--muted-foreground)]">
                       <span className="font-medium">Scénario</span>
                       <select
@@ -554,7 +616,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
 
                   <div className="space-y-3">
                     {form.customContextEntries.map((entry, index) => (
-                      <div key={`${index}-${entry.key}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                      <div key={index} className="grid gap-3">
                         <input
                           className={formFieldClassName({ hasError: Boolean(errors[`customContextEntries.${index}.key`]) })}
                           placeholder="Clé"
@@ -615,7 +677,7 @@ export function VerificationWorkspace({ viewer }: { viewer: Viewer }) {
           </div>
         ) : null}
 
-        <div className={fixedFooterActionsClassName}>
+        <div className={fixedFooterSafeAreaClassName}>
           <button
             type="submit"
             disabled={submitting}

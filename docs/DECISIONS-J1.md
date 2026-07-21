@@ -4,11 +4,6 @@ Ce document ferme les arbitrages indispensables pour demarrer l'implementation d
 
 Il sert de source de verite quand plusieurs documents formulaient la meme idee de maniere differente.
 
-> Ces arbitrages sont désormais formalisés en **ADR** dans
-> [architecture/decisions/](architecture/decisions/README.md) : ADR-001 (flux Cognito direct),
-> ADR-002 (sandbox-only / `ck_demo_*`), ADR-003 (sélection de clé côté partner-node),
-> ADR-004 (déploiement Vercel Git Integration). Ce document reste la référence narrative J1.
-
 ## D1 — Nature de l'independance de l'app
 
 whitelabel-vercel est:
@@ -173,7 +168,7 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 3. verifier l'acces applicatif
 4. resoudre `demo_account_id`
 5. deriver `externalId`
-6. deriver `parentOrigin` depuis la requete HTTP
+6. resoudre `parentOrigin` cote serveur depuis `APP_CANONICAL_ORIGIN`, sinon depuis les headers forwardes / le host de la requete
 7. construire `metadata`
 8. reutiliser l'id token Cognito conserve cote serveur
 9. appeler `partner-node /kyclink/create`
@@ -181,8 +176,15 @@ Le backend de whitelabel-vercel doit, dans cet ordre:
 
 Le meme cadrage vaut pour la lecture de resultat et pour la liste de sessions exposee par l'app:
 
-- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur, puis replie sur l'index `GET /kyclink/sessions` si la route detail repond `404`
+- `GET /api/kyc/session/:sessionId` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur et devient la source canonique pour la reprise et le refresh
+- `GET /api/kyc/session/:sessionId/result` appelle `partner-node` sandbox avec l'id token Cognito de la session serveur pour lire le resultat courant
 - `GET /api/kyc/sessions` appelle `partner-node /kyclink/sessions` avec la meme contrainte de scope demo
+
+La regle de reprise retenue est:
+
+- la liste de sessions decide seulement si elle affiche l'action `Reprendre`
+- la validation finale de reprise est toujours portee par `GET /api/kyc/session/:sessionId`
+- aucune dependance forte a `sessionStorage` ne doit subsister pour rouvrir l'iframe
 
 ## D7bis — Contrat de la liste `Mes verifications`
 
@@ -199,7 +201,7 @@ Champs cibles par item:
 - `completedAt`
 - `expiresAt`
 - `createdAt`
-- `validationStatus`
+- `workflowStatus`
 
 Champs explicitement exclus:
 
@@ -218,7 +220,7 @@ Pagination et meta cibles:
 - `total` expose apres filtres et avant pagination
 - ordre canonique `createdAt DESC`
 - pas de `hasMore` ni de `nextOffset` au premier jet
-- `statusCounts` et `decisionCounts` exposes pour alimenter l'UI
+- `statusCounts` et `workflowCounts` exposes pour alimenter l'UI
 
 La specification detaillee de la route se trouve dans [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
 

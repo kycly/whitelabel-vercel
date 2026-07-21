@@ -46,10 +46,11 @@ test("replie vers logout puis login quand aucun historique fiable n'existe", asy
   await page.goto("/welcome");
 
   await expect(page.getByRole("heading", { name: "Accueil" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retour" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Déconnexion" })).toBeVisible();
   await expect.poll(async () => page.evaluate(() => window.history.length)).toBe(1);
 
-  await page.getByRole("button", { name: "Retour" }).click();
+  await page.getByRole("button", { name: "Déconnexion" }).click();
 
   await page.waitForURL(/\/login$/, { timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();

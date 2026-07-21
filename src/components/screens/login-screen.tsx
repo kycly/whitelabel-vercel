@@ -11,6 +11,8 @@ import {
   cognitoStartForgotPassword,
   getExistingSession,
 } from "@/auth/cognito-client";
+import { AppError } from "@/lib/app-error";
+import { requestInlineJson } from "@/lib/app-client";
 import { PageShell } from "@/components/layout/page-shell";
 import { BackIconButton } from "@/components/navigation/back-icon-button";
 import {
@@ -32,7 +34,7 @@ function loginStepTitle(step: LoginStep): string {
     return "Réinitialisation";
   }
 
-  return "Connexion";
+  return "KYCLY Demo";
 }
 
 function mapAuthError(error: unknown): string {
@@ -93,20 +95,15 @@ function mapForgotPasswordError(error: unknown): string {
 }
 
 async function createServerSession(idToken: string) {
-  const response = await fetch("/api/auth/session", {
+  await requestInlineJson("/api/auth/session", {
     method: "POST",
     headers: {
       "content-type": "application/json",
     },
     body: JSON.stringify({ idToken }),
+  }, {
+    defaultMessage: "La session Cognito n'a pas pu etre validee.",
   });
-
-  if (response.ok) {
-    return;
-  }
-
-  const payload = (await response.json().catch(() => null)) as { message?: string; code?: string } | null;
-  throw new Error(payload?.message ?? payload?.code ?? "INVALID_COGNITO_SESSION");
 }
 
 export function LoginScreen() {
@@ -144,7 +141,7 @@ export function LoginScreen() {
         cognitoSignOut();
 
         if (active) {
-          setError(mapAuthError(restoreError));
+          setError(mapAuthError(restoreError instanceof AppError ? new Error(restoreError.message) : restoreError));
         }
       } finally {
         if (active) {
@@ -309,35 +306,36 @@ export function LoginScreen() {
   }
 
   return (
-    <PageShell maxWidthClassName="max-w-4xl">
-        <SurfacePanel className="px-5 pb-6 pt-8">
+    <PageShell maxWidthClassName="sm:max-w-[430px]">
+        <SurfacePanel className="px-4 pb-6 pt-4 sm:px-5 sm:pt-5">
           <div className="flex h-full flex-col">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-5 flex items-center justify-between border-b border-[var(--border)]/80 pb-3">
               {step === "login" ? (
-                <span className="w-9" />
+                <span className="w-10" />
               ) : (
                 <BackIconButton
                   fallbackHref="/login"
                   onClick={handleBackNavigation}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-light)] text-[var(--muted-foreground)] transition-all duration-150 hover:bg-[var(--border)] hover:text-[var(--foreground)]"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] text-[var(--muted-foreground)] transition-all duration-150 hover:bg-[var(--border)] hover:text-[var(--foreground)]"
                 />
               )}
               <p className="text-sm font-semibold text-[var(--foreground)]">{loginStepTitle(step)}</p>
-              <span className="w-9" />
+              <span className="w-10" />
             </div>
 
-            <div className="mb-6 flex animate-fade-in flex-col items-center justify-center text-center">
-              <div className="relative mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-[var(--surface-light)]">
-                <KeyRound className="h-10 w-10 text-brand" strokeWidth={1.7} aria-hidden="true" />
+            <div className="mb-5 flex animate-fade-in flex-col items-center justify-center text-center">
+              <div className="relative mb-4 flex h-18 w-18 items-center justify-center rounded-full bg-[var(--surface-light)]">
+                <KeyRound className="h-8 w-8 text-brand" strokeWidth={1.7} aria-hidden="true" />
                 <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
                   <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
                 </div>
               </div>
-              <h1 className="mb-1 text-2xl font-bold text-brand">Connectez-vous</h1>
-              <p className="text-xs tracking-wide text-[var(--muted-foreground)]">Compte demo requis.</p>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Accès partenaire</p>
+              <h1 className="mb-1 text-2xl font-semibold text-[var(--foreground)]">Connectez-vous</h1>
+              <p className="max-w-xs text-sm text-[var(--muted-foreground)]">Compte démo requis pour ouvrir les parcours de vérification.</p>
             </div>
 
-            <div className="animate-slide-up rounded-2xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-4" style={{ animationDelay: "0.1s" }}>
+            <div className="animate-slide-up rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] px-4 py-5" style={{ animationDelay: "0.1s" }}>
 
             {bootstrapping ? (
               <div className="mb-4 flex items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-5 py-4 text-sm font-medium text-[var(--muted-foreground)]">

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title>KYCLY Whitelabel</title>
+  <desc>Icône d'application pour le whitelabel KYC KYCLY.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eff6ff" />
+      <stop offset="100%" stop-color="#dbeafe" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)" />
+  <rect x="88" y="88" width="336" height="336" rx="96" fill="#ffffff" stroke="#bfdbfe" stroke-width="16" />
+  <path d="M256 144l92 34v75c0 68-36 116-92 145-56-29-92-77-92-145v-75l92-34z" fill="#2563eb" />
+  <path d="M212 258l28 28 60-67" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="28" />
+</svg>

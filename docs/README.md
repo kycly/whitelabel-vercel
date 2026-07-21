@@ -24,8 +24,8 @@ le [../README.md](../README.md) racine et [../AGENTS.md](../AGENTS.md).
 
 ## Référence
 
-Voir [reference/README.md](reference/README.md) (contrats, UX, intégration SDK, canon UI).
+Voir [reference/README.md](reference/README.md) (contrats, UX, intégration SDK, canon UI, PWA).
 
 ## Runbooks
 
-Voir [runbooks/README.md](runbooks/README.md) (CI/CD, variables d'environnement, gouvernance, mise en place).
+Voir [runbooks/README.md](runbooks/README.md) (CI/CD, variables d'environnement, gouvernance, mise en place, QA PWA).

@@ -9,11 +9,6 @@ La regle produit est simple:
 - elle ouvre l'authentification Cognito sans exposer de details IAM inutiles
 - elle collecte email et mot de passe directement dans l'app, comme partner-node
 
-> Note infrastructure : la resolution du compte demo apres login (`GET /demo/me`, `src/auth/cognito.ts`)
-> est un appel **serveur** vers partner-node, protege par Cloudflare Access. Il porte, en plus du
-> `Authorization: Bearer <JWT Cognito>`, les en-tetes de service token `CF-Access-Client-Id` /
-> `CF-Access-Client-Secret` (cf. [../runbooks/env-vars-lifecycle.md](../runbooks/env-vars-lifecycle.md)).
-
 ## Role de la page
 
 La page `LOGIN` a quatre objectifs:
@@ -89,9 +84,10 @@ La page reste volontairement legere.
 - pas d'informations de compte tant que l'utilisateur n'est pas authentifie
 - conserver le meme langage visuel que le reste du scaffold
 - mobile-first, carte de connexion centree, contenu simple
-- reprendre le meme frame mobile et le meme hero que integration-node
-- afficher une icone retour unique en haut a gauche sur les ecrans d'auth transitoires et de sous-etapes, y compris sur `AUTH_LOADING`
+- reprendre le meme frame mobile et le meme hero que integration-node, mais dans une version plus compacte et moins demonstrative
+- afficher une icone retour uniquement sur les sous-etapes du formulaire quand elle sert a revenir dans le flux local
 - la deconnexion reste reservee aux ecrans proteges, pas a `LOGIN`
+- conserver un header court avec separateur discret et ne jamais laisser le hero pousser le formulaire sous la ligne de flottaison mobile
 
 ## Etats a prevoir
 
@@ -107,20 +103,23 @@ La page reste volontairement legere.
 - pas de grand titre ni de texte explicatif long
 - un seul indicateur de progression visible
 - aucun detail technique sur la verification serveur ou le scope demo
-- l'icone retour quitte l'app via `GET /auth/logout` si aucun historique navigateur fiable n'existe
+- aucun bouton retour ni deconnexion concurrente dans le header
+- carte compacte, centree, sans decor additionnel ni second CTA
 
 ## Regles specifiques `ACCESS_DENIED`
 
 - un message unique et direct
 - aucune explication technique sur les claims ou le scoping partner-node
-- une icone retour en haut a gauche, avec repli vers `GET /auth/logout`
+- aucune navigation generique concurrente dans le header
+- une seule sortie explicite de deconnexion dans le contenu
+- ton produit calme, sans ecran d'erreur agressif ni hero inutile
 
 ## Decision de navigation
 
 - l'etat initial de `LOGIN` n'affiche pas d'icone retour
 - les sous-etapes `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD` repliquent d'abord vers l'etape precedente du formulaire
 - `FORGOT_PASSWORD_CONFIRM` revient d'abord vers la demande de code
-- `AUTH_LOADING` quitte l'app via `GET /auth/logout` si l'utilisateur interrompt la transition sans historique fiable
+- `AUTH_LOADING` ne propose pas d'interruption manuelle de la transition
 - les ecrans proteges racine ne replient jamais vers `LOGIN` pour eviter les boucles avec la restauration de session
 
 ## Decision technique J1
@@ -142,6 +141,21 @@ Implications UX:
 - aucun token Cognito n'est expose via `GET /api/me`
 - la reconnexion doit paraitre immediate si une session Cognito existe deja cote navigateur
 - la deconnexion efface la session Cognito locale puis la session applicative
+
+## Politique d'erreur commune
+
+Le scaffold distingue maintenant deux familles d'erreurs:
+
+- les erreurs de bootstrap d'authentification restent locales a `LOGIN` et s'affichent inline dans la carte de connexion
+- les erreurs des routes protegees utilisent un contrat commun `{ message, code }` et une decision client unique
+
+Regles de decision retenues:
+
+- `401` ou `UNAUTHORIZED` sur une route protegee -> fermeture de la session locale puis redirection vers `LOGIN` via le flux de logout
+- `403 ACCESS_DENIED` -> redirection vers `ACCESS_DENIED`
+- erreur protegee qualifiee hors auth -> redirection vers `FAILURE` avec un code canonique de parcours
+
+Cette separation permet de garder des messages utiles sur `LOGIN` sans repliquer de logique de logout ou de redirection dans chaque ecran KYC.
 
 ## Comportement recommande
 
@@ -172,6 +186,7 @@ Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 ### Cas non autorise
 
 - apres auth valide mais sans scope demo resolu par partner-node, le parcours va vers `ACCESS_DENIED`
+- apres expiration ou invalidation de la session Cognito sur une route protegee, le parcours ne reste pas sur l'ecran courant et replie vers `LOGIN` via le logout centralise
 
 ## Structure d'interface recommandee
 
