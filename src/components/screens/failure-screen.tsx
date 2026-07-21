@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
+import { getFailurePresentation } from "@/lib/app-error";
 import {
   errorAlertWithIconClassName,
   inlinePrimaryButtonClassName,
@@ -15,16 +16,21 @@ type FailureScreenProps = {
 };
 
 export function FailureScreen({ sessionId, code, message }: FailureScreenProps) {
+  const presentation = getFailurePresentation(code, message);
+
   return (
-    <ProtectedScreenShell backHref="/welcome" title="Erreur" maxWidthClassName="max-w-3xl" panelClassName="space-y-5 pt-4">
-        <div className={errorAlertWithIconClassName}>
+    <ProtectedScreenShell backHref="/welcome" title="Erreur" showBack={false} showLogout={false} maxWidthClassName="sm:max-w-[430px]" panelClassName="space-y-4 !pt-0">
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Incident de parcours</p>
+          <div className={errorAlertWithIconClassName}>
           <AlertTriangle className="mt-0.5 size-5 shrink-0" />
           <div className="space-y-1">
-            <p>{message ?? "Le parcours a rencontre une erreur recuperable."}</p>
+            <p>{presentation.message}</p>
+          </div>
           </div>
         </div>
 
-        <div className={[surfaceInfoPanelClassName, "grid gap-4 sm:grid-cols-2"].join(" ")}>
+        <div className={[surfaceInfoPanelClassName, "grid gap-4 rounded-3xl"].join(" ")}>
           <div>
             <p className="font-medium text-[var(--foreground)]">Session ID</p>
             <p className="break-all">{sessionId ?? "—"}</p>
@@ -35,19 +41,19 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
-            href="/verify"
-            className={inlinePrimaryButtonClassName}
+            href={presentation.primaryHref}
+            className={[inlinePrimaryButtonClassName, "justify-center"].join(" ")}
           >
-            Reessayer
+            {presentation.primaryLabel}
           </Link>
 
           <Link
-            href="/welcome"
-            className={secondaryButtonClassName}
+            href={presentation.secondaryHref}
+            className={[secondaryButtonClassName, "justify-center"].join(" ")}
           >
-            Accueil
+            {presentation.secondaryLabel}
           </Link>
         </div>
     </ProtectedScreenShell>

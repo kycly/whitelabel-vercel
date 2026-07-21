@@ -4,13 +4,22 @@ type PageShellProps = {
   children: ReactNode;
   className?: string;
   maxWidthClassName?: string;
+  fullViewport?: boolean;
 };
 
-export function PageShell({ children, className, maxWidthClassName = "max-w-4xl" }: PageShellProps) {
+export function PageShell({ children, className, maxWidthClassName = "sm:max-w-[430px]", fullViewport = false }: PageShellProps) {
   return (
     <div
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+      }}
       className={[
-        "min-h-screen w-full bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-8",
+        fullViewport
+          ? "h-[100dvh] w-full overflow-hidden bg-[var(--background)] p-0"
+          : "h-[100dvh] w-full overflow-hidden bg-[var(--surface-light)] p-0 sm:flex sm:items-center sm:justify-center sm:p-6 lg:p-8",
         className,
       ]
         .filter(Boolean)
@@ -18,13 +27,15 @@ export function PageShell({ children, className, maxWidthClassName = "max-w-4xl"
     >
       <div
         className={[
-          "flex h-[100dvh] w-full flex-col bg-[var(--background)] sm:h-[850px] sm:max-w-[430px] sm:overflow-hidden sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
+          fullViewport
+            ? "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)]"
+            : "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--background)] sm:h-full sm:max-h-[850px] sm:w-full sm:rounded-[2.5rem] sm:border sm:border-[var(--border)] sm:[box-shadow:var(--shadow-soft),0_0_0_8px_var(--border)]",
           maxWidthClassName,
         ]
           .filter(Boolean)
           .join(" ")}
       >
-        <main className="relative flex w-full flex-1 flex-col overflow-x-hidden overflow-y-auto">{children}</main>
+        <main className="relative flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
     </div>
   );

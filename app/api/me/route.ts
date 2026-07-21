@@ -9,7 +9,8 @@ export async function GET() {
     return NextResponse.json(
       {
         authenticated: false,
-        message: "No active session.",
+        message: "Unauthorized.",
+        code: "UNAUTHORIZED",
       },
       { status: 401 },
     );

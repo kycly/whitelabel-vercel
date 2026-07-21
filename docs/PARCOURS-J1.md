@@ -13,10 +13,14 @@ Le but du J1 est volontairement etroit:
 Le J1 ne couvre pas:
 
 - backoffice
-- historique persistant
-- reprise de parcours multi-session
 - consultation de resultats metier detailes
 - administration du compte demo
+
+Le J1 couvre en revanche une reprise bornee d'une session KYC existante quand:
+
+- la session appartient au compte demo courant
+- la session n'est pas terminee
+- la date `expiresAt` n'est pas depassee
 
 ## Principe general
 
@@ -71,18 +75,20 @@ SESSION_PREPARE
 
 KYC_LINK
   -> COMPLETE         quand onComplete est emis par le SDK
-  -> FAILURE          si erreur bloquante
+  -> FAILURE          si erreur bloquante ou si la session relue n'est plus reprenable
 
 FAILURE
   -> SESSION_PREPARE  si retry possible
   -> WELCOME          si on veut relancer depuis le debut
 
 COMPLETE
-  -> WELCOME          pour lancer une nouvelle verification plus tard
+  -> SESSIONS         via l'icone retour harmonisee vers la liste des sessions verifiees
+  -> WELCOME          via la sortie positive explicite quand elle est disponible
 
 SESSIONS
   -> WELCOME          pour revenir a l'accueil
   -> SESSION_CONTEXT  via creation d'une nouvelle session
+  -> KYC_LINK         via reprise d'une session incomplete et non expiree
 ```
 
 ## 1. LOGIN
@@ -188,6 +194,7 @@ Ecran d'accueil du parcours.
 - rassurer
 - donner du contexte
 - ne pas surcharger l'utilisateur d'informations techniques
+- ne pas afficher d'icone retour sur cet ecran
 
 ### Donnees affichees
 
@@ -303,7 +310,7 @@ Etat intermediaire pendant lequel le backend cree la session KYC.
 - le backend verifie le JWT
 - le backend determine le `demo_account_id`
 - le backend derive `externalId` a partir de la reference client
-- le backend derive `parentOrigin` depuis la requete HTTP
+- le backend resout `parentOrigin` cote serveur depuis `APP_CANONICAL_ORIGIN`, sinon depuis les headers forwardes / le host de la requete
 - le backend reutilise l'id token Cognito stocke dans la session serveur
 - le backend appelle `partner-node` pour creer la session
 
@@ -336,6 +343,8 @@ Ecran principal du produit au J1.
 - les elements parasites autour doivent etre minimaux
 - le CTA principal disparait au profit du flux embarque
 - on garde une issue claire en cas d'erreur bloquante
+- aucune icone retour n'est affichee sur cet ecran
+- aucune action de deconnexion n'est affichee sur cet ecran
 
 ### Evenements ecoutes
 
@@ -365,6 +374,7 @@ Ecran de resultat et de sortie positive du parcours iframe.
 - un etat de progression avant le premier poll
 - un resume lisible de la reference, du statut, de la decision et de la date de finalisation quand disponibles
 - des actions utilitaires compactes, principalement en icones
+- une icone retour harmonisee vers la liste des sessions verifiees
 - un retour accueil explicite quand une sortie positive est disponible
 
 ### Principe
@@ -377,7 +387,7 @@ L'ecran `COMPLETE` doit donc:
 - attendre au moins 10 secondes avant le premier poll backend
 - interroger ensuite `/api/kyc/session/:sessionId/result`
 - replier cote serveur sur `GET /kyclink/sessions` si la route detail upstream repond `404`
-- afficher `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+- afficher `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`
 - arreter le polling quand `completed = true` ou quand la limite de tentatives est atteinte
 - utiliser un backoff progressif entre les polls suivants plutot qu'un intervalle fixe
 
@@ -385,10 +395,10 @@ L'ecran `COMPLETE` doit donc:
 
 - attente avant premier poll
 - polling en cours
-- resultat backend sans decision finale
-- resultat backend avec `validationStatus = APPROVED`
-- resultat backend avec `validationStatus = REJECTED`
-- resultat backend avec `validationStatus = REVIEW`
+- resultat backend sans statut metier rattache, affiche comme `TRAIT. EN COURS`
+- resultat backend avec `workflowStatus = APPROVED`
+- resultat backend avec `workflowStatus = REJECTED`
+- resultat backend avec `workflowStatus = IN_REVIEW`
 - echec temporaire de lecture backend
 
 ### CTA

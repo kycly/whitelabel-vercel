@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { readSession } from "@/auth/session";
-import { VerificationRunScreen } from "@/components/verify/verification-run-screen";
+import { VerificationSessionGate } from "@/components/verify/verification-session-gate";
 
 type VerificationSessionPageProps = {
   searchParams: Promise<{
@@ -26,5 +26,5 @@ export default async function VerificationSessionPage({ searchParams }: Verifica
     redirect("/verify");
   }
 
-  return <VerificationRunScreen sessionId={sessionId} />;
+  return <VerificationSessionGate sessionId={sessionId} />;
 }

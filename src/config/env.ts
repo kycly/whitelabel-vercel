@@ -1,4 +1,5 @@
-const LOCAL_APP_ENV = "local";
+import { LOCAL_APP_ENV, publicEnv } from "@/config/public-env";
+
 const LOCAL_DEV_SESSION_SECRET = "local-dev-session-secret-change-me";
 
 function normalizeBaseUrl(value: string): string {
@@ -24,19 +25,13 @@ function resolveSessionSecret(appEnv: string): string {
   throw new Error("APP_SESSION_SECRET must be set to a non-placeholder value outside local.");
 }
 
-const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? LOCAL_APP_ENV;
-
 export const env = {
-  public: {
-    appEnv,
-    awsRegion: process.env.NEXT_PUBLIC_AWS_REGION ?? "eu-west-1",
-    cognitoAppClientId: process.env.NEXT_PUBLIC_COGNITO_APP_CLIENT_ID ?? "local-dev-client",
-    cognitoUserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID ?? "eu-west-1_local",
-  },
+  public: publicEnv,
   server: {
-    sessionSecret: resolveSessionSecret(appEnv),
+    sessionSecret: resolveSessionSecret(publicEnv.appEnv),
+    appCanonicalOrigin: process.env.APP_CANONICAL_ORIGIN?.trim() || null,
     // Hôte unique partner-node : un seul base URL, appelé avec l'endpoint voulu à chaque fois
-    // (`/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`).
+    // (`/demo/me`, `/kyclink/create`, `/kyclink/{id}`, `/kyclink/{id}/result`, `/kyclink/sessions`).
     kyclyBaseUrl: resolveBaseUrl(process.env.KYCLY_BASE_URL, "https://api.kycly.sn"),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
     // Service token Cloudflare Access pour débloquer les appels serveur vers partner-node

@@ -135,7 +135,7 @@ Ordre des etapes retenu:
 8. `pnpm typecheck`
 9. `pnpm lint`
 10. `pnpm build`
-11. `pnpm exec playwright install --with-deps chromium`
+11. `pnpm exec playwright install --with-deps chromium webkit`
 12. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
 
 Ordre de severite retenu:
@@ -144,7 +144,7 @@ Ordre de severite retenu:
 - le garde-fou sandbox-only doit bloquer toute introduction de `ck_live_*`
 - les tests executables passent avant les controles purement statiques
 - le build reste obligatoire pour verifier le runtime Next/Vercel
-- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit
+- les smokes navigateur Playwright doivent ensuite verifier le tunnel critique, le repli retour vers logout et le tunnel protege mobile sur le build produit, sur les projets Playwright actives dans `playwright.config.ts`
 
 Note locale:
 
@@ -179,6 +179,7 @@ Conclusion operatoire:
 
 - `pnpm install` doit reconfigurer les hooks localement
 - un push est bloque si la doc canonique n'est pas alignee ou si un marqueur `ck_live_*` apparait dans les surfaces applicatives
+- les changements sur le shell mobile-first, l'installabilite PWA ou l'ergonomie du tunnel KYC critique doivent aussi mettre a jour [../reference/PWA-MOBILE-FIRST-CONTRACT.md](../reference/PWA-MOBILE-FIRST-CONTRACT.md)
 
 Artefacts recommandés:
 
@@ -256,6 +257,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Variables serveur minimales
 
 - `APP_SESSION_SECRET`
+- `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour le build Vercel si `@kycly/link` est installe depuis GitHub Packages
 - `KYCLY_BASE_URL`
 - `DEFAULT_KYCLINK_THEME` si override necessaire
@@ -263,6 +265,7 @@ Les variables doivent etre separees par environnement Vercel.
 ### Politique retenue
 
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
+- `APP_CANONICAL_ORIGIN` doit pointer vers le host public qui doit etre autorise a embarquer KycLink; si vide, l'app derive l'origine depuis les headers forwardes / `host`
 - `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
 - `KYCLY_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` en `Preview` et `Production`
 - l'id token Cognito reste strictement cote serveur dans la session HTTP-only
@@ -272,6 +275,7 @@ Les variables doivent etre separees par environnement Vercel.
 Pour `Preview` comme pour `Production`:
 
 - `KYCLY_BASE_URL` -> runtime sandbox de `partner-node` pour `/kyclink/*`
+- `APP_CANONICAL_ORIGIN` -> host public autorise pour l'iframe KycLink, ou vide pour derivation proxy / host
 - aucune `ck_live_*`
 
 ---

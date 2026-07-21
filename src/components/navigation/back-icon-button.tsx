@@ -8,6 +8,7 @@ type BackIconButtonProps = {
   className?: string;
   label?: string;
   onClick?: () => void;
+  preferFallbackHref?: boolean;
 };
 
 export function BackIconButton({
@@ -15,6 +16,7 @@ export function BackIconButton({
   className,
   label = "Retour",
   onClick,
+  preferFallbackHref = false,
 }: BackIconButtonProps) {
   const router = useRouter();
 
@@ -27,6 +29,11 @@ export function BackIconButton({
       onClick={() => {
         if (onClick) {
           onClick();
+          return;
+        }
+
+        if (preferFallbackHref) {
+          router.push(fallbackHref);
           return;
         }
 

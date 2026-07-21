@@ -14,7 +14,8 @@ Le flux cible est le suivant:
 1. votre **backend applicatif** appelle `partner-node`
 2. `partner-node` cree une session KycLink
 3. votre backend recoit `{ sessionId, kyclinkUrl, expiresAt }`
-4. votre frontend React rend `<KycLink />`
+4. votre frontend React relit la session canonique sur `/verify/session?sessionId=...`
+5. votre frontend React rend `<KycLink />` si la session est encore reprenable
 
 ```text
 Frontend React
@@ -23,15 +24,28 @@ Frontend React
 Backend applicatif
   -> POST https://api.kycly.sn/kyclink/create
   -> Authorization: Bearer <cognito-id-token>
-  -> CF-Access-Client-Id / CF-Access-Client-Secret (service token Cloudflare Access)
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
 Frontend React
-  -> recoit kyclinkUrl
-  -> rend <KycLink kyclinkUrl={...} />
+  -> relit GET /api/kyc/session/:sessionId
+  -> rend <KycLink kyclinkUrl={...} /> si la session est ACTIVE
 ```
 
 **Regle centrale** : n'appelez pas `partner-node` directement depuis le navigateur. La creation de session se fait cote serveur, jamais cote frontend.
+
+Pour `whitelabel-vercel`, la reprise et le refresh ne doivent plus dependre d'un stockage navigateur comme source de verite. L'entree `/verify/session?sessionId=...` relit toujours `GET /api/kyc/session/:sessionId`, puis:
+
+- ouvre KycLink si la session est `ACTIVE`
+- redirige vers `COMPLETE` si la session est `COMPLETED`
+- redirige vers `FAILURE` si la session est `EXPIRED` ou introuvable
+- ne depend jamais d'une session KYC active prealablement sauvegardee en `sessionStorage`
+
+Regle UI mobile-first associee:
+
+- `SESSION_PREPARE` et `SESSION_GATE` restent des etats transitoires courts, centres et sobres
+- l'ecran `KYC_LINK` maximise la hauteur utile de l'iframe
+- le viewport du shell reste verrouille pour eviter tout scroll du document concurrent au parcours embarque
+- aucun padding ou chrome concurrent ne doit reduire artificiellement l'espace du parcours embarque
 
 ---
 
@@ -124,11 +138,13 @@ Contraintes utiles:
 
 ### 2.2 — Instance backend actuelle
 
-Pour cette app, `KYCLY_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node`. C'est l'URL **unique** appelee avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}/result`, `/kyclink/sessions`.
+Pour cette app, `KYCLY_BASE_URL` doit toujours pointer vers le runtime sandbox de `partner-node` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`.
 
 La lecture de liste `GET /kyclink/sessions` utilise le meme `KYCLY_BASE_URL` (hote unique partner-node).
 
 La resolution du scope demo via `/demo/me` utilise le meme `KYCLY_BASE_URL`.
+
+Si vous voulez figer strictement l'origine parent transmise a KycLink, configurez aussi `APP_CANONICAL_ORIGIN`. Sinon, `whitelabel-vercel` derive `parentOrigin` cote serveur depuis `x-forwarded-host` / `x-forwarded-proto`, puis `host`. Le header navigateur `Origin` n'est plus la source de verite.
 
 Pour l'usage interne actuel, l'instance de reference est:
 
@@ -180,7 +196,7 @@ Payload attendu:
 }
 ```
 
-Dans whitelabel-vercel, `externalId` est derive cote backend a partir de la `Reference client`; il n'est pas expose comme champ technique au frontend. `parentOrigin` est egalement derivee cote backend depuis l'origin de la requete HTTP, puis forwardee vers `partner-node`.
+Dans whitelabel-vercel, `externalId` est saisi dans le formulaire comme un champ metier simple, ou genere a la demande via une icone discrète. Il n'est pas expose comme parametre technique brut au reste de l'UI. `parentOrigin` est resolue cote backend depuis une origine canonique configuree (`APP_CANONICAL_ORIGIN`) ou, a defaut, depuis les headers forwardes / le host de la requete, puis forwardee vers `partner-node`.
 
 Reponse succes:
 
@@ -233,14 +249,14 @@ type CreateKycLinkSessionResponse = {
 
 export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
-  parentOrigin: string,
+  resolvedParentOrigin: string,
   cognitoIdToken: string,
   baseUrl = process.env.KYCLY_BASE_URL ?? "https://api.kycly.sn",
 ): Promise<CreateKycLinkSessionResponse> {
   const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
   const payload = {
     ...input,
-    parentOrigin,
+    parentOrigin: resolvedParentOrigin,
   };
 
   const response = await fetch(endpoint, {
@@ -267,7 +283,8 @@ Le flux retenu est le suivant:
 2. appeler `GET /demo/me` sur `KYCLY_BASE_URL`
 3. recuperer le `demoAccountId` courant
 4. conserver l'id token Cognito dans la session HTTP-only signee
-5. appeler `POST /kyclink/create` sur `KYCLY_BASE_URL` avec ce token
+5. resoudre `parentOrigin` cote serveur (origine canonique configuree, sinon headers forwardes / host)
+6. appeler `POST /kyclink/create` sur `KYCLY_BASE_URL` avec ce token et cette `parentOrigin`
 
 ### 3.3 — Route a exposer dans votre propre backend
 
@@ -318,7 +335,7 @@ Cet exemple montre le vrai chemin d'integration:
 - le composant React rend ensuite `<KycLink />`
 
 ```tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KycLink } from "@kycly/link/react";
 import type {
   KycLinkCompletePayload,
@@ -332,9 +349,12 @@ type KycLinkSession = {
   expiresAt: string;
 };
 
+const PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE = "kyclink:parent-origin:init";
+
 export function KycLinkPage({ userId }: { userId: string }) {
   const [session, setSession] = useState<KycLinkSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const iframeContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,6 +398,49 @@ export function KycLinkPage({ userId }: { userId: string }) {
     };
   }, [userId]);
 
+  const kyclinkOrigin = useMemo(
+    () => (session ? new URL(session.kyclinkUrl).origin : null),
+    [session],
+  );
+
+  const stopHandshake = useCallback((intervalId: number | null) => {
+    if (intervalId !== null) {
+      window.clearInterval(intervalId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session || !kyclinkOrigin) {
+      return;
+    }
+
+    const container = iframeContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const iframe = container.querySelector("iframe");
+    if (!(iframe instanceof HTMLIFrameElement)) {
+      return;
+    }
+
+    const message = {
+      type: PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE,
+      sessionId: session.sessionId,
+    };
+
+    const sendHandshake = () => {
+      iframe.contentWindow?.postMessage(message, kyclinkOrigin);
+    };
+
+    sendHandshake();
+    const intervalId = window.setInterval(sendHandshake, 500);
+
+    return () => {
+      stopHandshake(intervalId);
+    };
+  }, [kyclinkOrigin, session, stopHandshake]);
+
   if (error) {
     return <p>Erreur KYC: {error}</p>;
   }
@@ -387,27 +450,31 @@ export function KycLinkPage({ userId }: { userId: string }) {
   }
 
   return (
-    <KycLink
-      kyclinkUrl={session.kyclinkUrl}
-      height="700px"
-      className="kyc-iframe"
-      style={{ borderRadius: "12px" }}
-      onReady={() => {
-        console.log("KycLink pret");
-      }}
-      onStep={(step: KycLinkStep) => {
-        console.log("KycLink step:", step);
-      }}
-      onComplete={(result: KycLinkCompletePayload) => {
-        console.log("Parcours termine:", result.sessionId, result.status);
-      }}
-      onError={(payload: KycLinkErrorPayload) => {
-        console.error("KycLink error:", payload.code, payload.message);
-      }}
-    />
+    <div ref={iframeContainerRef}>
+      <KycLink
+        kyclinkUrl={session.kyclinkUrl}
+        height="700px"
+        className="kyc-iframe"
+        style={{ borderRadius: "12px" }}
+        onReady={() => {
+          console.log("KycLink pret");
+        }}
+        onStep={(step: KycLinkStep) => {
+          console.log("KycLink step:", step);
+        }}
+        onComplete={(result: KycLinkCompletePayload) => {
+          console.log("Parcours termine:", result.sessionId, result.status);
+        }}
+        onError={(payload: KycLinkErrorPayload) => {
+          console.error("KycLink error:", payload.code, payload.message);
+        }}
+      />
+    </div>
   );
 }
 ```
+
+Le host React doit maintenant emettre ce handshake `kyclink:parent-origin:init` vers l'iframe. KycLink valide `event.origin` contre la `parentOrigin` stockee cote backend; `document.referrer` n'est plus la preuve de securite retenue.
 
 ### 4.3 — Ce que signifie `onComplete`
 
@@ -425,7 +492,7 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 3. le frontend appelle ensuite `/api/kyc/session/:sessionId/result`
 4. le backend applicatif appelle `partner-node /kyclink/:sessionId/result`
 5. si cette route detail repond `404`, le backend replie sur `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat
-6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `validationStatus`
+6. la page affiche `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`
 7. les polls suivants utilisent un backoff progressif jusqu'au statut final ou a la limite de tentatives
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.

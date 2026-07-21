@@ -4,23 +4,9 @@ import { useEffect } from "react";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
-import { saveActiveVerificationSession } from "@/lib/active-verification-session";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
-
-async function readErrorMessage(response: Response): Promise<string> {
-  const raw = await response.text();
-
-  if (!raw) {
-    return "Creation impossible.";
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as { message?: string };
-    return parsed.message ?? "Creation impossible.";
-  } catch {
-    return raw;
-  }
-}
 
 export function VerificationPrepareScreen() {
   useEffect(() => {
@@ -35,29 +21,21 @@ export function VerificationPrepareScreen() {
       }
 
       try {
-        const response = await fetch("/api/kyc/session", {
+        const createdSession = await requestProtectedJson<{ sessionId: string }>("/api/kyc/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(draft),
+        }, {
+          defaultMessage: "Creation impossible.",
+          defaultFailureCode: "SESSION_PREPARE_FAILED",
         });
-
-        if (!response.ok) {
-          throw new Error(await readErrorMessage(response));
-        }
-
-        const createdSession = (await response.json()) as {
-          sessionId: string;
-          kyclinkUrl: string;
-          expiresAt: string;
-        };
 
         if (cancelled) {
           return;
         }
 
-        saveActiveVerificationSession(createdSession);
         clearVerificationDraft();
         window.location.replace(`/verify/session?sessionId=${encodeURIComponent(createdSession.sessionId)}`);
       } catch (reason) {
@@ -65,7 +43,11 @@ export function VerificationPrepareScreen() {
           return;
         }
 
-        const message = reason instanceof Error ? reason.message : "Creation impossible.";
+        if (handleAppError(reason)) {
+          return;
+        }
+
+        const message = errorMessage(reason, "Creation impossible.");
         const query = new URLSearchParams({
           code: "SESSION_PREPARE_FAILED",
           message,
@@ -83,15 +65,23 @@ export function VerificationPrepareScreen() {
   }, []);
 
   return (
-    <ProtectedScreenShell backHref="/verify" title="Session" maxWidthClassName="max-w-2xl" panelClassName="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--surface-light)]">
-          <LoaderCircle className="h-9 w-9 animate-spin text-brand" />
+    <ProtectedScreenShell
+      backHref="/verify"
+      preferBackHref
+      title="Session"
+      showLogout={false}
+      maxWidthClassName="sm:max-w-[430px]"
+      panelClassName="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 !pt-0 text-center"
+    >
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-light)]">
+          <LoaderCircle className="h-7 w-7 animate-spin text-brand" />
           <div className="absolute -right-1 top-0 rounded-2xl bg-white p-2 shadow-[var(--shadow-soft)]">
             <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
           </div>
         </div>
-        <div className={surfaceInfoCardClassName}>
-          Préparation de votre session
+        <div className={[surfaceInfoCardClassName, "w-full max-w-sm rounded-3xl px-5 py-4"].join(" ")}>
+          <p className="font-medium text-[var(--foreground)]">Préparation de votre session</p>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">Création de l&apos;accès KYC et ouverture du parcours en cours.</p>
         </div>
     </ProtectedScreenShell>
   );

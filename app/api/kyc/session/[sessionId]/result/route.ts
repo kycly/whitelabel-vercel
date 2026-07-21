@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/auth/session";
-import { fetchKycSessionResultWithFallback, KycSessionError } from "@/server/kyclink";
+import { fetchKycSessionResult, KycSessionError } from "@/server/kyclink";
+import { createKycErrorResponse, createUnauthorizedKycResponse } from "@/server/kyc-route-response";
 
 type RouteContext = {
   params: Promise<{
@@ -12,13 +13,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const session = await readSession();
 
   if (!session) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized.",
-        code: "UNAUTHORIZED",
-      },
-      { status: 401 },
-    );
+    return createUnauthorizedKycResponse();
   }
 
   if (!session.canAccess || !session.demoAccountId) {
@@ -34,7 +29,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { sessionId } = await context.params;
 
   try {
-    const result = await fetchKycSessionResultWithFallback({
+    const result = await fetchKycSessionResult({
       cognitoIdToken: session.cognitoIdToken,
       sessionId,
     });
@@ -42,13 +37,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof KycSessionError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-          code: error.code,
-        },
-        { status: error.statusCode },
-      );
+      return createKycErrorResponse(error);
     }
 
     return NextResponse.json(

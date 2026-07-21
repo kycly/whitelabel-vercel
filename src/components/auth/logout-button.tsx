@@ -3,7 +3,7 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { LogOut } from "lucide-react";
-import { cognitoSignOut } from "@/auth/cognito-client";
+import { redirectToLogout } from "@/auth/cognito-client";
 
 type LogoutButtonProps = {
   className?: string;
@@ -35,8 +35,7 @@ export function LogoutButton({
       title={accessibleLabel}
       onClick={() => {
         setSubmitting(true);
-        cognitoSignOut();
-        window.location.assign("/auth/logout");
+        redirectToLogout();
       }}
     >
       {showIcon ? <LogOut className="size-4" /> : null}

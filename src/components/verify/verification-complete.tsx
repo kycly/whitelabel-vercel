@@ -1,18 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock3, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
+  type WorkflowStatus,
+  workflowStatusTone,
+  workflowStatusValue,
+} from "@/components/verify/workflow-status";
+import {
   errorAlertClassName,
+  fixedFooterSafeAreaClassName,
   infoAlertClassName,
   primaryIconButtonClassName,
+  scrollablePanelBodyClassName,
   secondaryIconButtonClassName,
   surfaceInfoCardClassName,
   successIconButtonClassName,
   warningAlertClassName,
 } from "@/components/ui/fixed-action-layout";
+import { errorMessage } from "@/lib/app-error";
+import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
 type KycSessionResult = {
   sessionId: string;
@@ -20,7 +29,7 @@ type KycSessionResult = {
   status: "pending" | "processing" | "completed";
   completed: boolean;
   completedAt: string | null;
-  validationStatus: "APPROVED" | "REJECTED" | "REVIEW" | null;
+  workflowStatus: WorkflowStatus | null;
 };
 
 type ResultState = {
@@ -29,18 +38,6 @@ type ResultState = {
   isPolling: boolean;
   attemptCount: number;
   countdownSeconds: number;
-  attemptHistory: PollAttempt[];
-};
-
-type PollAttempt = {
-  attempt: number;
-  checkedAt: string;
-  outcome: "success" | "error";
-  status: KycSessionResult["status"] | null;
-  completed: boolean | null;
-  validationStatus: KycSessionResult["validationStatus"];
-  nextPollInSeconds: number | null;
-  message: string;
 };
 
 const FIRST_POLL_DELAY_SECONDS = 10;
@@ -56,74 +53,29 @@ function nextPollDelayMs(attempt: number): number {
   );
 }
 
-function statusLabel(status: KycSessionResult["status"] | null): string {
+function pollingMessage(countdownSeconds: number, attemptCount: number): string {
+  if (attemptCount === 0) {
+    return `Vérification en cours — premier appel dans ${countdownSeconds}s.`;
+  }
+
+  const remaining = MAX_POLL_ATTEMPTS - attemptCount;
+  return `Vérification en cours — prochain appel dans ${countdownSeconds}s (${remaining} restant${remaining > 1 ? "s" : ""}).`;
+}
+
+function statusTone(status: KycSessionResult["status"]): string {
   if (status === "completed") {
-    return "Resultat backend confirme";
-  }
-
-  if (status === "processing") {
-    return "Analyse backend en cours";
-  }
-
-  return "Attente du premier resultat backend";
-}
-
-function validationStatusLabel(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "Approuve";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "Rejete";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "Revue manuelle";
-  }
-
-  return "Non disponible";
-}
-
-function decisionTitle(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
-    return "Decision favorable confirmee";
-  }
-
-  if (validationStatus === "REJECTED") {
-    return "Decision de rejet confirmee";
-  }
-
-  if (validationStatus === "REVIEW") {
-    return "Verification basculee en revue manuelle";
-  }
-
-  return "Decision backend encore en attente";
-}
-
-function decisionTone(validationStatus: KycSessionResult["validationStatus"]): string {
-  if (validationStatus === "APPROVED") {
     return "border-emerald-200 bg-emerald-50 text-emerald-800";
   }
 
-  if (validationStatus === "REJECTED") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  if (validationStatus === "REVIEW") {
+  if (status === "processing") {
     return "border-amber-200 bg-amber-50 text-amber-800";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-function pollingMessage(countdownSeconds: number, attemptCount: number): string {
-  const nextAttempt = Math.min(attemptCount + 1, MAX_POLL_ATTEMPTS);
-
-  if (attemptCount === 0) {
-    return `Le premier appel backend partira dans ${countdownSeconds}s minimum.`;
-  }
-
-  return `Le poll ${nextAttempt}/${MAX_POLL_ATTEMPTS} partira dans ${countdownSeconds}s.`;
+function resultTone(result: KycSessionResult): string {
+  return result.workflowStatus ? workflowStatusTone(result.workflowStatus) : statusTone(result.status);
 }
 
 export function VerificationComplete({ sessionId }: { sessionId: string }) {
@@ -134,7 +86,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
     isPolling: false,
     attemptCount: 0,
     countdownSeconds: FIRST_POLL_DELAY_SECONDS,
-    attemptHistory: [],
   });
 
   useEffect(() => {
@@ -179,22 +130,18 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         }));
 
         try {
-          const response = await fetch(`/api/kyc/session/${encodeURIComponent(sessionId)}/result`, {
+          const parsed = await requestProtectedJson<KycSessionResult>(`/api/kyc/session/${encodeURIComponent(sessionId)}/result`, {
             method: "GET",
             cache: "no-store",
+          }, {
+            defaultMessage: "Lecture impossible.",
+            defaultFailureCode: "SESSION_RESULT_FETCH_FAILED",
+            sessionId,
           });
-
-          const payload = (await response.json()) as KycSessionResult | { message?: string };
-
-          if (!response.ok) {
-            throw new Error(payload && "message" in payload && payload.message ? payload.message : "Lecture impossible.");
-          }
 
           if (cancelled) {
             return;
           }
-
-          const parsed = payload as KycSessionResult;
 
           setState((current) => ({
             ...current,
@@ -202,21 +149,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             isPolling: false,
             error: null,
             attemptCount: attempt,
-            attemptHistory: [
-              ...current.attemptHistory,
-              {
-                attempt,
-                checkedAt: new Date().toISOString(),
-                outcome: "success",
-                status: parsed.status,
-                completed: parsed.completed,
-                validationStatus: parsed.validationStatus,
-                nextPollInSeconds: parsed.completed ? null : nextDelaySeconds,
-                message: parsed.completed
-                  ? "Le backend a confirme un statut final pour cette session."
-                  : "Lecture backend reussie, mais aucun statut final n'est encore disponible.",
-              },
-            ],
           }));
 
           if (parsed.completed) {
@@ -227,24 +159,15 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             return;
           }
 
+          if (handleAppError(error)) {
+            return;
+          }
+
           setState((current) => ({
             ...current,
-            error: error instanceof Error ? error.message : "Lecture impossible.",
+            error: errorMessage(error, "Lecture impossible."),
             isPolling: false,
             attemptCount: attempt,
-            attemptHistory: [
-              ...current.attemptHistory,
-              {
-                attempt,
-                checkedAt: new Date().toISOString(),
-                outcome: "error",
-                status: null,
-                completed: null,
-                validationStatus: null,
-                nextPollInSeconds: nextDelaySeconds,
-                message: error instanceof Error ? error.message : "Lecture impossible.",
-              },
-            ],
           }));
         }
 
@@ -281,20 +204,26 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
 
   const reachedPollingLimit = !state.data?.completed && state.attemptCount >= MAX_POLL_ATTEMPTS;
 
-  const currentStatus = useMemo(() => {
-    return statusLabel(state.data?.status ?? null);
-  }, [state.data?.status]);
-
-  const approvedExitHref = state.data?.validationStatus === "APPROVED" ? "/welcome" : null;
+  const approvedExitHref = state.data?.workflowStatus === "APPROVED" ? "/welcome" : null;
 
   return (
-    <ProtectedScreenShell backHref="/sessions" title="Résultat" maxWidthClassName="max-w-4xl" panelClassName="space-y-5 pt-4">
-        <div className={surfaceInfoCardClassName}>
-          <p>{currentStatus}</p>
-        </div>
+    <ProtectedScreenShell
+      backHref="/sessions"
+      preferBackHref
+      title="Résultat"
+      maxWidthClassName="sm:max-w-[430px]"
+      lockViewportScroll
+      panelClassName="flex h-full flex-col gap-4 !pt-0"
+    >
+        <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+        {state.data ? (
+          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+            <p>status: {state.data.status}</p>
+          </div>
+        ) : null}
 
         {state.countdownSeconds > 0 ? (
-          <div className={infoAlertClassName}>
+          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
             <Clock3 className="mt-0.5 size-5 shrink-0" />
             <div>
               <p>{pollingMessage(state.countdownSeconds, state.attemptCount)}</p>
@@ -303,7 +232,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.isPolling ? (
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
+          <div className={[surfaceInfoCardClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
             <LoaderCircle className="size-4 animate-spin" />
             Lecture du resultat en cours.
           </div>
@@ -316,19 +245,20 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.data ? (
-          <div className={`rounded-2xl border px-5 py-4 text-sm ${decisionTone(state.data.validationStatus)}`}>
-            <p className="font-semibold">{decisionTitle(state.data.validationStatus)}</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className={`rounded-3xl border px-5 py-5 text-sm ${resultTone(state.data)}`}>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">Decision backend</p>
+            <p className="font-semibold">workflowStatus: {workflowStatusValue(state.data.workflowStatus)}</p>
+            <div className="mt-4 grid gap-3 rounded-2xl bg-white/55 p-4">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{state.data.externalId ?? sessionId}</p>
               </div>
               <div>
-                <p className="font-medium">Decision</p>
-                <p>{validationStatusLabel(state.data.validationStatus)}</p>
+                <p className="font-medium">workflowStatus</p>
+                <p>{workflowStatusValue(state.data.workflowStatus)}</p>
               </div>
               <div>
-                <p className="font-medium">Statut</p>
+                <p className="font-medium">status</p>
                 <p>{state.data.status}</p>
               </div>
               <div>
@@ -344,8 +274,10 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
             Aucun statut final n&apos;a encore ete confirme.
           </div>
         ) : null}
+        </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className={fixedFooterSafeAreaClassName}>
+          <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
           <button
             type="button"
             onClick={() => {
@@ -356,7 +288,6 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
                 attemptCount: 0,
                 countdownSeconds: 0,
                 isPolling: false,
-                attemptHistory: [],
               }));
               setPollGeneration((current) => current + 1);
             }}
@@ -399,6 +330,7 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
               <span className="sr-only">Retour accueil</span>
             </Link>
           ) : null}
+          </div>
         </div>
     </ProtectedScreenShell>
   );

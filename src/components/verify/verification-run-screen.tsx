@@ -1,58 +1,56 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
 import { KycLink } from "@kycly/link/react";
 import type { KycLinkErrorPayload } from "@kycly/link";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { primaryCtaClassName, surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
-import { readActiveVerificationSession, type ActiveVerificationSession } from "@/lib/active-verification-session";
+import {
+  createParentOriginHandshakeMessage,
+  resolveKyclinkOrigin,
+} from "@/lib/kyclink-embed";
 
 type VerificationRunScreenProps = {
   sessionId: string;
+  kyclinkUrl: string;
 };
 
-type RunState =
-  | {
-      status: "loading";
-    }
-  | {
-      status: "error";
-      message: string;
-    }
-  | {
-      status: "ready";
-      session: ActiveVerificationSession;
-    };
-
-export function VerificationRunScreen({ sessionId }: VerificationRunScreenProps) {
+export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRunScreenProps) {
   const router = useRouter();
-  const [state, setState] = useState<RunState>({ status: "loading" });
+  const iframeContainerRef = useRef<HTMLDivElement | null>(null);
+  const handshakeIntervalRef = useRef<number | null>(null);
+  const kyclinkOrigin = useMemo(() => resolveKyclinkOrigin(kyclinkUrl), [kyclinkUrl]);
+
+  const stopHandshake = useCallback(() => {
+    if (handshakeIntervalRef.current !== null) {
+      window.clearInterval(handshakeIntervalRef.current);
+      handshakeIntervalRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    const scheduled = window.setTimeout(() => {
-      const session = readActiveVerificationSession(sessionId);
+    stopHandshake();
 
-      if (!session) {
-        setState({
-          status: "error",
-          message: "Session introuvable. Recommencez la creation.",
-        });
-        return;
-      }
+    const container = iframeContainerRef.current;
+    if (!container) {
+      return;
+    }
 
-      setState({
-        status: "ready",
-        session,
-      });
-    }, 0);
+    const iframe = container.querySelector("iframe");
+    if (!(iframe instanceof HTMLIFrameElement)) {
+      return;
+    }
 
-    return () => {
-      window.clearTimeout(scheduled);
+    const message = createParentOriginHandshakeMessage(sessionId);
+    const sendHandshake = () => {
+      iframe.contentWindow?.postMessage(message, kyclinkOrigin);
     };
-  }, [sessionId]);
+
+    sendHandshake();
+    handshakeIntervalRef.current = window.setInterval(sendHandshake, 500);
+
+    return stopHandshake;
+  }, [kyclinkOrigin, sessionId, stopHandshake]);
 
   function redirectToFailure(payload: KycLinkErrorPayload) {
     const query = new URLSearchParams();
@@ -72,44 +70,31 @@ export function VerificationRunScreen({ sessionId }: VerificationRunScreenProps)
     router.push(`/failure?${query.toString()}`);
   }
 
-  if (state.status === "loading") {
-    return (
-      <ProtectedScreenShell backHref="/verify" title="Parcours" maxWidthClassName="max-w-5xl" panelClassName="flex flex-1 flex-col justify-center space-y-4">
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3"].join(" ")}>
-            <LoaderCircle className="size-4 animate-spin" />
-            Chargement du parcours.
-          </div>
-      </ProtectedScreenShell>
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <ProtectedScreenShell backHref="/verify" title="Parcours" maxWidthClassName="max-w-2xl" panelClassName="flex flex-1 flex-col justify-center space-y-4">
-          <div className={surfaceInfoCardClassName}>{state.message}</div>
-          <Link
-            href="/verify"
-            className={primaryCtaClassName}
-          >
-            Revenir au formulaire
-          </Link>
-      </ProtectedScreenShell>
-    );
-  }
-
-  const { session } = state;
-
   return (
-    <ProtectedScreenShell backHref="/verify" title="Parcours" maxWidthClassName="max-w-5xl" panelClassName="flex flex-1 flex-col pt-2">
-        <div className="flex-1 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
+    <ProtectedScreenShell
+      backHref="/verify"
+      fullViewport
+      showBack={false}
+      showHeader={false}
+      showLogout={false}
+      maxWidthClassName="w-full"
+      lockViewportScroll
+      panelClassName="flex min-h-0 flex-1 flex-col !px-0 !pb-0 !pt-0"
+    >
+        <div ref={iframeContainerRef} className="flex min-h-0 flex-1 overflow-hidden bg-white">
           <KycLink
-            kyclinkUrl={session.kyclinkUrl}
-            className="min-h-full w-full border-0 bg-white"
-            height={736}
+            kyclinkUrl={kyclinkUrl}
+            className="h-full min-h-full w-full border-0 bg-white"
+            height="100%"
+            onReady={() => {
+              stopHandshake();
+            }}
             onComplete={(payload) => {
+              stopHandshake();
               router.push(`/complete?sessionId=${encodeURIComponent(payload.sessionId)}`);
             }}
             onError={(payload) => {
+              stopHandshake();
               redirectToFailure(payload);
             }}
           />

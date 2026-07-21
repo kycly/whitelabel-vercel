@@ -6,18 +6,13 @@ import {
   KycSessionError,
   parseKycSessionsListQuery,
 } from "@/server/kyclink";
+import { createKycErrorResponse, createUnauthorizedKycResponse } from "@/server/kyc-route-response";
 
 export async function GET(request: Request) {
   const session = await readSession();
 
   if (!session) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized.",
-        code: "UNAUTHORIZED",
-      },
-      { status: 401 },
-    );
+    return createUnauthorizedKycResponse();
   }
 
   if (!session.canAccess || !session.demoAccountId) {
@@ -51,13 +46,7 @@ export async function GET(request: Request) {
     }
 
     if (error instanceof KycSessionError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-          code: error.code,
-        },
-        { status: error.statusCode },
-      );
+      return createKycErrorResponse(error);
     }
 
     return NextResponse.json(
