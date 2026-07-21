@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "docs:codegen": "node scripts/generate-code-docs.mjs",
     "docs:check": "node scripts/check-doc-drift.mjs",
     "guard:sandbox-only": "node scripts/check-sandbox-only.mjs",
     "prepare": "node scripts/install-githooks.mjs"

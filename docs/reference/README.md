@@ -10,5 +10,6 @@
 | [KYC-SESSIONS-LIST-CONTRACT.md](KYC-SESSIONS-LIST-CONTRACT.md) | Contrat de la liste des vérifications |
 | [KYCLINK-SDK-INTEGRATION.md](KYCLINK-SDK-INTEGRATION.md) | Guide d'intégration `@kycly/link` (React) |
 | [UI-ESTHETIC-CANON.md](UI-ESTHETIC-CANON.md) | Canon UI/UX local |
+| [CODEBASE-AUTOGEN.md](CODEBASE-AUTOGEN.md) | Index de code généré (routes, exports, env, tests) — `pnpm docs:codegen` |
 
-> `CODEBASE-AUTOGEN.md` (index de code généré) est ajouté par le lot autogen du run de parité doc.
+> `CODEBASE-AUTOGEN.md` est **auto-généré** (analyse statique) : ne pas l'éditer à la main ; le régénérer via `pnpm docs:codegen`.
