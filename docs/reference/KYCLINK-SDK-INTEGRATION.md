@@ -497,6 +497,22 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.
 
+### 4.4 — Ecran detail (OCR + images), distinct de `COMPLETE`
+
+En plus du compte a rebours `COMPLETE`, `whitelabel-vercel` expose un ecran detail
+`/sessions/:sessionId` (lien "Voir le resultat" depuis la liste des sessions) qui affiche l'OCR
+complet et les images capturees, pas seulement la decision. Deux routes backend supplementaires,
+en scope demo (`sandbox_operator`), servent cet ecran:
+
+- `GET /api/kyc/session/:sessionId/detail` -> proxifie `partner-node GET
+  /kyclink/:sessionId/verification-detail` -> `{ ocrFront, ocrBack, faceSimilarity, imageSides }`.
+- `GET /api/kyc/session/:sessionId/images/:side` -> proxifie `partner-node GET
+  /kyclink/:sessionId/verification-detail/images/:side` -> image binaire (recto/verso/portrait/liveness).
+
+Ces deux routes partner-node resolvent `sessionId -> verificationId` cote demo
+(`getLocalVerificationBySessionId`), independamment de la route reviseur `/verifications/:id`.
+Detail complet du flux: [data-flows/verification-detail.md](../architecture/data-flows/verification-detail.md).
+
 ---
 
 ## 5. Metadonnees de session
