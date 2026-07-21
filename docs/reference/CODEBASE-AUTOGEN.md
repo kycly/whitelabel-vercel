@@ -11,7 +11,7 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 52 |
+| Fichiers code scannes | 56 |
 | Routes detectees | 19 |
 | Hooks detectes | 0 |
 | Composants detectes | 17 |
@@ -31,7 +31,11 @@
 | test | vitest run |
 | test:e2e | playwright test |
 | docs:codegen | node scripts/generate-code-docs.mjs |
+| docs:codegen:check | node scripts/check-code-docs.mjs |
 | docs:check | node scripts/check-doc-drift.mjs |
+| docs:truth | node scripts/check-doc-truth.mjs |
+| docs:structure | node scripts/check-doc-structure.mjs |
+| docs:freshness | node scripts/check-doc-freshness.mjs |
 | guard:sandbox-only | node scripts/check-sandbox-only.mjs |
 | prepare | node scripts/install-githooks.mjs |
 
