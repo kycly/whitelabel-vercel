@@ -16,6 +16,7 @@ type CanonicalSession = {
   sessionId: string;
   kyclinkUrl: string;
   status: "pending" | "processing" | "completed";
+  workflowStatus: "PENDING" | "IN_REVIEW" | "ESCALATED" | "APPROVED" | "REJECTED" | null;
   sessionState: "ACTIVE" | "COMPLETED" | "EXPIRED";
   resumeAvailable: boolean;
 };
@@ -71,10 +72,17 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
             return;
           }
 
-          // La verif peut deja etre terminee (decision rendue) sans que la liste
-          // des sessions le sache encore : on reaffiche le resultat plutot que de
-          // rouvrir un widget kyclink sur une session deja soumise.
-          if (session.status === "completed" || session.sessionState === "COMPLETED") {
+          // `status`/`sessionState` restent a "processing"/ACTIVE tant que la decision
+          // n'est pas rendue, meme quand la verif a deja ete soumise une premiere fois.
+          // `workflowStatus` non nul est le seul signal fiable d'une entree dans le
+          // pipeline de decision : on ne rouvre alors plus le widget, on reaffiche le
+          // resultat (en cours ou rendu) plutot que de permettre une resoumission.
+          const alreadySubmitted =
+            session.status === "completed" ||
+            session.sessionState === "COMPLETED" ||
+            session.workflowStatus !== null;
+
+          if (alreadySubmitted) {
             router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
             return;
           }
