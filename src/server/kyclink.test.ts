@@ -18,6 +18,8 @@ import {
   fetchKycSession,
   fetchKycSessionResult,
   fetchKycSessions,
+  fetchKycVerificationDetail,
+  fetchKycVerificationImage,
   KycSessionError,
   parseKycSessionsListQuery,
 } from "@/server/kyclink";
@@ -301,5 +303,70 @@ describe("server/kyclink", () => {
 
     expect(result.data.map((item) => item.sessionId)).toEqual(["sess_new", "sess_mid"]);
     expect(result.meta.total).toBe(3);
+  });
+});
+
+describe("fetchKycVerificationDetail", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("récupère le détail vérif, avec Bearer + en-têtes CF", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ocrFront: { firstName: "Ada" }, ocrBack: {},
+        faceSimilarity: 0.98, imageSides: ["recto"],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const detail = await fetchKycVerificationDetail({ cognitoIdToken: "tok", sessionId: "sess-1" });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.kycly.test/kyclink/sess-1/verification-detail");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok");
+    expect((init.headers as Record<string, string>)["CF-Access-Client-Id"]).toBe("test-cf-id.access");
+    expect(detail.faceSimilarity).toBe(0.98);
+    expect(detail.imageSides).toEqual(["recto"]);
+  });
+
+  it("propage une erreur upstream en KycSessionError", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false, status: 404,
+      json: async () => ({ message: "not found", code: "NOT_FOUND" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      fetchKycVerificationDetail({ cognitoIdToken: "tok", sessionId: "sess-x" }),
+    ).rejects.toBeInstanceOf(KycSessionError);
+  });
+});
+
+describe("fetchKycVerificationImage", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("récupère les octets d'une image + content-type", async () => {
+    const bytes = new Uint8Array([1, 2, 3]).buffer;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: (h: string) => (h.toLowerCase() === "content-type" ? "image/jpeg" : null) },
+      arrayBuffer: async () => bytes,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const img = await fetchKycVerificationImage({ cognitoIdToken: "tok", sessionId: "sess-1", side: "recto" });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.kycly.test/kyclink/sess-1/verification-detail/images/recto");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok");
+    expect(img.contentType).toBe("image/jpeg");
+    expect(new Uint8Array(img.body)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it("propage un échec image en KycSessionError", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, headers: { get: () => null }, arrayBuffer: async () => new ArrayBuffer(0) });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      fetchKycVerificationImage({ cognitoIdToken: "tok", sessionId: "sess-1", side: "recto" }),
+    ).rejects.toBeInstanceOf(KycSessionError);
   });
 });

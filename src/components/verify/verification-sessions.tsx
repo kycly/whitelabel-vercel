@@ -426,7 +426,7 @@ export function VerificationSessions() {
                   ) : null}
 
                   <Link
-                    href={`/complete?sessionId=${encodeURIComponent(item.sessionId)}`}
+                    href={`/sessions/${encodeURIComponent(item.sessionId)}`}
                     className={secondaryButtonClassName}
                   >
                     Voir le résultat
