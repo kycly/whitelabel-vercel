@@ -138,16 +138,46 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
   }, [sessionId]);
 
   const { session, detail, isLoading } = state;
+  // La decision (status) et le detail (OCR/images) sont deux propagations
+  // distinctes et asynchrones cote backend : la premiere doit etre pollee
+  // tant qu'elle n'est pas rendue, la seconde une fois la decision connue.
+  const isWaitingForDecision = session !== null && session.status !== "completed" && !isLoading;
   const isWaitingForDetail = session?.status === "completed" && !detail && !isLoading;
 
   useEffect(() => {
-    if (!isWaitingForDetail) {
+    if (!isWaitingForDecision && !isWaitingForDetail) {
       setPollCountdown(null);
       return;
     }
 
     let cancelled = false;
     setPollCountdown(DETAIL_POLL_INTERVAL_SECONDS);
+
+    async function pollSessionStatus() {
+      try {
+        const polledSession = await requestProtectedJson<SessionStatus>(
+          `/api/kyc/session/${encodeURIComponent(sessionId)}`,
+          { method: "GET", cache: "no-store" },
+          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_STATUS_FETCH_FAILED", sessionId },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setState((current) => ({ ...current, session: polledSession }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        if (handleAppError(error)) {
+          return;
+        }
+
+        setState((current) => ({ ...current, error: errorMessage(error, "Lecture impossible.") }));
+      }
+    }
 
     async function pollDetail() {
       try {
@@ -184,7 +214,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         }
 
         if (current <= 1) {
-          void pollDetail();
+          void (isWaitingForDecision ? pollSessionStatus() : pollDetail());
           return DETAIL_POLL_INTERVAL_SECONDS;
         }
 
@@ -196,7 +226,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [sessionId, isWaitingForDetail]);
+  }, [sessionId, isWaitingForDecision, isWaitingForDetail]);
   const isCompleted = session?.status === "completed";
 
   return (
@@ -280,7 +310,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
 
         {!isCompleted && session ? (
           <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
-            Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
+            <p>
+              Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
+            </p>
+            {pollCountdown !== null ? (
+              <p className="mt-2 font-mono text-xs opacity-70">
+                Nouvelle tentative dans {pollCountdown}s
+              </p>
+            ) : null}
           </div>
         ) : null}
 

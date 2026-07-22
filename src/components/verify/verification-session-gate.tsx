@@ -25,9 +25,6 @@ type GateState =
   | { status: "loading" }
   | { status: "ready"; kyclinkUrl: string };
 
-const RESUME_STATUS_POLL_MAX_ATTEMPTS = 3;
-const RESUME_STATUS_POLL_INTERVAL_MS = 1500;
-
 function failureHref(params: { sessionId: string; code: string; message: string }): string {
   const query = new URLSearchParams({
     sessionId: params.sessionId,
@@ -38,78 +35,60 @@ function failureHref(params: { sessionId: string; code: string; message: string 
   return `/failure?${query.toString()}`;
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 export function VerificationSessionGate({ sessionId }: VerificationSessionGateProps) {
   const router = useRouter();
   const [state, setState] = useState<GateState>({ status: "loading" });
 
   useEffect(() => {
     const controller = new AbortController();
-    let cancelled = false;
 
     async function loadSession() {
       try {
-        for (let attempt = 1; attempt <= RESUME_STATUS_POLL_MAX_ATTEMPTS; attempt += 1) {
-          const session = await requestProtectedJson<CanonicalSession>(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
-            method: "GET",
-            cache: "no-store",
-            signal: controller.signal,
-          }, {
-            defaultMessage: "La reprise de session est temporairement indisponible.",
-            defaultFailureCode: "SESSION_FETCH_FAILED",
-            failureCodeMap: {
-              KYCLINK_SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
-            },
-            sessionId,
-          });
+        const session = await requestProtectedJson<CanonicalSession>(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        }, {
+          defaultMessage: "La reprise de session est temporairement indisponible.",
+          defaultFailureCode: "SESSION_FETCH_FAILED",
+          failureCodeMap: {
+            KYCLINK_SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
+          },
+          sessionId,
+        });
 
-          if (cancelled) {
-            return;
-          }
+        // `status`/`sessionState` restent a "processing"/ACTIVE tant que la decision
+        // n'est pas rendue, meme quand la verif a deja ete soumise une premiere fois.
+        // `workflowStatus` non nul est le seul signal fiable d'une entree dans le
+        // pipeline de decision : on ne rouvre alors plus le widget, on reaffiche le
+        // resultat (en cours ou rendu) plutot que de permettre une resoumission.
+        const alreadySubmitted =
+          session.status === "completed" ||
+          session.sessionState === "COMPLETED" ||
+          session.workflowStatus !== null;
 
-          // `status`/`sessionState` restent a "processing"/ACTIVE tant que la decision
-          // n'est pas rendue, meme quand la verif a deja ete soumise une premiere fois.
-          // `workflowStatus` non nul est le seul signal fiable d'une entree dans le
-          // pipeline de decision : on ne rouvre alors plus le widget, on reaffiche le
-          // resultat (en cours ou rendu) plutot que de permettre une resoumission.
-          const alreadySubmitted =
-            session.status === "completed" ||
-            session.sessionState === "COMPLETED" ||
-            session.workflowStatus !== null;
-
-          if (alreadySubmitted) {
-            router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
-            return;
-          }
-
-          if (session.sessionState === "EXPIRED" || !session.resumeAvailable) {
-            router.replace(
-              failureHref({
-                sessionId,
-                code: "SESSION_EXPIRED",
-                message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
-              }),
-            );
-            return;
-          }
-
-          if (attempt < RESUME_STATUS_POLL_MAX_ATTEMPTS) {
-            await wait(RESUME_STATUS_POLL_INTERVAL_MS);
-            continue;
-          }
-
-          setState({
-            status: "ready",
-            kyclinkUrl: session.kyclinkUrl,
-          });
+        if (alreadySubmitted) {
+          router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
+          return;
         }
+
+        if (session.sessionState === "EXPIRED" || !session.resumeAvailable) {
+          router.replace(
+            failureHref({
+              sessionId,
+              code: "SESSION_EXPIRED",
+              message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
+            }),
+          );
+          return;
+        }
+
+        setState({
+          status: "ready",
+          kyclinkUrl: session.kyclinkUrl,
+        });
       } catch (error) {
-        if (cancelled || controller.signal.aborted) {
+        if (controller.signal.aborted) {
           return;
         }
 
@@ -130,7 +109,6 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
     void loadSession();
 
     return () => {
-      cancelled = true;
       controller.abort();
     };
   }, [router, sessionId]);
