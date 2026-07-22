@@ -51,4 +51,5 @@ sequenceDiagram
 ## Voir aussi
 
 - ADR [001](../decisions/001-direct-cognito-auth-flow.md) — pourquoi le flux Cognito direct.
+- ADR [005](../decisions/005-partner-node-direct-ip-cloudflare-bypass.md) — `/demo/me` était bloqué par Cloudflare (access-denied post-login) ; `KYCLY_BASE_URL` pointe sur l'IP directe en contournement.
 - Référence : [AUTH-UX](../../reference/AUTH-UX.md).
