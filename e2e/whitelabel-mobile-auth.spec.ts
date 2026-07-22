@@ -53,12 +53,25 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         sessionId: SESSION_ID,
         externalId: "cust_mobile_001",
         kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
-        status: "pending",
+        status: "completed",
         expiresAt: "2099-05-18T12:00:00.000Z",
-        completedAt: null,
-        workflowStatus: null,
+        completedAt: "2026-05-18T12:03:00.000Z",
+        workflowStatus: "APPROVED",
         sessionState: "ACTIVE",
         resumeAvailable: true,
+      }),
+    });
+  });
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}/detail`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ocrFront: { firstName: "Demo", lastName: "User" },
+        ocrBack: {},
+        faceSimilarity: 0.97,
+        imageSides: [],
       }),
     });
   });
@@ -189,16 +202,12 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page.getByRole("heading", { name: "Historique" })).toBeVisible();
 
   await page.getByRole("link", { name: /Voir le résultat/i }).click();
-  await page.waitForURL(new RegExp(`/complete\\?sessionId=${SESSION_ID}$`), { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
+  await page.waitForURL(new RegExp(`/sessions/${SESSION_ID}$`), { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Détail de la vérification" })).toBeVisible();
 
-  const refreshResultButton = page.getByRole("button", { name: "Actualiser" });
-  expect((await refreshResultButton.boundingBox())?.height).toBe(44);
-  await refreshResultButton.click();
-
-  await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
-  await expect(page.getByText("status: completed")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
+  await expect(page.getByText("APPROVED")).toBeVisible();
+  await expect(page.getByText("cust_mobile_001")).toBeVisible();
+  await expect(page.getByText("Demo")).toBeVisible();
 });
 
 test("fait defiler la page contexte quand des champs optionnels apparaissent", async ({ page }) => {
