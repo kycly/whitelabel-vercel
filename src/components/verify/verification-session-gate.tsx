@@ -15,6 +15,7 @@ type VerificationSessionGateProps = {
 type CanonicalSession = {
   sessionId: string;
   kyclinkUrl: string;
+  status: "pending" | "processing" | "completed";
   sessionState: "ACTIVE" | "COMPLETED" | "EXPIRED";
   resumeAvailable: boolean;
 };
@@ -22,6 +23,9 @@ type CanonicalSession = {
 type GateState =
   | { status: "loading" }
   | { status: "ready"; kyclinkUrl: string };
+
+const RESUME_STATUS_POLL_MAX_ATTEMPTS = 3;
+const RESUME_STATUS_POLL_INTERVAL_MS = 1500;
 
 function failureHref(params: { sessionId: string; code: string; message: string }): string {
   const query = new URLSearchParams({
@@ -33,50 +37,71 @@ function failureHref(params: { sessionId: string; code: string; message: string 
   return `/failure?${query.toString()}`;
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function VerificationSessionGate({ sessionId }: VerificationSessionGateProps) {
   const router = useRouter();
   const [state, setState] = useState<GateState>({ status: "loading" });
 
   useEffect(() => {
     const controller = new AbortController();
+    let cancelled = false;
 
     async function loadSession() {
       try {
-        const session = await requestProtectedJson<CanonicalSession>(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
-          method: "GET",
-          cache: "no-store",
-          signal: controller.signal,
-        }, {
-          defaultMessage: "La reprise de session est temporairement indisponible.",
-          defaultFailureCode: "SESSION_FETCH_FAILED",
-          failureCodeMap: {
-            KYCLINK_SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
-          },
-          sessionId,
-        });
+        for (let attempt = 1; attempt <= RESUME_STATUS_POLL_MAX_ATTEMPTS; attempt += 1) {
+          const session = await requestProtectedJson<CanonicalSession>(`/api/kyc/session/${encodeURIComponent(sessionId)}`, {
+            method: "GET",
+            cache: "no-store",
+            signal: controller.signal,
+          }, {
+            defaultMessage: "La reprise de session est temporairement indisponible.",
+            defaultFailureCode: "SESSION_FETCH_FAILED",
+            failureCodeMap: {
+              KYCLINK_SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
+            },
+            sessionId,
+          });
 
-        if (session.sessionState === "COMPLETED") {
-          router.replace(`/complete?sessionId=${encodeURIComponent(sessionId)}`);
-          return;
+          if (cancelled) {
+            return;
+          }
+
+          // La verif peut deja etre terminee (decision rendue) sans que la liste
+          // des sessions le sache encore : on reaffiche le resultat plutot que de
+          // rouvrir un widget kyclink sur une session deja soumise.
+          if (session.status === "completed" || session.sessionState === "COMPLETED") {
+            router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
+            return;
+          }
+
+          if (session.sessionState === "EXPIRED" || !session.resumeAvailable) {
+            router.replace(
+              failureHref({
+                sessionId,
+                code: "SESSION_EXPIRED",
+                message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
+              }),
+            );
+            return;
+          }
+
+          if (attempt < RESUME_STATUS_POLL_MAX_ATTEMPTS) {
+            await wait(RESUME_STATUS_POLL_INTERVAL_MS);
+            continue;
+          }
+
+          setState({
+            status: "ready",
+            kyclinkUrl: session.kyclinkUrl,
+          });
         }
-
-        if (session.sessionState === "EXPIRED" || !session.resumeAvailable) {
-          router.replace(
-            failureHref({
-              sessionId,
-              code: "SESSION_EXPIRED",
-              message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
-            }),
-          );
-          return;
-        }
-
-        setState({
-          status: "ready",
-          kyclinkUrl: session.kyclinkUrl,
-        });
       } catch (error) {
-        if (controller.signal.aborted) {
+        if (cancelled || controller.signal.aborted) {
           return;
         }
 
@@ -97,6 +122,7 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
     void loadSession();
 
     return () => {
+      cancelled = true;
       controller.abort();
     };
   }, [router, sessionId]);
