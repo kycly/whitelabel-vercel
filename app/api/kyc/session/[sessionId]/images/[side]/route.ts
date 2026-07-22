@@ -5,6 +5,8 @@ import { createKycErrorResponse, createUnauthorizedKycResponse } from "@/server/
 
 type RouteContext = { params: Promise<{ sessionId: string; side: string }> };
 
+const ALLOWED_IMAGE_CONTENT_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"]);
+
 export async function GET(_request: Request, context: RouteContext) {
   const session = await readSession();
   if (!session) {
@@ -17,9 +19,21 @@ export async function GET(_request: Request, context: RouteContext) {
   const { sessionId, side } = await context.params;
   try {
     const image = await fetchKycVerificationImage({ cognitoIdToken: session.cognitoIdToken, sessionId, side });
+
+    if (!ALLOWED_IMAGE_CONTENT_TYPES.has(image.contentType)) {
+      return NextResponse.json(
+        { message: "Unexpected verification image content type.", code: "UNEXPECTED_IMAGE_CONTENT_TYPE" },
+        { status: 502 },
+      );
+    }
+
     return new NextResponse(image.body, {
       status: 200,
-      headers: { "Content-Type": image.contentType, "Cache-Control": "private, max-age=300" },
+      headers: {
+        "Content-Type": image.contentType,
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, max-age=300",
+      },
     });
   } catch (error) {
     if (error instanceof KycSessionError) {
