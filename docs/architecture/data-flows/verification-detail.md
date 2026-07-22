@@ -99,10 +99,26 @@ dépendance npm : la police Inter est désormais réellement chargée (`next/fon
 `app/layout.tsx`, remplace un fallback silencieux vers `system-ui`) ; les cartes utilisent les ombres
 `--shadow-soft` déjà définies dans `globals.css` mais jusqu'ici inutilisées ; le badge de statut plein
 devient une pastille discrète (point coloré + texte) ; la barre de similarité devient une jauge à
-graduations pilotée par `--brand-primary` via le helper pur `computeConfidenceTicks`
-(`src/lib/confidence-ticks.ts`) au lieu d'un `emerald-500` codé en dur sans lien avec la marque ; les
+graduations pilotée par `--brand-primary` via un helper pur (`computeConfidenceTicks`) au lieu d'un
+`emerald-500` codé en dur sans lien avec la marque ; les
 lignes "Scans document" gagnent un chevron ; une animation d'entrée unique (`animate-fade-in`, déjà
 définie) s'applique au chargement, avec un `prefers-reduced-motion: reduce` ajouté à `globals.css`.
+
+## Alignement `@kycly/ui` (2026-07-22)
+
+Refacto cross-repo : le score de confiance (`validationScore`, restauré côté partner-node dans la
+réponse `GET /kyclink/:sessionId/verification-detail`) est désormais plombé de bout en bout
+(`projectVerificationDetail`, type `VerificationDetail`) et affiché comme une barre de progression
+lissée (`role="progressbar"`, `aria-valuenow`), en plus du pourcentage de similarité visage déjà
+affiché — les deux affichages sont indépendants l'un de l'autre. La jauge à graduations
+(`computeConfidenceTicks`) est retirée à cette occasion : les helpers `confidence-ticks` et
+`similarity-format` de `src/lib/` sont supprimés (plus aucun appelant en production). L'écran détail et
+5 écrans secondaires (`verification-prepare-screen.tsx`, `verification-complete.tsx`,
+`verification-session-gate.tsx`, `failure-screen.tsx`, `access-denied-screen.tsx`,
+`auth-loading-screen.tsx`) basculent leurs conteneurs bespoke sur `SurfaceCard` du design system
+partagé `@kycly/ui`, et le badge de statut sur `StatusBadge` (via le wrapper
+`VerificationStatusBadge`). Toujours aucune nouvelle donnée ni nouvel appel réseau au-delà de
+`validationScore`.
 
 ## Voir aussi
 
