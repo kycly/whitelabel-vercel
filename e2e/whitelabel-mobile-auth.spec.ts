@@ -71,8 +71,21 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         ocrFront: { firstName: "Demo", lastName: "User" },
         ocrBack: {},
         faceSimilarity: 0.97,
-        imageSides: [],
+        imageSides: ["recto"],
       }),
+    });
+  });
+
+  const TRANSPARENT_PNG = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}/images/recto`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: TRANSPARENT_PNG,
     });
   });
 
@@ -208,6 +221,12 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page.getByText("APPROVED")).toBeVisible();
   await expect(page.getByText("cust_mobile_001")).toBeVisible();
   await expect(page.getByText("Demo")).toBeVisible();
+  await expect(page.getByText("97 %")).toBeVisible();
+
+  await page.getByRole("button", { name: "recto" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Fermer" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("fait defiler la page contexte quand des champs optionnels apparaissent", async ({ page }) => {

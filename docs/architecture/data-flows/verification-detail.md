@@ -76,6 +76,15 @@ sequenceDiagram
   (`src/server/kyclink.test.ts`, `src/server/verification-detail.test.ts`, tests de route sous
   `app/api/kyc/session/[sessionId]/**`).
 
+## Réorg visuelle (2026-07-22)
+
+L'écran `verification-detail.tsx` a été restylé pour s'inspirer de l'affichage détail vérification de
+`dashboard-node` (`VerificationDataPanel/*`) : badge de statut coloré, similarité faciale en pourcentage
+avec barre de progression, champs OCR en paires clé/valeur, images ouvrables en plein écran
+(`image-lightbox.tsx`). **Aucune nouvelle donnée ni nouvel appel réseau** — les mêmes champs
+`workflowStatus`/`faceSimilarity`/`ocrFront`/`ocrBack`/`imageSides` (contrat inchangé, cf. section
+ci-dessus) sont simplement présentés différemment.
+
 ## Voir aussi
 
 - [kyc-session-create.md](kyc-session-create.md) — création de session et lecture du statut.

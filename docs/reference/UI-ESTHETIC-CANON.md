@@ -50,6 +50,18 @@ Structure attendue:
 - header compact avec titre centre
 - deconnexion seulement quand elle ne concurrence pas le CTA metier
 
+## Écran détail de vérification (2026-07-22)
+
+`src/components/verify/verification-detail.tsx` reprend, à données inchangées, le langage visuel de
+l'écran détail vérification interne (référence : dashboard admin) adapté mobile-first :
+
+- statut de décision affiché en badge pill (couleur reprise du ton de statut existant), pas en bandeau
+  plein-largeur
+- similarité faciale affichée en pourcentage avec une barre de progression (`role="progressbar"`)
+- champs OCR en paires clé/valeur séparées par un filet pointillé
+- images consultables en plein écran via `src/components/verify/image-lightbox.tsx` (overlay `role="dialog"`,
+  fermeture au tap sur l'overlay ou sur le bouton dédié)
+
 Sequence protegee du parcours KYC:
 
 1. `WELCOME`
