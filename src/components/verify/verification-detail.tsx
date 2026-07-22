@@ -187,15 +187,29 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                     />
                   </div>
                   <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
-                    <span>Score fiabilité Document</span>
+                    <span>Fiabilité du document</span>
                     <span>{Math.round((detail.validationScore ?? 0) * 100)} %</span>
                   </div>
                 </div>
               ) : null}
               {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
-                <div className="flex justify-between text-xs font-mono opacity-60">
-                  <span>Score Similarité Visage</span>
-                  <span>{Math.round(detail.faceSimilarity * 100)} %</span>
+                <div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={Math.round(detail.faceSimilarity * 100)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    className="h-3 overflow-hidden rounded-full bg-[var(--surface)]"
+                  >
+                    <div
+                      className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-500"
+                      style={{ width: `${Math.min(detail.faceSimilarity * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
+                    <span>Similarité du visage</span>
+                    <span>{Math.round(detail.faceSimilarity * 100)} %</span>
+                  </div>
                 </div>
               ) : null}
             </div>

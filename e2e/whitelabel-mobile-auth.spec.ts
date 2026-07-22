@@ -222,7 +222,8 @@ test("verifie le tunnel protege en mobile avec proportions stables", async ({ pa
   await expect(page.getByText("APPROVED")).toBeVisible();
   await expect(page.getByText("cust_mobile_001")).toBeVisible();
   await expect(page.getByText("Demo")).toBeVisible();
-  await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "92");
+  await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "92");
+  await expect(page.getByRole("progressbar").nth(1)).toHaveAttribute("aria-valuenow", "97");
   await expect(page.getByText("92 %")).toBeVisible();
   await expect(page.getByText("97 %")).toBeVisible();
 
