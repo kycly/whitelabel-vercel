@@ -2,18 +2,16 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ChevronRight, Eye, LoaderCircle } from "lucide-react";
+import { ChevronRight, Eye } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { type WorkflowStatus, workflowStatusValue } from "@/components/verify/workflow-status";
+import { type WorkflowStatus, VerificationStatusBadge } from "@/components/verify/workflow-status";
+import { SurfaceCard, SkeletonCard } from "@kycly/ui";
 import {
   errorAlertClassName,
   infoAlertClassName,
   scrollablePanelBodyClassName,
-  surfaceInfoCardClassName,
 } from "@/components/ui/fixed-action-layout";
 import { formatOcrLabel } from "@/lib/ocr-format";
-import { formatSimilarityPercent } from "@/lib/similarity-format";
-import { computeConfidenceTicks } from "@/lib/confidence-ticks";
 import { ImageLightbox } from "@/components/verify/image-lightbox";
 import { groupImageSides } from "@/components/verify/image-sides";
 import { AppError, errorMessage } from "@/lib/app-error";
@@ -39,19 +37,6 @@ type Detail = {
   imageSides: string[];
 };
 
-const STATUS_DOT_CLASS_NAME: Record<string, string> = {
-  APPROVED: "bg-emerald-500",
-  REJECTED: "bg-red-500",
-  ESCALATED: "bg-orange-500",
-  IN_REVIEW: "bg-amber-500",
-};
-
-function statusDotClassName(workflowStatus: WorkflowStatus | null): string {
-  return (workflowStatus && STATUS_DOT_CLASS_NAME[workflowStatus]) ?? "bg-slate-400";
-}
-
-const CONFIDENCE_TOTAL_TICKS = 10;
-
 type ViewState = {
   session: SessionStatus | null;
   detail: Detail | null;
@@ -72,10 +57,10 @@ function OcrFields({ title, fields }: { title: string; fields: Record<string, un
         {entries.map(([key, value]) => (
           <div
             key={key}
-            className="flex items-center justify-between gap-3 border-b border-dashed border-[var(--border)] py-2 last:border-0"
+            className="flex items-center justify-between gap-3 border-b border-[var(--border-muted)] py-2 last:border-0"
           >
-            <p className="text-xs uppercase tracking-wide opacity-70">{formatOcrLabel(key)}</p>
-            <p className="break-all text-right font-medium">{String(value)}</p>
+            <p className="text-xs uppercase tracking-wide opacity-60">{formatOcrLabel(key)}</p>
+            <p className="break-all text-right font-bold uppercase">{String(value)}</p>
           </div>
         ))}
       </div>
@@ -168,24 +153,16 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           !state.isLoading ? "animate-fade-in" : "",
         ].join(" ")}
       >
-        {state.isLoading ? (
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
-            <LoaderCircle className="size-4 animate-spin" />
-            Chargement en cours.
-          </div>
-        ) : null}
+        {state.isLoading ? <SkeletonCard lines={4} /> : null}
 
         {state.error ? <div className={errorAlertClassName}>{state.error}</div> : null}
 
         {session ? (
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-card)] px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
+          <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
               Decision backend
             </p>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold">
-              <span className={`size-2 rounded-full ${statusDotClassName(session.workflowStatus)}`} />
-              {workflowStatusValue(session.workflowStatus)}
-            </span>
+            <VerificationStatusBadge workflowStatus={session.workflowStatus} size="lg" />
             <div className="mt-4 grid gap-3 rounded-2xl bg-[var(--surface-light)] p-4">
               <div>
                 <p className="font-medium">Reference</p>
@@ -195,40 +172,34 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 <p className="font-medium">Finalise le</p>
                 <p>{session.completedAt ?? "—"}</p>
               </div>
-              {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
+              {detail?.validationScore !== null && detail?.validationScore !== undefined ? (
                 <div>
-                  <div className="flex items-baseline justify-between">
-                    <p className="font-medium">Similarité faciale</p>
-                    <p className="font-semibold tabular-nums">
-                      {formatSimilarityPercent(detail.faceSimilarity)} %
-                    </p>
-                  </div>
                   <div
                     role="progressbar"
-                    aria-valuenow={formatSimilarityPercent(detail.faceSimilarity) ?? 0}
+                    aria-valuenow={Math.round((detail.validationScore ?? 0) * 100)}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    className="mt-2 flex gap-1"
+                    className="h-3 overflow-hidden rounded-full bg-[var(--surface)]"
                   >
-                    {Array.from({ length: CONFIDENCE_TOTAL_TICKS }, (_, index) => {
-                      const filledTicks = computeConfidenceTicks(
-                        formatSimilarityPercent(detail.faceSimilarity) ?? 0,
-                        CONFIDENCE_TOTAL_TICKS,
-                      );
-                      return (
-                        <span
-                          key={index}
-                          className={`h-2 flex-1 rounded-full ${
-                            index < filledTicks ? "bg-[var(--brand-primary)]" : "bg-black/10"
-                          }`}
-                        />
-                      );
-                    })}
+                    <div
+                      className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-500"
+                      style={{ width: `${Math.min((detail.validationScore ?? 0) * 100, 100)}%` }}
+                    />
                   </div>
+                  <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
+                    <span>Score confiance</span>
+                    <span>{Math.round((detail.validationScore ?? 0) * 100)}%</span>
+                  </div>
+                  {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
+                    <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
+                      <span>Similarité visage</span>
+                      <span>{Math.round(detail.faceSimilarity * 100)}%</span>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
-          </div>
+          </SurfaceCard>
         ) : null}
 
         {!isCompleted && session ? (
@@ -245,7 +216,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {isCompleted && detail && detail.imageSides.length > 0 ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl", "shadow-[var(--shadow-soft)]"].join(" ")}>
+          <SurfaceCard variant="raised" className="shadow-[var(--shadow-soft)]">
             <div className="grid gap-4">
               <p className="font-medium">Document</p>
               {(() => {
@@ -270,7 +241,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                                 width={200}
                                 height={200}
                                 unoptimized
-                                className="object-cover"
+                                className="aspect-square object-cover"
                               />
                             </button>
                           ))}
@@ -301,16 +272,16 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 );
               })()}
             </div>
-          </div>
+          </SurfaceCard>
         ) : null}
 
         {isCompleted && detail ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl", "shadow-[var(--shadow-soft)]"].join(" ")}>
+          <SurfaceCard variant="raised" className="shadow-[var(--shadow-soft)]">
             <div className="grid gap-4">
               <OcrFields title="Recto" fields={detail.ocrFront} />
               <OcrFields title="Verso" fields={detail.ocrBack} />
             </div>
-          </div>
+          </SurfaceCard>
         ) : null}
       </div>
 
