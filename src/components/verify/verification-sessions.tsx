@@ -6,8 +6,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, His
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   type WorkflowStatus,
-  workflowStatusTone,
-  workflowStatusValue,
+  VerificationStatusBadge,
 } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
@@ -95,10 +94,6 @@ function statusTone(status: string): string {
   }
 
   return "border-slate-200 bg-slate-50 text-slate-700";
-}
-
-function workflowLabel(item: SessionsResponse["data"][number]): string {
-  return workflowStatusValue(item.workflowStatus);
 }
 
 function formatDate(value: string | null): string {
@@ -409,9 +404,7 @@ export function VerificationSessions() {
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 ${statusTone(item.status)}`}>
                     {item.status}
                   </span>
-                  <span className={`inline-flex items-center rounded-full border px-3 py-1 ${workflowStatusTone(item.workflowStatus)}`}>
-                    {workflowLabel(item)}
-                  </span>
+                  <VerificationStatusBadge workflowStatus={item.workflowStatus} size="lg" />
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">

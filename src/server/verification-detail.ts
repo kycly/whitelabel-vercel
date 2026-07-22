@@ -4,6 +4,7 @@ export type VerificationDetail = {
   ocrFront: Record<string, unknown>;
   ocrBack: Record<string, unknown>;
   faceSimilarity: number | null;
+  validationScore: number | null;
   imageSides: string[];
 };
 
@@ -23,6 +24,7 @@ export function projectVerificationDetail(raw: unknown): VerificationDetail {
     ocrFront: asRecord(src.ocrFront),
     ocrBack: asRecord(src.ocrBack),
     faceSimilarity: asNumber(src.faceSimilarity),
+    validationScore: asNumber(src.validationScore),
     imageSides: asStringArray(src.imageSides),
   };
 }

@@ -15,7 +15,7 @@
 | Routes detectees | 23 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 153 |
+| Exports detectes | 154 |
 | Fichiers de tests detectes | 13 |
 | Variables d'environnement detectees | 10 |
 
@@ -107,7 +107,7 @@ _Aucun hook detecte._
 - src/components/verify/verification-session-gate.tsx
 - src/components/verify/verification-sessions.tsx
 - src/components/verify/verification-workspace.tsx
-- src/components/verify/workflow-status.ts
+- src/components/verify/workflow-status.tsx
 
 ## Exports publics
 
@@ -206,9 +206,10 @@ _Aucun hook detecte._
 | function | VerificationSessionGate | src/components/verify/verification-session-gate.tsx |
 | function | VerificationSessions | src/components/verify/verification-sessions.tsx |
 | function | VerificationWorkspace | src/components/verify/verification-workspace.tsx |
-| type | WorkflowStatus | src/components/verify/workflow-status.ts |
-| function | workflowStatusTone | src/components/verify/workflow-status.ts |
-| function | workflowStatusValue | src/components/verify/workflow-status.ts |
+| function | VerificationStatusBadge | src/components/verify/workflow-status.tsx |
+| type | WorkflowStatus | src/components/verify/workflow-status.tsx |
+| function | workflowStatusTone | src/components/verify/workflow-status.tsx |
+| function | workflowStatusValue | src/components/verify/workflow-status.tsx |
 | const | env | src/config/env.ts |
 | function | buildPartnerAccessHeaders | src/config/partner-access.ts |
 | const | LOCAL_APP_ENV | src/config/public-env.ts |
