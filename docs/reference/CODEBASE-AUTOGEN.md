@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 86 |
+| Fichiers code scannes | 82 |
 | Routes detectees | 23 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 154 |
-| Fichiers de tests detectes | 13 |
+| Exports detectes | 152 |
+| Fichiers de tests detectes | 11 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -228,12 +228,10 @@ _Aucun hook detecte._
 | function | getFailurePresentation | src/lib/app-error.ts |
 | function | resolveInlineAppError | src/lib/app-error.ts |
 | function | resolveProtectedAppError | src/lib/app-error.ts |
-| function | computeConfidenceTicks | src/lib/confidence-ticks.ts |
 | function | createParentOriginHandshakeMessage | src/lib/kyclink-embed.ts |
 | const | PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE | src/lib/kyclink-embed.ts |
 | function | resolveKyclinkOrigin | src/lib/kyclink-embed.ts |
 | function | formatOcrLabel | src/lib/ocr-format.ts |
-| function | formatSimilarityPercent | src/lib/similarity-format.ts |
 | function | clearVerificationDraft | src/lib/verification-draft.ts |
 | function | readVerificationDraft | src/lib/verification-draft.ts |
 | function | saveVerificationDraft | src/lib/verification-draft.ts |
@@ -276,10 +274,8 @@ _Aucun hook detecte._
 - src/components/verify/image-sides.test.ts
 - src/config/partner-access.test.ts
 - src/lib/app-error.test.ts
-- src/lib/confidence-ticks.test.ts
 - src/lib/kyclink-embed.test.ts
 - src/lib/ocr-format.test.ts
-- src/lib/similarity-format.test.ts
 - src/server/kyc-session-route.test.ts
 - src/server/kyclink.test.ts
 - src/server/verification-detail.test.ts

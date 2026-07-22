@@ -149,7 +149,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
       <div
         className={[
           scrollablePanelBodyClassName,
-          "pt-1",
+          "space-y-4 pt-1",
           !state.isLoading ? "animate-fade-in" : "",
         ].join(" ")}
       >
@@ -187,14 +187,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                     />
                   </div>
                   <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
-                    <span>Score confiance</span>
+                    <span>Score fiabilité Document</span>
                     <span>{Math.round((detail.validationScore ?? 0) * 100)} %</span>
                   </div>
                 </div>
               ) : null}
               {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
                 <div className="flex justify-between text-xs font-mono opacity-60">
-                  <span>Similarité visage</span>
+                  <span>Score Similarité Visage</span>
                   <span>{Math.round(detail.faceSimilarity * 100)} %</span>
                 </div>
               ) : null}
@@ -223,6 +223,26 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 const { evidence, documentScans } = groupImageSides(detail.imageSides);
                 return (
                   <>
+                    {documentScans.length > 0 ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-wide opacity-70">Scans document</p>
+                        <div className="mt-2 grid gap-2">
+                          {documentScans.map((side) => (
+                            <button
+                              key={side}
+                              type="button"
+                              onClick={() => setZoomedSide(side)}
+                              className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
+                            >
+                              <Eye className="size-4 opacity-70" />
+                              <span className="flex-1 font-medium capitalize">{side}</span>
+                              <ChevronRight className="size-4 opacity-40" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
                     {evidence.length > 0 ? (
                       <div>
                         <p className="text-xs uppercase tracking-wide opacity-70">Evidence</p>
@@ -243,26 +263,6 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                                 unoptimized
                                 className="aspect-square object-cover"
                               />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {documentScans.length > 0 ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-wide opacity-70">Scans document</p>
-                        <div className="mt-2 grid gap-2">
-                          {documentScans.map((side) => (
-                            <button
-                              key={side}
-                              type="button"
-                              onClick={() => setZoomedSide(side)}
-                              className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
-                            >
-                              <Eye className="size-4 opacity-70" />
-                              <span className="flex-1 font-medium capitalize">{side}</span>
-                              <ChevronRight className="size-4 opacity-40" />
                             </button>
                           ))}
                         </div>
