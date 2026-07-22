@@ -85,6 +85,25 @@ avec barre de progression, champs OCR en paires clé/valeur, images ouvrables en
 `workflowStatus`/`faceSimilarity`/`ocrFront`/`ocrBack`/`imageSides` (contrat inchangé, cf. section
 ci-dessus) sont simplement présentés différemment.
 
+Une seconde passe (Task 14, même lot) a réorganisé la **disposition** des trois panneaux pour se
+rapprocher davantage de `dashboard-node` : la similarité faciale a été remontée dans la carte "Decision
+backend" (juste sous Reference/Finalisé le, au lieu d'être isolée en bas d'écran) ; une nouvelle section
+"Document" regroupe les images — sous-groupe "Evidence" (portrait/liveness) en mini-grille de vignettes,
+puis barre "Scans document" (recto/verso) en boutons `Eye + label`, via le helper pur
+`groupImageSides` (`src/components/verify/image-sides.ts`, aucun nouveau champ, classement local du
+même `imageSides: string[]`) ; la carte OCR est déplacée en dernier. Toujours aucune nouvelle donnée ni
+nouvel appel réseau.
+
+Une troisième passe (Task 16, même lot) est un **polish purement visuel**, toujours zéro nouvelle
+dépendance npm : la police Inter est désormais réellement chargée (`next/font/google` dans
+`app/layout.tsx`, remplace un fallback silencieux vers `system-ui`) ; les cartes utilisent les ombres
+`--shadow-soft` déjà définies dans `globals.css` mais jusqu'ici inutilisées ; le badge de statut plein
+devient une pastille discrète (point coloré + texte) ; la barre de similarité devient une jauge à
+graduations pilotée par `--brand-primary` via le helper pur `computeConfidenceTicks`
+(`src/lib/confidence-ticks.ts`) au lieu d'un `emerald-500` codé en dur sans lien avec la marque ; les
+lignes "Scans document" gagnent un chevron ; une animation d'entrée unique (`animate-fade-in`, déjà
+définie) s'applique au chargement, avec un `prefers-reduced-motion: reduce` ajouté à `globals.css`.
+
 ## Voir aussi
 
 - [kyc-session-create.md](kyc-session-create.md) — création de session et lecture du statut.
