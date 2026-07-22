@@ -16,6 +16,8 @@ import {
   surfaceInfoCardClassName,
 } from "@/components/ui/fixed-action-layout";
 import { formatOcrLabel } from "@/lib/ocr-format";
+import { formatSimilarityPercent } from "@/lib/similarity-format";
+import { ImageLightbox } from "@/components/verify/image-lightbox";
 import { errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
@@ -54,11 +56,14 @@ function OcrFields({ title, fields }: { title: string; fields: Record<string, un
   return (
     <div>
       <p className="font-medium">{title}</p>
-      <div className="mt-2 grid gap-2">
+      <div className="mt-2">
         {entries.map(([key, value]) => (
-          <div key={key}>
+          <div
+            key={key}
+            className="flex items-center justify-between gap-3 border-b border-dashed border-[var(--border)] py-2 last:border-0"
+          >
             <p className="text-xs uppercase tracking-wide opacity-70">{formatOcrLabel(key)}</p>
-            <p className="break-all">{String(value)}</p>
+            <p className="break-all text-right font-medium">{String(value)}</p>
           </div>
         ))}
       </div>
@@ -73,6 +78,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
     error: null,
     isLoading: true,
   });
+  const [zoomedSide, setZoomedSide] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,10 +152,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
 
         {session ? (
           <div className={`rounded-3xl border px-5 py-5 text-sm ${workflowStatusTone(session.workflowStatus)}`}>
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">
               Decision backend
             </p>
-            <p className="font-semibold">{workflowStatusValue(session.workflowStatus)}</p>
+            <span
+              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${workflowStatusTone(session.workflowStatus)}`}
+            >
+              {workflowStatusValue(session.workflowStatus)}
+            </span>
             <div className="mt-4 grid gap-3 rounded-2xl bg-white/55 p-4">
               <div>
                 <p className="font-medium">Reference</p>
@@ -177,8 +187,22 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
 
               {detail.faceSimilarity !== null ? (
                 <div>
-                  <p className="font-medium">Similarité faciale</p>
-                  <p>{detail.faceSimilarity}</p>
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-medium">Similarité faciale</p>
+                    <p className="font-semibold">{formatSimilarityPercent(detail.faceSimilarity)} %</p>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={formatSimilarityPercent(detail.faceSimilarity) ?? 0}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    className="mt-2 h-2 w-full overflow-hidden rounded-full bg-black/10"
+                  >
+                    <div
+                      className="h-full rounded-full bg-emerald-500"
+                      style={{ width: `${formatSimilarityPercent(detail.faceSimilarity)}%` }}
+                    />
+                  </div>
                 </div>
               ) : null}
 
@@ -187,15 +211,22 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                   <p className="font-medium">Images</p>
                   <div className="mt-2 grid grid-cols-2 gap-3">
                     {detail.imageSides.map((side) => (
-                      <Image
+                      <button
                         key={side}
-                        src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
-                        alt={side}
-                        width={200}
-                        height={200}
-                        unoptimized
-                        className="rounded-2xl border border-[var(--border)] object-cover"
-                      />
+                        type="button"
+                        aria-label={side}
+                        onClick={() => setZoomedSide(side)}
+                        className="overflow-hidden rounded-2xl border border-[var(--border)]"
+                      >
+                        <Image
+                          src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
+                          alt={side}
+                          width={200}
+                          height={200}
+                          unoptimized
+                          className="object-cover"
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -204,6 +235,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           </div>
         ) : null}
       </div>
+
+      {zoomedSide ? (
+        <ImageLightbox
+          src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(zoomedSide)}`}
+          alt={zoomedSide}
+          onClose={() => setZoomedSide(null)}
+        />
+      ) : null}
     </ProtectedScreenShell>
   );
 }
