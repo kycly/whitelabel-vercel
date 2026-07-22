@@ -44,6 +44,8 @@ type ViewState = {
   isLoading: boolean;
 };
 
+const DETAIL_POLL_INTERVAL_SECONDS = 5;
+
 function OcrFields({ title, fields }: { title: string; fields: Record<string, unknown> }) {
   const entries = Object.entries(fields);
   if (entries.length === 0) {
@@ -76,6 +78,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
     isLoading: true,
   });
   const [zoomedSide, setZoomedSide] = useState<string | null>(null);
+  const [pollCountdown, setPollCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +137,66 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
     };
   }, [sessionId]);
 
-  const { session, detail } = state;
+  const { session, detail, isLoading } = state;
+  const isWaitingForDetail = session?.status === "completed" && !detail && !isLoading;
+
+  useEffect(() => {
+    if (!isWaitingForDetail) {
+      setPollCountdown(null);
+      return;
+    }
+
+    let cancelled = false;
+    setPollCountdown(DETAIL_POLL_INTERVAL_SECONDS);
+
+    async function pollDetail() {
+      try {
+        const polledDetail = await requestProtectedJson<Detail>(
+          `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
+          { method: "GET", cache: "no-store" },
+          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setState((current) => ({ ...current, detail: polledDetail }));
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        if (!(error instanceof AppError) || error.status !== 404) {
+          if (handleAppError(error)) {
+            return;
+          }
+
+          setState((current) => ({ ...current, error: errorMessage(error, "Lecture impossible.") }));
+        }
+      }
+    }
+
+    const timer = setInterval(() => {
+      setPollCountdown((current) => {
+        if (current === null) {
+          return current;
+        }
+
+        if (current <= 1) {
+          void pollDetail();
+          return DETAIL_POLL_INTERVAL_SECONDS;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [sessionId, isWaitingForDetail]);
   const isCompleted = session?.status === "completed";
 
   return (
@@ -224,8 +286,15 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
 
         {isCompleted && session && !detail ? (
           <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
-            Décision rendue — les données détaillées (documents, similarité) finalisent leur traitement.
-            Revenez dans un instant.
+            <p>
+              Décision rendue — les données détaillées (documents, similarité) finalisent leur traitement.
+              Revenez dans un instant.
+            </p>
+            {pollCountdown !== null ? (
+              <p className="mt-2 font-mono text-xs opacity-70">
+                Nouvelle tentative dans {pollCountdown}s
+              </p>
+            ) : null}
           </div>
         ) : null}
 
