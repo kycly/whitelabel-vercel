@@ -85,6 +85,15 @@ avec barre de progression, champs OCR en paires clé/valeur, images ouvrables en
 `workflowStatus`/`faceSimilarity`/`ocrFront`/`ocrBack`/`imageSides` (contrat inchangé, cf. section
 ci-dessus) sont simplement présentés différemment.
 
+Une seconde passe (Task 14, même lot) a réorganisé la **disposition** des trois panneaux pour se
+rapprocher davantage de `dashboard-node` : la similarité faciale a été remontée dans la carte "Decision
+backend" (juste sous Reference/Finalisé le, au lieu d'être isolée en bas d'écran) ; une nouvelle section
+"Document" regroupe les images — sous-groupe "Evidence" (portrait/liveness) en mini-grille de vignettes,
+puis barre "Scans document" (recto/verso) en boutons `Eye + label`, via le helper pur
+`groupImageSides` (`src/components/verify/image-sides.ts`, aucun nouveau champ, classement local du
+même `imageSides: string[]`) ; la carte OCR est déplacée en dernier. Toujours aucune nouvelle donnée ni
+nouvel appel réseau.
+
 ## Voir aussi
 
 - [kyc-session-create.md](kyc-session-create.md) — création de session et lecture du statut.
