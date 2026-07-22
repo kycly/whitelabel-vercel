@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@kycly/link": "^1.0.0",
+    "@kycly/ui": "^0.2.0",
     "amazon-cognito-identity-js": "^6.3.15",
     "clsx": "^2.1.1",
     "jose": "^6.1.2",
