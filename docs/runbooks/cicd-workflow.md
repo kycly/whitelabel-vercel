@@ -125,18 +125,19 @@ Runtime retenu:
 
 Ordre des etapes retenu:
 
-1. checkout
-2. setup pnpm
-3. setup Node.js
-4. `pnpm install --frozen-lockfile`
-5. `pnpm docs:check`
-6. `pnpm guard:sandbox-only`
-7. `pnpm test`
-8. `pnpm typecheck`
-9. `pnpm lint`
-10. `pnpm build`
-11. `pnpm exec playwright install --with-deps chromium webkit`
-12. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
+1. garde-fou source de promotion (`pull_request` vers `production` refuse toute branche source autre que `main`)
+2. checkout
+3. setup pnpm
+4. setup Node.js
+5. `pnpm install --frozen-lockfile`
+6. `pnpm docs:check`
+7. `pnpm guard:sandbox-only`
+8. `pnpm test`
+9. `pnpm typecheck`
+10. `pnpm lint`
+11. `pnpm build`
+12. `pnpm exec playwright install --with-deps chromium webkit`
+13. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
 
 Ordre de severite retenu:
 
@@ -201,6 +202,10 @@ Les regles suivantes doivent etre actives:
 Regle d'exploitation retenue:
 
 - pas de deploy production sans PR ou promotion explicite vers `production`
+- garde-fou CI : toute PR ouverte vers `production` depuis une branche autre que `main` echoue
+  immediatement (job `quality`, etape "Guard production PR source") — corrige le dephasage recurrent
+  ou des PR de contenu/hotfix etaient ouvertes directement vers `production` (cf. incidents #4/#6/#13)
+  au lieu de passer par une promotion `production <- main`
 
 ---
 
