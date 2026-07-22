@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-sans), system-ui, sans-serif;
 
   --color-brand: var(--brand-primary);
   --color-brand-foreground: var(--brand-foreground);
