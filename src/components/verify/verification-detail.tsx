@@ -268,12 +268,15 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           </SurfaceCard>
         ) : null}
 
-        {isCompleted && detail ? (
-          <SurfaceCard variant="raised" className="shadow-[var(--shadow-soft)]">
-            <div className="grid gap-4">
-              <OcrFields title="Recto" fields={detail.ocrFront} />
-              <OcrFields title="Verso" fields={detail.ocrBack} />
-            </div>
+        {isCompleted && detail && Object.keys(detail.ocrFront).length > 0 ? (
+          <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
+            <OcrFields title="Recto" fields={detail.ocrFront} />
+          </SurfaceCard>
+        ) : null}
+
+        {isCompleted && detail && Object.keys(detail.ocrBack).length > 0 ? (
+          <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
+            <OcrFields title="Verso" fields={detail.ocrBack} />
           </SurfaceCard>
         ) : null}
       </div>
