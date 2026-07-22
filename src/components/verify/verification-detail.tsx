@@ -188,14 +188,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                   </div>
                   <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
                     <span>Score confiance</span>
-                    <span>{Math.round((detail.validationScore ?? 0) * 100)}%</span>
+                    <span>{Math.round((detail.validationScore ?? 0) * 100)} %</span>
                   </div>
-                  {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
-                    <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
-                      <span>Similarité visage</span>
-                      <span>{Math.round(detail.faceSimilarity * 100)}%</span>
-                    </div>
-                  ) : null}
+                </div>
+              ) : null}
+              {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
+                <div className="flex justify-between text-xs font-mono opacity-60">
+                  <span>Similarité visage</span>
+                  <span>{Math.round(detail.faceSimilarity * 100)} %</span>
                 </div>
               ) : null}
             </div>
