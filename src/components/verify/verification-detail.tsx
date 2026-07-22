@@ -35,6 +35,7 @@ type Detail = {
   ocrFront: Record<string, unknown>;
   ocrBack: Record<string, unknown>;
   faceSimilarity: number | null;
+  validationScore: number | null;
   imageSides: string[];
 };
 

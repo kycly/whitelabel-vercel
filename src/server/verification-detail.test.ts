@@ -7,18 +7,20 @@ describe("server/verification-detail projection", () => {
       ocrFront: { firstName: "Ada", document_number: "X123" },
       ocrBack: { address: "12 rue Demo" },
       faceSimilarity: 0.98,
+      validationScore: 0.95,
       imageSides: ["recto", "portrait"],
     });
     expect(d).toEqual({
       ocrFront: { firstName: "Ada", document_number: "X123" },
       ocrBack: { address: "12 rue Demo" },
       faceSimilarity: 0.98,
+      validationScore: 0.95,
       imageSides: ["recto", "portrait"],
     });
   });
   it("tolère les champs absents (upstream incomplet)", () => {
     const d = projectVerificationDetail({});
-    expect(d).toEqual({ ocrFront: {}, ocrBack: {}, faceSimilarity: null, imageSides: [] });
+    expect(d).toEqual({ ocrFront: {}, ocrBack: {}, faceSimilarity: null, validationScore: null, imageSides: [] });
   });
   it("ignore toute clé inattendue de l'upstream", () => {
     const d = projectVerificationDetail({
