@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { inlinePrimaryButtonClassName, surfaceInfoPanelClassName } from "@/components/ui/fixed-action-layout";
+import { inlinePrimaryButtonClassName } from "@/components/ui/fixed-action-layout";
+import { SurfaceCard } from "@kycly/ui";
 
 export function AccessDeniedScreen({ userLabel }: { userLabel: string }) {
   return (
@@ -20,11 +21,11 @@ export function AccessDeniedScreen({ userLabel }: { userLabel: string }) {
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Accès démo refusé</p>
         </div>
-        <div className={[surfaceInfoPanelClassName, "space-y-3 rounded-3xl"].join(" ")}>
+        <SurfaceCard variant="raised" className="space-y-3 p-5">
           <h1 className="text-2xl font-semibold text-[var(--foreground)]">Cet accès démo n&apos;est pas autorisé.</h1>
           <p className="text-sm text-[var(--muted-foreground)]">Ce compte ne peut pas ouvrir ce parcours.</p>
           <p className="text-sm text-[var(--muted-foreground)]">Compte courant : {userLabel}</p>
-        </div>
+        </SurfaceCard>
         <div className="flex justify-center">
           <Link href="/auth/logout" className={[inlinePrimaryButtonClassName, "justify-center"].join(" ")}>
             Se déconnecter

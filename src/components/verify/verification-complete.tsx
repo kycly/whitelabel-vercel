@@ -9,6 +9,7 @@ import {
   workflowStatusTone,
   workflowStatusValue,
 } from "@/components/verify/workflow-status";
+import { SurfaceCard } from "@kycly/ui";
 import {
   errorAlertClassName,
   fixedFooterSafeAreaClassName,
@@ -16,7 +17,6 @@ import {
   primaryIconButtonClassName,
   scrollablePanelBodyClassName,
   secondaryIconButtonClassName,
-  surfaceInfoCardClassName,
   successIconButtonClassName,
   warningAlertClassName,
 } from "@/components/ui/fixed-action-layout";
@@ -217,9 +217,9 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
     >
         <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
         {state.data ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+          <SurfaceCard variant="raised">
             <p>status: {state.data.status}</p>
-          </div>
+          </SurfaceCard>
         ) : null}
 
         {state.countdownSeconds > 0 ? (
@@ -232,10 +232,10 @@ export function VerificationComplete({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {state.isPolling ? (
-          <div className={[surfaceInfoCardClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
+          <SurfaceCard variant="raised" className="flex items-center gap-3">
             <LoaderCircle className="size-4 animate-spin" />
             Lecture du resultat en cours.
-          </div>
+          </SurfaceCard>
         ) : null}
 
         {state.error ? (
