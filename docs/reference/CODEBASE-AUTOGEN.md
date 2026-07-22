@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 69 |
-| Routes detectees | 20 |
+| Fichiers code scannes | 79 |
+| Routes detectees | 23 |
 | Hooks detectes | 0 |
-| Composants detectes | 19 |
-| Exports detectes | 140 |
-| Fichiers de tests detectes | 6 |
+| Composants detectes | 20 |
+| Exports detectes | 149 |
+| Fichiers de tests detectes | 10 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -61,6 +61,8 @@
 | next-app | HTTP | /api/auth/session | app/api/auth/session/route.ts |
 | next-app | HTTP | /api/kyc/session | app/api/kyc/session/route.ts |
 | next-app | HTTP | /api/kyc/session/:sessionId | app/api/kyc/session/[sessionId]/route.ts |
+| next-app | HTTP | /api/kyc/session/:sessionId/detail | app/api/kyc/session/[sessionId]/detail/route.ts |
+| next-app | HTTP | /api/kyc/session/:sessionId/images/:side | app/api/kyc/session/[sessionId]/images/[side]/route.ts |
 | next-app | HTTP | /api/kyc/session/:sessionId/result | app/api/kyc/session/[sessionId]/result/route.ts |
 | next-app | HTTP | /api/kyc/sessions | app/api/kyc/sessions/route.ts |
 | next-app | HTTP | /api/me | app/api/me/route.ts |
@@ -72,6 +74,7 @@
 | next-app | PAGE | /failure | app/failure/page.tsx |
 | next-app | PAGE | /login | app/login/page.tsx |
 | next-app | PAGE | /sessions | app/sessions/page.tsx |
+| next-app | PAGE | /sessions/:sessionId | app/sessions/[sessionId]/page.tsx |
 | next-app | PAGE | /verify | app/verify/page.tsx |
 | next-app | PAGE | /verify/prepare | app/verify/prepare/page.tsx |
 | next-app | PAGE | /verify/session | app/verify/session/page.tsx |
@@ -96,6 +99,7 @@ _Aucun hook detecte._
 - src/components/ui/fixed-action-layout.ts
 - src/components/ui/surface-panel.tsx
 - src/components/verify/verification-complete.tsx
+- src/components/verify/verification-detail.tsx
 - src/components/verify/verification-prepare-screen.tsx
 - src/components/verify/verification-run-screen.tsx
 - src/components/verify/verification-session-gate.tsx
@@ -109,6 +113,8 @@ _Aucun hook detecte._
 |---|---|---|
 | default | default | app/access-denied/page.tsx |
 | function | POST | app/api/auth/session/route.ts |
+| function | GET | app/api/kyc/session/[sessionId]/detail/route.ts |
+| function | GET | app/api/kyc/session/[sessionId]/images/[side]/route.ts |
 | function | GET | app/api/kyc/session/[sessionId]/result/route.ts |
 | function | GET | app/api/kyc/session/[sessionId]/route.ts |
 | function | POST | app/api/kyc/session/route.ts |
@@ -127,6 +133,7 @@ _Aucun hook detecte._
 | default | default | app/login/page.tsx |
 | default | default | app/manifest.ts |
 | default | default | app/page.tsx |
+| default | default | app/sessions/[sessionId]/page.tsx |
 | default | default | app/sessions/page.tsx |
 | default | default | app/verify/page.tsx |
 | default | default | app/verify/prepare/page.tsx |
@@ -189,6 +196,7 @@ _Aucun hook detecte._
 | const | warningAlertClassName | src/components/ui/fixed-action-layout.ts |
 | function | SurfacePanel | src/components/ui/surface-panel.tsx |
 | function | VerificationComplete | src/components/verify/verification-complete.tsx |
+| function | VerificationDetail | src/components/verify/verification-detail.tsx |
 | function | VerificationPrepareScreen | src/components/verify/verification-prepare-screen.tsx |
 | function | VerificationRunScreen | src/components/verify/verification-run-screen.tsx |
 | function | VerificationSessionGate | src/components/verify/verification-session-gate.tsx |
@@ -218,6 +226,7 @@ _Aucun hook detecte._
 | function | createParentOriginHandshakeMessage | src/lib/kyclink-embed.ts |
 | const | PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE | src/lib/kyclink-embed.ts |
 | function | resolveKyclinkOrigin | src/lib/kyclink-embed.ts |
+| function | formatOcrLabel | src/lib/ocr-format.ts |
 | function | clearVerificationDraft | src/lib/verification-draft.ts |
 | function | readVerificationDraft | src/lib/verification-draft.ts |
 | function | saveVerificationDraft | src/lib/verification-draft.ts |
@@ -240,6 +249,8 @@ _Aucun hook detecte._
 | function | fetchKycSession | src/server/kyclink.ts |
 | function | fetchKycSessionResult | src/server/kyclink.ts |
 | function | fetchKycSessions | src/server/kyclink.ts |
+| function | fetchKycVerificationDetail | src/server/kyclink.ts |
+| function | fetchKycVerificationImage | src/server/kyclink.ts |
 | type | KycSession | src/server/kyclink.ts |
 | class | KycSessionError | src/server/kyclink.ts |
 | type | KycSessionResult | src/server/kyclink.ts |
@@ -247,15 +258,21 @@ _Aucun hook detecte._
 | type | KycSessionsListQuery | src/server/kyclink.ts |
 | function | parseKycSessionsListQuery | src/server/kyclink.ts |
 | function | resolveParentOrigin | src/server/request-origin.ts |
+| function | projectVerificationDetail | src/server/verification-detail.ts |
+| type | VerificationDetail | src/server/verification-detail.ts |
 
 ## Fichiers de tests
 
+- app/api/kyc/session/[sessionId]/detail/route.test.ts
+- app/api/kyc/session/[sessionId]/images/[side]/route.test.ts
 - src/auth/cognito.test.ts
 - src/config/partner-access.test.ts
 - src/lib/app-error.test.ts
 - src/lib/kyclink-embed.test.ts
+- src/lib/ocr-format.test.ts
 - src/server/kyc-session-route.test.ts
 - src/server/kyclink.test.ts
+- src/server/verification-detail.test.ts
 
 ## Regeneration
 

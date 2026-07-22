@@ -6,6 +6,7 @@ import {
   normalizeExternalId,
   type SessionContextInput,
 } from "@/lib/verification";
+import { projectVerificationDetail, type VerificationDetail } from "@/server/verification-detail";
 
 const createdSessionSchema = z.object({
   sessionId: z.string().min(1),
@@ -370,4 +371,71 @@ export async function fetchKycSessions(params: {
       },
     },
   });
+}
+
+export async function fetchKycVerificationDetail(params: {
+  cognitoIdToken: string;
+  sessionId: string;
+}): Promise<VerificationDetail> {
+  const endpoint = new URL(
+    `/kyclink/${params.sessionId}/verification-detail`,
+    `${env.server.kyclyBaseUrl}/`,
+  ).toString();
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
+    },
+    cache: "no-store",
+  });
+
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "Verification detail fetch failed";
+    const code =
+      body && typeof body === "object" && "code" in body && typeof body.code === "string"
+        ? body.code
+        : "VERIFICATION_DETAIL_FETCH_FAILED";
+    throw new KycSessionError(message, response.status, code);
+  }
+
+  return projectVerificationDetail(body);
+}
+
+export async function fetchKycVerificationImage(params: {
+  cognitoIdToken: string;
+  sessionId: string;
+  side: string;
+}): Promise<{ body: ArrayBuffer; contentType: string }> {
+  const endpoint = new URL(
+    `/kyclink/${params.sessionId}/verification-detail/images/${params.side}`,
+    `${env.server.kyclyBaseUrl}/`,
+  ).toString();
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${params.cognitoIdToken}`,
+      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new KycSessionError("Verification image fetch failed", response.status, "VERIFICATION_IMAGE_FETCH_FAILED");
+  }
+
+  return {
+    body: await response.arrayBuffer(),
+    contentType: response.headers.get("content-type") ?? "application/octet-stream",
+  };
 }
