@@ -16,7 +16,7 @@ import { formatSimilarityPercent } from "@/lib/similarity-format";
 import { computeConfidenceTicks } from "@/lib/confidence-ticks";
 import { ImageLightbox } from "@/components/verify/image-lightbox";
 import { groupImageSides } from "@/components/verify/image-sides";
-import { errorMessage } from "@/lib/app-error";
+import { AppError, errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
 type SessionStatus = {
@@ -104,11 +104,20 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_STATUS_FETCH_FAILED", sessionId },
         );
 
-        const detail = await requestProtectedJson<Detail>(
-          `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
-          { method: "GET", cache: "no-store" },
-          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
-        );
+        let detail: Detail | null = null;
+        try {
+          detail = await requestProtectedJson<Detail>(
+            `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
+            { method: "GET", cache: "no-store" },
+            { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
+          );
+        } catch (detailError) {
+          // Le backend peut renvoyer 404 juste après la fin de vérif : les données
+          // détaillées (OCR/similarité) sont encore en cours de propagation en aval.
+          if (!(detailError instanceof AppError) || detailError.status !== 404) {
+            throw detailError;
+          }
+        }
 
         if (cancelled) {
           return;
@@ -224,6 +233,13 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         {!isCompleted && session ? (
           <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
             Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
+          </div>
+        ) : null}
+
+        {isCompleted && session && !detail ? (
+          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
+            Décision rendue — les données détaillées (documents, similarité) finalisent leur traitement.
+            Revenez dans un instant.
           </div>
         ) : null}
 
