@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 82 |
+| Fichiers code scannes | 84 |
 | Routes detectees | 23 |
 | Hooks detectes | 0 |
-| Composants detectes | 21 |
-| Exports detectes | 151 |
-| Fichiers de tests detectes | 11 |
+| Composants detectes | 22 |
+| Exports detectes | 152 |
+| Fichiers de tests detectes | 12 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -99,6 +99,7 @@ _Aucun hook detecte._
 - src/components/ui/fixed-action-layout.ts
 - src/components/ui/surface-panel.tsx
 - src/components/verify/image-lightbox.tsx
+- src/components/verify/image-sides.ts
 - src/components/verify/verification-complete.tsx
 - src/components/verify/verification-detail.tsx
 - src/components/verify/verification-prepare-screen.tsx
@@ -197,6 +198,7 @@ _Aucun hook detecte._
 | const | warningAlertClassName | src/components/ui/fixed-action-layout.ts |
 | function | SurfacePanel | src/components/ui/surface-panel.tsx |
 | function | ImageLightbox | src/components/verify/image-lightbox.tsx |
+| function | groupImageSides | src/components/verify/image-sides.ts |
 | function | VerificationComplete | src/components/verify/verification-complete.tsx |
 | function | VerificationDetail | src/components/verify/verification-detail.tsx |
 | function | VerificationPrepareScreen | src/components/verify/verification-prepare-screen.tsx |
@@ -269,6 +271,7 @@ _Aucun hook detecte._
 - app/api/kyc/session/[sessionId]/detail/route.test.ts
 - app/api/kyc/session/[sessionId]/images/[side]/route.test.ts
 - src/auth/cognito.test.ts
+- src/components/verify/image-sides.test.ts
 - src/config/partner-access.test.ts
 - src/lib/app-error.test.ts
 - src/lib/kyclink-embed.test.ts
