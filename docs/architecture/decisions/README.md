@@ -16,6 +16,7 @@ que ces ADR formalisent et prolongent.
 | [002](002-sandbox-only-ck-demo.md) | Pourquoi sandbox-only et `ck_demo_*` uniquement | ✅ Accepté | 2026-07-21 | Team KYCLY |
 | [003](003-ck-demo-selection-partner-node.md) | Pourquoi la sélection de clé `ck_demo` est côté partner-node | ✅ Accepté | 2026-07-21 | Team KYCLY |
 | [004](004-vercel-git-integration-deploy.md) | Pourquoi le déploiement Vercel Git Integration | ✅ Accepté | 2026-07-21 | Team KYCLY |
+| [005](005-partner-node-direct-ip-cloudflare-bypass.md) | `KYCLY_BASE_URL` sur l'IP directe (contournement Cloudflare) | ✅ Accepté (interim) | 2026-07-21 | Team KYCLY |
 
 ## Template
 
