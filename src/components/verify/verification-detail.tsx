@@ -2,13 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Eye, LoaderCircle } from "lucide-react";
+import { ChevronRight, Eye, LoaderCircle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import {
-  type WorkflowStatus,
-  workflowStatusTone,
-  workflowStatusValue,
-} from "@/components/verify/workflow-status";
+import { type WorkflowStatus, workflowStatusValue } from "@/components/verify/workflow-status";
 import {
   errorAlertClassName,
   infoAlertClassName,
@@ -17,6 +13,7 @@ import {
 } from "@/components/ui/fixed-action-layout";
 import { formatOcrLabel } from "@/lib/ocr-format";
 import { formatSimilarityPercent } from "@/lib/similarity-format";
+import { computeConfidenceTicks } from "@/lib/confidence-ticks";
 import { ImageLightbox } from "@/components/verify/image-lightbox";
 import { groupImageSides } from "@/components/verify/image-sides";
 import { errorMessage } from "@/lib/app-error";
@@ -40,6 +37,19 @@ type Detail = {
   faceSimilarity: number | null;
   imageSides: string[];
 };
+
+const STATUS_DOT_CLASS_NAME: Record<string, string> = {
+  APPROVED: "bg-emerald-500",
+  REJECTED: "bg-red-500",
+  ESCALATED: "bg-orange-500",
+  IN_REVIEW: "bg-amber-500",
+};
+
+function statusDotClassName(workflowStatus: WorkflowStatus | null): string {
+  return (workflowStatus && STATUS_DOT_CLASS_NAME[workflowStatus]) ?? "bg-slate-400";
+}
+
+const CONFIDENCE_TOTAL_TICKS = 10;
 
 type ViewState = {
   session: SessionStatus | null;
@@ -141,7 +151,13 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
       lockViewportScroll
       panelClassName="flex h-full flex-col gap-4 !pt-0"
     >
-      <div className={[scrollablePanelBodyClassName, "pt-1"].join(" ")}>
+      <div
+        className={[
+          scrollablePanelBodyClassName,
+          "pt-1",
+          !state.isLoading ? "animate-fade-in" : "",
+        ].join(" ")}
+      >
         {state.isLoading ? (
           <div className={[surfaceInfoCardClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
             <LoaderCircle className="size-4 animate-spin" />
@@ -152,16 +168,15 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         {state.error ? <div className={errorAlertClassName}>{state.error}</div> : null}
 
         {session ? (
-          <div className={`rounded-3xl border px-5 py-5 text-sm ${workflowStatusTone(session.workflowStatus)}`}>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-card)] px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
               Decision backend
             </p>
-            <span
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${workflowStatusTone(session.workflowStatus)}`}
-            >
+            <span className="inline-flex items-center gap-2 text-sm font-semibold">
+              <span className={`size-2 rounded-full ${statusDotClassName(session.workflowStatus)}`} />
               {workflowStatusValue(session.workflowStatus)}
             </span>
-            <div className="mt-4 grid gap-3 rounded-2xl bg-white/55 p-4">
+            <div className="mt-4 grid gap-3 rounded-2xl bg-[var(--surface-light)] p-4">
               <div>
                 <p className="font-medium">Reference</p>
                 <p className="break-all">{session.externalId ?? session.sessionId}</p>
@@ -174,19 +189,31 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 <div>
                   <div className="flex items-baseline justify-between">
                     <p className="font-medium">Similarité faciale</p>
-                    <p className="font-semibold">{formatSimilarityPercent(detail.faceSimilarity)} %</p>
+                    <p className="font-semibold tabular-nums">
+                      {formatSimilarityPercent(detail.faceSimilarity)} %
+                    </p>
                   </div>
                   <div
                     role="progressbar"
                     aria-valuenow={formatSimilarityPercent(detail.faceSimilarity) ?? 0}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    className="mt-2 h-2 w-full overflow-hidden rounded-full bg-black/10"
+                    className="mt-2 flex gap-1"
                   >
-                    <div
-                      className="h-full rounded-full bg-emerald-500"
-                      style={{ width: `${formatSimilarityPercent(detail.faceSimilarity)}%` }}
-                    />
+                    {Array.from({ length: CONFIDENCE_TOTAL_TICKS }, (_, index) => {
+                      const filledTicks = computeConfidenceTicks(
+                        formatSimilarityPercent(detail.faceSimilarity) ?? 0,
+                        CONFIDENCE_TOTAL_TICKS,
+                      );
+                      return (
+                        <span
+                          key={index}
+                          className={`h-2 flex-1 rounded-full ${
+                            index < filledTicks ? "bg-[var(--brand-primary)]" : "bg-black/10"
+                          }`}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -201,7 +228,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {isCompleted && detail && detail.imageSides.length > 0 ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+          <div className={[surfaceInfoCardClassName, "rounded-3xl", "shadow-[var(--shadow-soft)]"].join(" ")}>
             <div className="grid gap-4">
               <p className="font-medium">Document</p>
               {(() => {
@@ -246,7 +273,8 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                               className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
                             >
                               <Eye className="size-4 opacity-70" />
-                              <span className="font-medium capitalize">{side}</span>
+                              <span className="flex-1 font-medium capitalize">{side}</span>
+                              <ChevronRight className="size-4 opacity-40" />
                             </button>
                           ))}
                         </div>
@@ -260,7 +288,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {isCompleted && detail ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+          <div className={[surfaceInfoCardClassName, "rounded-3xl", "shadow-[var(--shadow-soft)]"].join(" ")}>
             <div className="grid gap-4">
               <OcrFields title="Recto" fields={detail.ocrFront} />
               <OcrFields title="Verso" fields={detail.ocrBack} />
