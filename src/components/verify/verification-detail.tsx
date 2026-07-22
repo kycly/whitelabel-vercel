@@ -218,54 +218,47 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
         {isCompleted && detail && detail.imageSides.length > 0 ? (
           <SurfaceCard variant="raised" className="shadow-[var(--shadow-soft)]">
             <div className="grid gap-4">
-              <p className="font-medium">Document</p>
               {(() => {
                 const { evidence, documentScans } = groupImageSides(detail.imageSides);
                 return (
                   <>
                     {documentScans.length > 0 ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-wide opacity-70">Scans document</p>
-                        <div className="mt-2 grid gap-2">
-                          {documentScans.map((side) => (
-                            <button
-                              key={side}
-                              type="button"
-                              onClick={() => setZoomedSide(side)}
-                              className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
-                            >
-                              <Eye className="size-4 opacity-70" />
-                              <span className="flex-1 font-medium capitalize">{side}</span>
-                              <ChevronRight className="size-4 opacity-40" />
-                            </button>
-                          ))}
-                        </div>
+                      <div className="grid gap-2">
+                        {documentScans.map((side) => (
+                          <button
+                            key={side}
+                            type="button"
+                            onClick={() => setZoomedSide(side)}
+                            className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
+                          >
+                            <Eye className="size-4 opacity-70" />
+                            <span className="flex-1 font-medium capitalize">{side}</span>
+                            <ChevronRight className="size-4 opacity-40" />
+                          </button>
+                        ))}
                       </div>
                     ) : null}
 
                     {evidence.length > 0 ? (
-                      <div>
-                        <p className="text-xs uppercase tracking-wide opacity-70">Evidence</p>
-                        <div className="mt-2 grid grid-cols-2 gap-3">
-                          {evidence.map((side) => (
-                            <button
-                              key={side}
-                              type="button"
-                              aria-label={side}
-                              onClick={() => setZoomedSide(side)}
-                              className="overflow-hidden rounded-2xl border border-[var(--border)]"
-                            >
-                              <Image
-                                src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
-                                alt={side}
-                                width={200}
-                                height={200}
-                                unoptimized
-                                className="aspect-square object-cover"
-                              />
-                            </button>
-                          ))}
-                        </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {evidence.map((side) => (
+                          <button
+                            key={side}
+                            type="button"
+                            aria-label={side}
+                            onClick={() => setZoomedSide(side)}
+                            className="overflow-hidden rounded-2xl border border-[var(--border)]"
+                          >
+                            <Image
+                              src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
+                              alt={side}
+                              width={200}
+                              height={200}
+                              unoptimized
+                              className="aspect-square object-cover"
+                            />
+                          </button>
+                        ))}
                       </div>
                     ) : null}
                   </>
