@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { Eye, LoaderCircle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   type WorkflowStatus,
@@ -18,6 +18,7 @@ import {
 import { formatOcrLabel } from "@/lib/ocr-format";
 import { formatSimilarityPercent } from "@/lib/similarity-format";
 import { ImageLightbox } from "@/components/verify/image-lightbox";
+import { groupImageSides } from "@/components/verify/image-sides";
 import { errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 
@@ -169,23 +170,7 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 <p className="font-medium">Finalise le</p>
                 <p>{session.completedAt ?? "—"}</p>
               </div>
-            </div>
-          </div>
-        ) : null}
-
-        {!isCompleted && session ? (
-          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
-            Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
-          </div>
-        ) : null}
-
-        {isCompleted && detail ? (
-          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
-            <div className="grid gap-4">
-              <OcrFields title="Recto" fields={detail.ocrFront} />
-              <OcrFields title="Verso" fields={detail.ocrBack} />
-
-              {detail.faceSimilarity !== null ? (
+              {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
                 <div>
                   <div className="flex items-baseline justify-between">
                     <p className="font-medium">Similarité faciale</p>
@@ -205,32 +190,80 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        ) : null}
 
-              {detail.imageSides.length > 0 ? (
-                <div>
-                  <p className="font-medium">Images</p>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    {detail.imageSides.map((side) => (
-                      <button
-                        key={side}
-                        type="button"
-                        aria-label={side}
-                        onClick={() => setZoomedSide(side)}
-                        className="overflow-hidden rounded-2xl border border-[var(--border)]"
-                      >
-                        <Image
-                          src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
-                          alt={side}
-                          width={200}
-                          height={200}
-                          unoptimized
-                          className="object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+        {!isCompleted && session ? (
+          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
+            Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
+          </div>
+        ) : null}
+
+        {isCompleted && detail && detail.imageSides.length > 0 ? (
+          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+            <div className="grid gap-4">
+              <p className="font-medium">Document</p>
+              {(() => {
+                const { evidence, documentScans } = groupImageSides(detail.imageSides);
+                return (
+                  <>
+                    {evidence.length > 0 ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-wide opacity-70">Evidence</p>
+                        <div className="mt-2 grid grid-cols-2 gap-3">
+                          {evidence.map((side) => (
+                            <button
+                              key={side}
+                              type="button"
+                              aria-label={side}
+                              onClick={() => setZoomedSide(side)}
+                              className="overflow-hidden rounded-2xl border border-[var(--border)]"
+                            >
+                              <Image
+                                src={`/api/kyc/session/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(side)}`}
+                                alt={side}
+                                width={200}
+                                height={200}
+                                unoptimized
+                                className="object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {documentScans.length > 0 ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-wide opacity-70">Scans document</p>
+                        <div className="mt-2 grid gap-2">
+                          {documentScans.map((side) => (
+                            <button
+                              key={side}
+                              type="button"
+                              onClick={() => setZoomedSide(side)}
+                              className="flex items-center gap-2 rounded-2xl border border-[var(--border)] px-4 py-3 text-left"
+                            >
+                              <Eye className="size-4 opacity-70" />
+                              <span className="font-medium capitalize">{side}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        ) : null}
+
+        {isCompleted && detail ? (
+          <div className={[surfaceInfoCardClassName, "rounded-3xl"].join(" ")}>
+            <div className="grid gap-4">
+              <OcrFields title="Recto" fields={detail.ocrFront} />
+              <OcrFields title="Verso" fields={detail.ocrBack} />
             </div>
           </div>
         ) : null}
