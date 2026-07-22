@@ -45,7 +45,15 @@ test.beforeEach(async ({ context, baseURL, page }) => {
     });
   });
 
+  let kycSessionCallCount = 0;
+
   await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
+    kycSessionCallCount += 1;
+    // Le premier appel simule la session juste apres creation (widget pas
+    // encore soumis) : le gate de reprise doit afficher KycLink, pas rediriger
+    // vers le resultat. Les appels suivants simulent la decision deja rendue.
+    const isFreshlyCreated = kycSessionCallCount === 1;
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -53,10 +61,10 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         sessionId: SESSION_ID,
         externalId: "cust_mobile_001",
         kyclinkUrl: "https://example.test/kyclink/session/sess_mobile_001",
-        status: "completed",
+        status: isFreshlyCreated ? "pending" : "completed",
         expiresAt: "2099-05-18T12:00:00.000Z",
-        completedAt: "2026-05-18T12:03:00.000Z",
-        workflowStatus: "APPROVED",
+        completedAt: isFreshlyCreated ? null : "2026-05-18T12:03:00.000Z",
+        workflowStatus: isFreshlyCreated ? null : "APPROVED",
         sessionState: "ACTIVE",
         resumeAvailable: true,
       }),
