@@ -206,6 +206,10 @@ Regle d'exploitation retenue:
   immediatement (job `quality`, etape "Guard production PR source") — corrige le dephasage recurrent
   ou des PR de contenu/hotfix etaient ouvertes directement vers `production` (cf. incidents #4/#6/#13)
   au lieu de passer par une promotion `production <- main`
+- securite : la valeur `github.head_ref` (nom de branche, controle par l'auteur de la PR) ne doit
+  jamais etre interpolee directement dans un bloc `run:` (`${{ ... }}` inline) — injection de script
+  CI/CD possible ; elle doit transiter par une variable d'environnement (`env: HEAD_REF: ${{
+  github.head_ref }}`) avant d'etre lue en shell (`$HEAD_REF`)
 
 ---
 

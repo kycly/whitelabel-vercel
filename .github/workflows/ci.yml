@@ -37,8 +37,10 @@ jobs:
     steps:
       - name: Guard production PR source
         if: github.event_name == 'pull_request' && github.base_ref == 'production' && github.head_ref != 'main'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          echo "::error::Les PR vers 'production' doivent provenir de 'main' (source actuelle : '${{ github.head_ref }}'). Ouvrez d'abord une PR vers 'main', puis une PR de promotion main -> production."
+          echo "::error::Les PR vers 'production' doivent provenir de 'main' (source actuelle : '$HEAD_REF'). Ouvrez d'abord une PR vers 'main', puis une PR de promotion main -> production."
           exit 1
 
       - name: Checkout
