@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
-import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
+import { SurfaceCard } from "@kycly/ui";
 import { errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { clearVerificationDraft, readVerificationDraft } from "@/lib/verification-draft";
@@ -79,10 +79,10 @@ export function VerificationPrepareScreen() {
             <ShieldCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
           </div>
         </div>
-        <div className={[surfaceInfoCardClassName, "w-full max-w-sm rounded-3xl px-5 py-4"].join(" ")}>
+        <SurfaceCard variant="raised" className="w-full max-w-sm px-5 py-4">
           <p className="font-medium text-[var(--foreground)]">Préparation de votre session</p>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">Création de l&apos;accès KYC et ouverture du parcours en cours.</p>
-        </div>
+        </SurfaceCard>
     </ProtectedScreenShell>
   );
 }

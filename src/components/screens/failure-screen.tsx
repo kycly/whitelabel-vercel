@@ -2,11 +2,11 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { getFailurePresentation } from "@/lib/app-error";
+import { SurfaceCard } from "@kycly/ui";
 import {
   errorAlertWithIconClassName,
   inlinePrimaryButtonClassName,
   secondaryButtonClassName,
-  surfaceInfoPanelClassName,
 } from "@/components/ui/fixed-action-layout";
 
 type FailureScreenProps = {
@@ -30,7 +30,7 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
           </div>
         </div>
 
-        <div className={[surfaceInfoPanelClassName, "grid gap-4 rounded-3xl"].join(" ")}>
+        <SurfaceCard variant="raised" className="grid gap-4 p-5">
           <div>
             <p className="font-medium text-[var(--foreground)]">Session ID</p>
             <p className="break-all">{sessionId ?? "—"}</p>
@@ -39,7 +39,7 @@ export function FailureScreen({ sessionId, code, message }: FailureScreenProps) 
             <p className="font-medium text-[var(--foreground)]">Code</p>
             <p>{code ?? "UNKNOWN_ERROR"}</p>
           </div>
-        </div>
+        </SurfaceCard>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link

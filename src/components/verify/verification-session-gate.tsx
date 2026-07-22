@@ -6,7 +6,7 @@ import { LoaderCircle } from "lucide-react";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { VerificationRunScreen } from "@/components/verify/verification-run-screen";
-import { surfaceInfoCardClassName } from "@/components/ui/fixed-action-layout";
+import { SurfaceCard } from "@kycly/ui";
 
 type VerificationSessionGateProps = {
   sessionId: string;
@@ -113,10 +113,10 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
         panelClassName="flex min-h-0 flex-1 flex-col justify-center px-6 text-center"
       >
           <div className="mx-auto flex w-full max-w-sm flex-col gap-3 text-center">
-            <div className={[surfaceInfoCardClassName, "flex items-center justify-center gap-3 rounded-3xl px-5 py-4 text-[var(--foreground)]"].join(" ")}>
+            <SurfaceCard variant="raised" className="flex items-center justify-center gap-3 px-5 py-4 text-[var(--foreground)]">
               <LoaderCircle className="size-4 animate-spin text-brand" />
               Chargement du parcours sécurisé.
-            </div>
+            </SurfaceCard>
             <p className="text-sm text-[var(--muted-foreground)]">
               Reprise de la session et vérification de l&apos;accès en cours.
             </p>
