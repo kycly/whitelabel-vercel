@@ -94,6 +94,16 @@ puis barre "Scans document" (recto/verso) en boutons `Eye + label`, via le helpe
 même `imageSides: string[]`) ; la carte OCR est déplacée en dernier. Toujours aucune nouvelle donnée ni
 nouvel appel réseau.
 
+Une troisième passe (Task 16, même lot) est un **polish purement visuel**, toujours zéro nouvelle
+dépendance npm : la police Inter est désormais réellement chargée (`next/font/google` dans
+`app/layout.tsx`, remplace un fallback silencieux vers `system-ui`) ; les cartes utilisent les ombres
+`--shadow-soft` déjà définies dans `globals.css` mais jusqu'ici inutilisées ; le badge de statut plein
+devient une pastille discrète (point coloré + texte) ; la barre de similarité devient une jauge à
+graduations pilotée par `--brand-primary` via le helper pur `computeConfidenceTicks`
+(`src/lib/confidence-ticks.ts`) au lieu d'un `emerald-500` codé en dur sans lien avec la marque ; les
+lignes "Scans document" gagnent un chevron ; une animation d'entrée unique (`animate-fade-in`, déjà
+définie) s'applique au chargement, avec un `prefers-reduced-motion: reduce` ajouté à `globals.css`.
+
 ## Voir aussi
 
 - [kyc-session-create.md](kyc-session-create.md) — création de session et lecture du statut.
