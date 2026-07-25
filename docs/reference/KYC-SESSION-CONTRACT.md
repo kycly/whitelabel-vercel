@@ -72,7 +72,7 @@ GET /api/kyc/session/sess_abc123
 Cette route pilote l'entree `/verify/session?sessionId=...` avec les regles suivantes:
 
 1. `ACTIVE` + `resumeAvailable = true` -> afficher KycLink
-2. `COMPLETED` -> rediriger vers `/complete?sessionId=...`
+2. `SUBMITTED` ou `COMPLETED` -> rediriger vers `/sessions/:sessionId` (ecran de resultat unique)
 3. `EXPIRED` -> rediriger vers `/failure` avec code `SESSION_EXPIRED`
 4. `404 KYCLINK_SESSION_NOT_FOUND` -> rediriger vers `/failure` avec code `SESSION_NOT_FOUND`
 5. erreur upstream non qualifiee -> rediriger vers `/failure` avec code `SESSION_FETCH_FAILED`
@@ -132,7 +132,7 @@ La route doit preferer une remontee lisible des erreurs `partner-node` utiles au
 
 Sans fallback implicite vers `GET /api/kyc/sessions` ni transformation silencieuse en session vide.
 
-Le frontend applique ensuite la meme politique protegee que pour `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId/result` et `GET /api/kyc/sessions`.
+Le frontend applique ensuite la meme politique protegee que pour `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId` et `GET /api/kyc/sessions`.
 
 ## Regle de separation a ne pas casser
 

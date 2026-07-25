@@ -125,7 +125,7 @@ Ces variables ne doivent jamais etre exposees au navigateur.
 | `APP_SESSION_SECRET` | secret de signature du cookie de session applicative |
 | `APP_CANONICAL_ORIGIN` | origin canonique optionnelle transmise comme `parentOrigin` a `partner-node /kyclink/create`; si vide, l'app derive l'origin cote serveur depuis les headers forwardes puis `host` |
 | `NODE_AUTH_TOKEN` | secret de build pour authentifier pnpm contre GitHub Packages via `.npmrc` |
-| `KYCLY_BASE_URL` | URL unique du runtime `partner-node`, appelee cote serveur avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}`, `/kyclink/{id}/result`, `/kyclink/sessions` |
+| `KYCLY_BASE_URL` | URL unique du runtime `partner-node`, appelee cote serveur avec l'endpoint voulu : `/demo/me`, `/kyclink/create`, `/kyclink/{id}`, `/kyclink/{id}/verification-detail`, `/kyclink/sessions` |
 | `DEFAULT_KYCLINK_THEME` | theme par defaut KycLink |
 | `CF_ACCESS_CLIENT_ID` | Client ID du service token Cloudflare Access (appels serveur vers partner-node) |
 | `CF_ACCESS_CLIENT_SECRET` | Client Secret du service token Cloudflare Access |
@@ -204,7 +204,7 @@ Regles retenues:
 
 Role:
 
-- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- URL du backend KYC appele par les route handlers Next.js pour `POST /kyclink/create` et `GET /kyclink/:sessionId`
 
 Regle J1 retenue:
 
@@ -360,7 +360,7 @@ Apres tout changement sur les variables structurantes, verifier:
 1. `LOGIN`
 2. `WELCOME`
 3. `POST /api/kyc/session`
-4. `GET /api/kyc/session/:sessionId/result`
+4. `GET /api/kyc/session/:sessionId`
 5. `GET /api/kyc/sessions`
 6. logout applicatif
 

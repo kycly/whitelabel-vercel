@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 82 |
-| Routes detectees | 23 |
+| Fichiers code scannes | 83 |
+| Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 152 |
-| Fichiers de tests detectes | 11 |
+| Exports detectes | 154 |
+| Fichiers de tests detectes | 13 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -63,14 +63,12 @@
 | next-app | HTTP | /api/kyc/session/:sessionId | app/api/kyc/session/[sessionId]/route.ts |
 | next-app | HTTP | /api/kyc/session/:sessionId/detail | app/api/kyc/session/[sessionId]/detail/route.ts |
 | next-app | HTTP | /api/kyc/session/:sessionId/images/:side | app/api/kyc/session/[sessionId]/images/[side]/route.ts |
-| next-app | HTTP | /api/kyc/session/:sessionId/result | app/api/kyc/session/[sessionId]/result/route.ts |
 | next-app | HTTP | /api/kyc/sessions | app/api/kyc/sessions/route.ts |
 | next-app | HTTP | /api/me | app/api/me/route.ts |
 | next-app | PAGE | /auth-loading | app/auth-loading/page.tsx |
 | next-app | HTTP | /auth/callback | app/auth/callback/route.ts |
 | next-app | HTTP | /auth/login | app/auth/login/route.ts |
 | next-app | HTTP | /auth/logout | app/auth/logout/route.ts |
-| next-app | PAGE | /complete | app/complete/page.tsx |
 | next-app | PAGE | /failure | app/failure/page.tsx |
 | next-app | PAGE | /login | app/login/page.tsx |
 | next-app | PAGE | /sessions | app/sessions/page.tsx |
@@ -100,12 +98,12 @@ _Aucun hook detecte._
 - src/components/ui/surface-panel.tsx
 - src/components/verify/image-lightbox.tsx
 - src/components/verify/image-sides.ts
-- src/components/verify/verification-complete.tsx
 - src/components/verify/verification-detail.tsx
 - src/components/verify/verification-prepare-screen.tsx
 - src/components/verify/verification-run-screen.tsx
 - src/components/verify/verification-session-gate.tsx
 - src/components/verify/verification-sessions.tsx
+- src/components/verify/verification-view-state.ts
 - src/components/verify/verification-workspace.tsx
 - src/components/verify/workflow-status.tsx
 
@@ -117,7 +115,6 @@ _Aucun hook detecte._
 | function | POST | app/api/auth/session/route.ts |
 | function | GET | app/api/kyc/session/[sessionId]/detail/route.ts |
 | function | GET | app/api/kyc/session/[sessionId]/images/[side]/route.ts |
-| function | GET | app/api/kyc/session/[sessionId]/result/route.ts |
 | function | GET | app/api/kyc/session/[sessionId]/route.ts |
 | function | POST | app/api/kyc/session/route.ts |
 | function | GET | app/api/kyc/sessions/route.ts |
@@ -127,7 +124,6 @@ _Aucun hook detecte._
 | function | GET | app/auth/login/route.ts |
 | function | GET | app/auth/logout/route.ts |
 | function | POST | app/auth/logout/route.ts |
-| default | default | app/complete/page.tsx |
 | default | default | app/failure/page.tsx |
 | default | default | app/layout.tsx |
 | const | metadata | app/layout.tsx |
@@ -199,16 +195,18 @@ _Aucun hook detecte._
 | function | SurfacePanel | src/components/ui/surface-panel.tsx |
 | function | ImageLightbox | src/components/verify/image-lightbox.tsx |
 | function | groupImageSides | src/components/verify/image-sides.ts |
-| function | VerificationComplete | src/components/verify/verification-complete.tsx |
 | function | VerificationDetail | src/components/verify/verification-detail.tsx |
 | function | VerificationPrepareScreen | src/components/verify/verification-prepare-screen.tsx |
 | function | VerificationRunScreen | src/components/verify/verification-run-screen.tsx |
 | function | VerificationSessionGate | src/components/verify/verification-session-gate.tsx |
 | function | VerificationSessions | src/components/verify/verification-sessions.tsx |
+| function | selectVerificationView | src/components/verify/verification-view-state.ts |
+| type | SessionState | src/components/verify/verification-view-state.ts |
+| function | shouldPoll | src/components/verify/verification-view-state.ts |
+| type | VerificationView | src/components/verify/verification-view-state.ts |
 | function | VerificationWorkspace | src/components/verify/verification-workspace.tsx |
 | function | VerificationStatusBadge | src/components/verify/workflow-status.tsx |
 | type | WorkflowStatus | src/components/verify/workflow-status.tsx |
-| function | workflowStatusTone | src/components/verify/workflow-status.tsx |
 | function | workflowStatusValue | src/components/verify/workflow-status.tsx |
 | const | env | src/config/env.ts |
 | function | buildPartnerAccessHeaders | src/config/partner-access.ts |
@@ -235,6 +233,10 @@ _Aucun hook detecte._
 | function | clearVerificationDraft | src/lib/verification-draft.ts |
 | function | readVerificationDraft | src/lib/verification-draft.ts |
 | function | saveVerificationDraft | src/lib/verification-draft.ts |
+| const | MAX_POLL_ATTEMPTS | src/lib/verification-poll.ts |
+| function | nextPollDelayMs | src/lib/verification-poll.ts |
+| function | pollCountdownMessage | src/lib/verification-poll.ts |
+| function | reachedPollingLimit | src/lib/verification-poll.ts |
 | function | buildSessionMetadata | src/lib/verification.ts |
 | const | COUNTRY_OPTIONS | src/lib/verification.ts |
 | const | defaultSessionContext | src/lib/verification.ts |
@@ -252,13 +254,11 @@ _Aucun hook detecte._
 | type | CreatedKycSession | src/server/kyclink.ts |
 | function | createKycSession | src/server/kyclink.ts |
 | function | fetchKycSession | src/server/kyclink.ts |
-| function | fetchKycSessionResult | src/server/kyclink.ts |
 | function | fetchKycSessions | src/server/kyclink.ts |
 | function | fetchKycVerificationDetail | src/server/kyclink.ts |
 | function | fetchKycVerificationImage | src/server/kyclink.ts |
 | type | KycSession | src/server/kyclink.ts |
 | class | KycSessionError | src/server/kyclink.ts |
-| type | KycSessionResult | src/server/kyclink.ts |
 | type | KycSessionsList | src/server/kyclink.ts |
 | type | KycSessionsListQuery | src/server/kyclink.ts |
 | function | parseKycSessionsListQuery | src/server/kyclink.ts |
@@ -272,10 +272,12 @@ _Aucun hook detecte._
 - app/api/kyc/session/[sessionId]/images/[side]/route.test.ts
 - src/auth/cognito.test.ts
 - src/components/verify/image-sides.test.ts
+- src/components/verify/verification-view-state.test.ts
 - src/config/partner-access.test.ts
 - src/lib/app-error.test.ts
 - src/lib/kyclink-embed.test.ts
 - src/lib/ocr-format.test.ts
+- src/lib/verification-poll.test.ts
 - src/server/kyc-session-route.test.ts
 - src/server/kyclink.test.ts
 - src/server/verification-detail.test.ts

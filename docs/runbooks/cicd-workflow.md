@@ -276,7 +276,7 @@ Les variables doivent etre separees par environnement Vercel.
 - `APP_SESSION_SECRET` doit etre distinct entre `Preview` et `Production`
 - `APP_CANONICAL_ORIGIN` doit pointer vers le host public qui doit etre autorise a embarquer KycLink; si vide, l'app derive l'origine depuis les headers forwardes / `host`
 - `NODE_AUTH_TOKEN` doit etre present dans Vercel `Preview` et `Production` si le build installe `@kycly/link`
-- `KYCLY_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result` en `Preview` et `Production`
+- `KYCLY_BASE_URL` pointe vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId` en `Preview` et `Production`
 - l'id token Cognito reste strictement cote serveur dans la session HTTP-only
 
 ### Invariant J1
@@ -379,7 +379,7 @@ Verifier apres deploy:
 3. creation de session applicative via `POST /api/auth/session`
 4. ecran `WELCOME`
 5. creation de session `/api/kyc/session`
-6. lecture resultat `/api/kyc/session/:sessionId/result`
+6. lecture resultat `/api/kyc/session/:sessionId`
 7. liste `/api/kyc/sessions`
 
 ---

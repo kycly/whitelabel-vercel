@@ -385,7 +385,7 @@ L'ecran `COMPLETE` doit donc:
 
 - confirmer la fin du parcours iframe
 - attendre au moins 10 secondes avant le premier poll backend
-- interroger ensuite `/api/kyc/session/:sessionId/result`
+- interroger ensuite `/api/kyc/session/:sessionId`
 - replier cote serveur sur `GET /kyclink/sessions` si la route detail upstream repond `404`
 - afficher `externalId`, `status`, `completed`, `completedAt` et `workflowStatus`
 - arreter le polling quand `completed = true` ou quand la limite de tentatives est atteinte
