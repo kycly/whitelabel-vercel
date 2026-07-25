@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { mockReadSession, mockCreateKycSession, mockFetchKycSession, mockFetchKycSessionResult, mockFetchKycSessions, mockParseKycSessionsListQuery, mockClearSessionCookie } = vi.hoisted(() => ({
+const { mockReadSession, mockCreateKycSession, mockFetchKycSession, mockFetchKycSessions, mockParseKycSessionsListQuery, mockClearSessionCookie } = vi.hoisted(() => ({
   mockReadSession: vi.fn(),
   mockCreateKycSession: vi.fn(),
   mockFetchKycSession: vi.fn(),
-  mockFetchKycSessionResult: vi.fn(),
   mockFetchKycSessions: vi.fn(),
   mockParseKycSessionsListQuery: vi.fn(),
   mockClearSessionCookie: vi.fn(),
@@ -28,7 +27,6 @@ vi.mock("@/config/env", () => ({
 vi.mock("@/server/kyclink", () => ({
   createKycSession: mockCreateKycSession,
   fetchKycSession: mockFetchKycSession,
-  fetchKycSessionResult: mockFetchKycSessionResult,
   fetchKycSessions: mockFetchKycSessions,
   parseKycSessionsListQuery: mockParseKycSessionsListQuery,
   KycSessionError: class KycSessionError extends Error {
@@ -45,7 +43,6 @@ vi.mock("@/server/kyclink", () => ({
 
 import { POST } from "../../app/api/kyc/session/route";
 import { GET } from "../../app/api/kyc/session/[sessionId]/route";
-import { GET as GET_RESULT } from "../../app/api/kyc/session/[sessionId]/result/route";
 import { GET as GET_SESSIONS } from "../../app/api/kyc/sessions/route";
 
 const validSessionContext = {
@@ -249,20 +246,15 @@ describe("api/kyc/session route", () => {
 
     const { KycSessionError } = await import("@/server/kyclink");
     mockFetchKycSession.mockRejectedValue(new KycSessionError("Unauthorized.", 401, "UNAUTHORIZED"));
-    mockFetchKycSessionResult.mockRejectedValue(new KycSessionError("Unauthorized.", 401, "UNAUTHORIZED"));
     mockFetchKycSessions.mockRejectedValue(new KycSessionError("Unauthorized.", 401, "UNAUTHORIZED"));
 
     const sessionResponse = await GET(new Request("https://whitelabel.kycly.test/api/kyc/session/sess_1"), {
       params: Promise.resolve({ sessionId: "sess_1" }),
     });
-    const resultResponse = await GET_RESULT(new Request("https://whitelabel.kycly.test/api/kyc/session/sess_1/result"), {
-      params: Promise.resolve({ sessionId: "sess_1" }),
-    });
     const sessionsResponse = await GET_SESSIONS(new Request("https://whitelabel.kycly.test/api/kyc/sessions?limit=20&offset=0"));
 
     expect(sessionResponse.status).toBe(401);
-    expect(resultResponse.status).toBe(401);
     expect(sessionsResponse.status).toBe(401);
-    expect(mockClearSessionCookie).toHaveBeenCalledTimes(3);
+    expect(mockClearSessionCookie).toHaveBeenCalledTimes(2);
   });
 });

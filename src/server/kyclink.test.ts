@@ -16,7 +16,6 @@ vi.mock("@/config/env", () => ({
 import {
   createKycSession,
   fetchKycSession,
-  fetchKycSessionResult,
   fetchKycSessions,
   fetchKycVerificationDetail,
   fetchKycVerificationImage,
@@ -91,34 +90,6 @@ describe("server/kyclink", () => {
     expect(body.metadata.customContext).toEqual({ campaign: "spring_demo" });
   });
 
-  it("authenticates session result reads against the backend with the Cognito id token", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        sessionId: "sess_1",
-        externalId: "cust_0042",
-        status: "completed",
-        completed: true,
-        completedAt: "2026-05-17T12:03:00.000Z",
-        workflowStatus: "APPROVED",
-      }),
-    });
-
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await fetchKycSessionResult({
-      cognitoIdToken: "cognito-id-token",
-      sessionId: "sess_1",
-    });
-
-    expect(result.workflowStatus).toBe("APPROVED");
-
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.kycly.test/kyclink/sess_1/result");
-    expect(init.method).toBe("GET");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
-  });
-
   it("authenticates canonical session reads against the backend with the Cognito id token", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -153,31 +124,6 @@ describe("server/kyclink", () => {
     expect(url).toBe("https://api.kycly.test/kyclink/sess_1");
     expect(init.method).toBe("GET");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer cognito-id-token");
-  });
-
-  it("propagates the upstream 404 instead of synthesizing a null decision", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({
-          message: "KycLink session not found",
-          code: "KYCLINK_SESSION_NOT_FOUND",
-        }),
-      });
-
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      fetchKycSessionResult({
-        cognitoIdToken: "cognito-id-token",
-        sessionId: "sess_1",
-      }),
-    ).rejects.toBeInstanceOf(KycSessionError);
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1/result");
   });
 
   it("propagates canonical session read failures", async () => {
@@ -220,6 +166,8 @@ describe("server/kyclink", () => {
               expires_at: null,
               completed_at: "2026-05-17T12:03:00.000Z",
               created_at: "2026-05-17T12:00:00.000Z",
+              sessionState: "COMPLETED",
+              resumeAvailable: false,
             },
             {
               session_id: "sess_2",
@@ -229,6 +177,8 @@ describe("server/kyclink", () => {
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:05:00.000Z",
+              sessionState: "COMPLETED",
+              resumeAvailable: false,
             },
           ],
           meta: {
@@ -268,6 +218,8 @@ describe("server/kyclink", () => {
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:00:00.000Z",
+              sessionState: "COMPLETED",
+              resumeAvailable: false,
             },
             {
               session_id: "sess_new",
@@ -276,6 +228,8 @@ describe("server/kyclink", () => {
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:10:00.000Z",
+              sessionState: "COMPLETED",
+              resumeAvailable: false,
             },
             {
               session_id: "sess_mid",
@@ -284,6 +238,8 @@ describe("server/kyclink", () => {
               expires_at: null,
               completed_at: null,
               created_at: "2026-05-17T12:05:00.000Z",
+              sessionState: "COMPLETED",
+              resumeAvailable: false,
             },
           ],
           meta: {
@@ -303,6 +259,71 @@ describe("server/kyclink", () => {
 
     expect(result.data.map((item) => item.sessionId)).toEqual(["sess_new", "sess_mid"]);
     expect(result.meta.total).toBe(3);
+  });
+
+  it("relaie sessionState et resumeAvailable sans les recalculer", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            session_id: "sess_1",
+            external_id: "cust_0042",
+            status: "processing",
+            workflow_status: "PENDING",
+            expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+            completed_at: null,
+            created_at: "2026-05-17T12:00:00.000Z",
+            sessionState: "SUBMITTED",
+            resumeAvailable: false,
+          },
+        ],
+        meta: { returned: 1, limit: 50, offset: 0 },
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchKycSessions({
+      cognitoIdToken: "cognito-id-token",
+      query: parseKycSessionsListQuery(new URLSearchParams()),
+    });
+
+    // L'etat vient de partner-node : aucune formule locale ne doit le redériver.
+    expect(result.data[0]?.sessionState).toBe("SUBMITTED");
+    expect(result.data[0]?.resumeAvailable).toBe(false);
+    expect(result.data[0]).not.toHaveProperty("completed");
+  });
+
+  it("rejette un sessionState inconnu plutot que de le laisser passer", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            session_id: "sess_1",
+            external_id: null,
+            status: "pending",
+            workflow_status: null,
+            expires_at: null,
+            completed_at: null,
+            created_at: "2026-05-17T12:00:00.000Z",
+            sessionState: "MYSTERE",
+            resumeAvailable: true,
+          },
+        ],
+        meta: { returned: 1, limit: 50, offset: 0 },
+      }),
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      fetchKycSessions({
+        cognitoIdToken: "cognito-id-token",
+        query: parseKycSessionsListQuery(new URLSearchParams()),
+      }),
+    ).rejects.toThrow();
   });
 });
 
