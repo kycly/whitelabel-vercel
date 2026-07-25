@@ -21,6 +21,7 @@ async function createSessionToken(): Promise<string> {
 }
 
 test.beforeEach(async ({ context, baseURL, page }) => {
+  let kycSessionCallCount = 0;
   const token = await createSessionToken();
 
   await context.addCookies([
@@ -45,22 +46,12 @@ test.beforeEach(async ({ context, baseURL, page }) => {
     });
   });
 
-  await page.route(`**/api/kyc/session/${SESSION_ID}/result`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        sessionId: SESSION_ID,
-        externalId: "cust_smoke_001",
-        status: "completed",
-        completed: true,
-        completedAt: "2026-05-18T12:03:00.000Z",
-        workflowStatus: "APPROVED",
-      }),
-    });
-  });
-
   await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
+    kycSessionCallCount += 1;
+    // Le premier appel sert la gate de reprise (session jamais soumise, le widget doit
+    // s'afficher) ; les suivants servent l'ecran de resultat, decision rendue.
+    const isFreshlyCreated = kycSessionCallCount === 1;
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -68,12 +59,26 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         sessionId: SESSION_ID,
         externalId: "cust_smoke_001",
         kyclinkUrl: "https://example.test/kyclink/session/sess_smoke_001",
-        status: "processing",
+        status: isFreshlyCreated ? "pending" : "completed",
         expiresAt: "2099-05-18T12:00:00.000Z",
-        completedAt: null,
-        workflowStatus: "IN_REVIEW",
-        sessionState: "ACTIVE",
-        resumeAvailable: true,
+        completedAt: isFreshlyCreated ? null : "2026-05-18T12:03:00.000Z",
+        workflowStatus: isFreshlyCreated ? null : "APPROVED",
+        sessionState: isFreshlyCreated ? "ACTIVE" : "COMPLETED",
+        resumeAvailable: isFreshlyCreated,
+      }),
+    });
+  });
+
+  await page.route(`**/api/kyc/session/${SESSION_ID}/detail`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ocrFront: { firstName: "Demo", lastName: "Smoke" },
+        ocrBack: {},
+        faceSimilarity: 0.97,
+        validationScore: 0.92,
+        imageSides: [],
       }),
     });
   });
@@ -88,11 +93,12 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             sessionId: SESSION_ID,
             externalId: "cust_smoke_001",
             status: "processing",
-            completed: false,
             completedAt: null,
             expiresAt: "2099-05-18T12:00:00.000Z",
             createdAt: "2026-05-18T12:00:00.000Z",
             workflowStatus: "IN_REVIEW",
+            sessionState: "ACTIVE",
+            resumeAvailable: true,
           },
         ],
         meta: {
@@ -149,13 +155,12 @@ test("traverse le tunnel principal jusqu'au resultat avec session mockee", async
   await expect(page.getByRole("button", { name: "Retour" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Déconnexion" })).toHaveCount(0);
 
-  await page.goto(`/complete?sessionId=${SESSION_ID}`);
-  await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
+  await page.goto(`/sessions/${SESSION_ID}`);
+  await expect(page.getByRole("heading", { name: "Détail de la vérification" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Actualiser" }).click();
-
-  await expect(page.getByText("workflowStatus: APPROVED")).toBeVisible();
-  await expect(page.getByText("status: completed")).toBeVisible();
+  await expect(page.getByText("APPROVED")).toBeVisible();
+  await expect(page.getByText("92 %")).toBeVisible();
+  await expect(page.getByText("97 %")).toBeVisible();
   await expect(page.getByRole("link", { name: "Retour accueil" })).toBeVisible();
 
   await page.goto("/sessions");
