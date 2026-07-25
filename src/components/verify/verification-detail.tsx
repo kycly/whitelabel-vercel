@@ -211,6 +211,10 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
     let cancelled = false;
     let timer: number | null = null;
 
+    // Chaque attente (decision puis detail) est une phase distincte : le compteur repart de zero,
+    // sinon le decompte annoncerait les tentatives restantes de la phase precedente.
+    setState((current) => (current.attemptCount === 0 ? current : { ...current, attemptCount: 0 }));
+
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
         timer = window.setTimeout(resolve, ms);
@@ -301,7 +305,10 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           !state.isLoading ? "animate-fade-in" : "",
         ].join(" ")}
       >
-        {view === "loading" ? <SkeletonCard lines={4} /> : null}
+        {/* Sur `state.isLoading` et non sur `view === "loading"` : `view` reste « loading » tant
+            que la session est nulle, donc aussi apres un echec de chargement — le squelette
+            resterait alors affiche indefiniment sous le message d'erreur. */}
+        {state.isLoading ? <SkeletonCard lines={4} /> : null}
 
         {state.error ? <div className={errorAlertClassName}>{state.error}</div> : null}
 
