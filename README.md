@@ -51,11 +51,11 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 
 - app Next.js App Router
 - login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
-- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId/result`, `GET /api/kyc/sessions`
+- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId`, `GET /api/kyc/sessions`
 - pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `COMPLETE`, `FAILURE`, `SESSIONS`
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
 - proxy serveur de creation, de lecture resultat et de liste des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
-- fallback serveur sur la page resultat: si `GET /kyclink/:sessionId/result` remonte un `404`, l'app reconstruit un etat minimal depuis l'index `GET /kyclink/sessions`
+- ecran de resultat unique `/sessions/:sessionId`: `GET /kyclink/:sessionId` reconcilie l'amont tant que la session n'est pas terminee, ce qui fait converger le poll sans repli sur l'index
 
 ## Demarrage local
 

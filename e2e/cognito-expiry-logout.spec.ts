@@ -67,7 +67,7 @@ test("logout automatiquement depuis l'historique quand Cognito est expire", asyn
 });
 
 test("logout automatiquement depuis le resultat quand Cognito est expire", async ({ page, context, baseURL }) => {
-  await page.route(`**/api/kyc/session/${SESSION_ID}/result`, async (route) => {
+  await page.route(`**/api/kyc/session/${SESSION_ID}`, async (route) => {
     await route.fulfill({
       status: 401,
       contentType: "application/json",
@@ -81,10 +81,8 @@ test("logout automatiquement depuis le resultat quand Cognito est expire", async
     });
   });
 
-  await page.goto(`/complete?sessionId=${SESSION_ID}`);
-  await expect(page.getByRole("heading", { name: "Résultat" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Actualiser" }).click();
+  await page.goto(`/sessions/${SESSION_ID}`);
+  await expect(page.getByRole("heading", { name: "Détail de la vérification" })).toBeVisible();
 
   await expectLoginAndClearedCookie({ page, context, baseURL });
 });

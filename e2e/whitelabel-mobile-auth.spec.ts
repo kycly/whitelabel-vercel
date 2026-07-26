@@ -65,8 +65,8 @@ test.beforeEach(async ({ context, baseURL, page }) => {
         expiresAt: "2099-05-18T12:00:00.000Z",
         completedAt: isFreshlyCreated ? null : "2026-05-18T12:03:00.000Z",
         workflowStatus: isFreshlyCreated ? null : "APPROVED",
-        sessionState: "ACTIVE",
-        resumeAvailable: true,
+        sessionState: isFreshlyCreated ? "ACTIVE" : "COMPLETED",
+        resumeAvailable: isFreshlyCreated,
       }),
     });
   });
@@ -108,11 +108,12 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             sessionId: SESSION_ID,
             externalId: "cust_mobile_001",
             status: "pending",
-            completed: false,
             completedAt: null,
             expiresAt: "2099-05-18T12:00:00.000Z",
             createdAt: "2026-05-18T11:50:00.000Z",
             workflowStatus: null,
+            sessionState: "ACTIVE",
+            resumeAvailable: true,
           },
         ],
         meta: {
@@ -135,21 +136,6 @@ test.beforeEach(async ({ context, baseURL, page }) => {
             REJECTED: 0,
           },
         },
-      }),
-    });
-  });
-
-  await page.route(`**/api/kyc/session/${SESSION_ID}/result`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        sessionId: SESSION_ID,
-        externalId: "cust_mobile_001",
-        status: "completed",
-        completed: true,
-        completedAt: "2026-05-18T12:03:00.000Z",
-        workflowStatus: "APPROVED",
       }),
     });
   });

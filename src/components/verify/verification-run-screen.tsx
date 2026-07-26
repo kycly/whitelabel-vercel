@@ -91,7 +91,9 @@ export function VerificationRunScreen({ sessionId, kyclinkUrl }: VerificationRun
             }}
             onComplete={(payload) => {
               stopHandshake();
-              router.push(`/complete?sessionId=${encodeURIComponent(payload.sessionId)}`);
+              // Destination = l'écran de résultat UNIQUE, le même que celui atteint depuis
+              // l'historique. Ne pas recréer un écran « post-soumission » distinct.
+              router.push(`/sessions/${encodeURIComponent(payload.sessionId)}`);
             }}
             onError={(payload) => {
               stopHandshake();

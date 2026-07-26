@@ -6,6 +6,7 @@ import { LoaderCircle } from "lucide-react";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { VerificationRunScreen } from "@/components/verify/verification-run-screen";
+import type { SessionState } from "@/components/verify/verification-view-state";
 import { SurfaceCard } from "@kycly/ui";
 
 type VerificationSessionGateProps = {
@@ -15,10 +16,7 @@ type VerificationSessionGateProps = {
 type CanonicalSession = {
   sessionId: string;
   kyclinkUrl: string;
-  status: "pending" | "processing" | "completed";
-  workflowStatus: "PENDING" | "IN_REVIEW" | "ESCALATED" | "APPROVED" | "REJECTED" | null;
-  sessionState: "ACTIVE" | "COMPLETED" | "EXPIRED";
-  resumeAvailable: boolean;
+  sessionState: SessionState;
 };
 
 type GateState =
@@ -57,36 +55,33 @@ export function VerificationSessionGate({ sessionId }: VerificationSessionGatePr
           sessionId,
         });
 
-        // `status`/`sessionState` restent a "processing"/ACTIVE tant que la decision
-        // n'est pas rendue, meme quand la verif a deja ete soumise une premiere fois.
-        // `workflowStatus` non nul est le seul signal fiable d'une entree dans le
-        // pipeline de decision : on ne rouvre alors plus le widget, on reaffiche le
-        // resultat (en cours ou rendu) plutot que de permettre une resoumission.
-        const alreadySubmitted =
-          session.status === "completed" ||
-          session.sessionState === "COMPLETED" ||
-          session.workflowStatus !== null;
+        // `sessionState` est calcule par partner-node (`resolveKyclinkSessionState`) : la gate
+        // ne le recalcule pas. Le switch est exhaustif — ajouter un etat casse la compilation
+        // plutot que de tomber dans une branche par defaut silencieuse. Il n'y a plus d'ordre
+        // de checks porteur : chaque etat a exactement une destination.
+        switch (session.sessionState) {
+          case "SUBMITTED":
+          case "COMPLETED":
+            router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
+            return;
 
-        if (alreadySubmitted) {
-          router.replace(`/sessions/${encodeURIComponent(sessionId)}`);
-          return;
+          case "EXPIRED":
+            router.replace(
+              failureHref({
+                sessionId,
+                code: "SESSION_EXPIRED",
+                message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
+              }),
+            );
+            return;
+
+          case "ACTIVE":
+            setState({
+              status: "ready",
+              kyclinkUrl: session.kyclinkUrl,
+            });
+            return;
         }
-
-        if (session.sessionState === "EXPIRED" || !session.resumeAvailable) {
-          router.replace(
-            failureHref({
-              sessionId,
-              code: "SESSION_EXPIRED",
-              message: "Cette session n'est plus reprenable. Relancez une verification depuis l'historique ou le formulaire.",
-            }),
-          );
-          return;
-        }
-
-        setState({
-          status: "ready",
-          kyclinkUrl: session.kyclinkUrl,
-        });
       } catch (error) {
         if (controller.signal.aborted) {
           return;

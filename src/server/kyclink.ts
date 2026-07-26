@@ -7,6 +7,7 @@ import {
   type SessionContextInput,
 } from "@/lib/verification";
 import { projectVerificationDetail, type VerificationDetail } from "@/server/verification-detail";
+import type { SessionState } from "@/components/verify/verification-view-state";
 
 const createdSessionSchema = z.object({
   sessionId: z.string().min(1),
@@ -15,7 +16,7 @@ const createdSessionSchema = z.object({
 });
 
 const sessionStatusSchema = z.enum(["pending", "processing", "completed"]);
-const sessionStateSchema = z.enum(["ACTIVE", "COMPLETED", "EXPIRED"]);
+const sessionStateSchema = z.enum(["ACTIVE", "SUBMITTED", "COMPLETED", "EXPIRED"]) satisfies z.ZodType<SessionState>;
 
 const kycSessionSchema = z.object({
   sessionId: z.string().min(1),
@@ -27,15 +28,6 @@ const kycSessionSchema = z.object({
   workflowStatus: z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]).nullable(),
   sessionState: sessionStateSchema,
   resumeAvailable: z.boolean(),
-});
-
-const kycSessionResultSchema = z.object({
-  sessionId: z.string().min(1),
-  externalId: z.string().optional(),
-  status: sessionStatusSchema,
-  completed: z.boolean(),
-  completedAt: z.string().nullable(),
-  workflowStatus: z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]).nullable(),
 });
 
 const workflowStatusSchema = z.enum(["PENDING", "IN_REVIEW", "ESCALATED", "APPROVED", "REJECTED"]);
@@ -55,6 +47,8 @@ const upstreamKycSessionSchema = z.object({
   expires_at: z.string().nullable(),
   completed_at: z.string().nullable(),
   created_at: z.string().min(1),
+  sessionState: sessionStateSchema,
+  resumeAvailable: z.boolean(),
 });
 
 const kycSessionsListSchema = z.object({
@@ -63,11 +57,12 @@ const kycSessionsListSchema = z.object({
       sessionId: z.string().min(1),
       externalId: z.string().nullable(),
       status: z.string().min(1),
-      completed: z.boolean(),
       completedAt: z.string().nullable(),
       expiresAt: z.string().nullable(),
       createdAt: z.string().min(1),
       workflowStatus: workflowStatusSchema.nullable(),
+      sessionState: sessionStateSchema,
+      resumeAvailable: z.boolean(),
     }),
   ),
   meta: z.object({
@@ -94,7 +89,6 @@ const kycSessionsListSchema = z.object({
 
 export type CreatedKycSession = z.infer<typeof createdSessionSchema>;
 export type KycSession = z.infer<typeof kycSessionSchema>;
-export type KycSessionResult = z.infer<typeof kycSessionResultSchema>;
 export type KycSessionsListQuery = z.infer<typeof kycSessionsListQuerySchema>;
 export type KycSessionsList = z.infer<typeof kycSessionsListSchema>;
 
@@ -216,43 +210,6 @@ export async function createKycSession(params: {
   return createdSessionSchema.parse(body);
 }
 
-export async function fetchKycSessionResult(params: {
-  cognitoIdToken: string;
-  sessionId: string;
-}): Promise<KycSessionResult> {
-  const endpoint = new URL(`/kyclink/${params.sessionId}/result`, `${env.server.kyclyBaseUrl}/`).toString();
-  const response = await fetch(endpoint, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${params.cognitoIdToken}`,
-      ...buildPartnerAccessHeaders(env.server.cfAccessClientId, env.server.cfAccessClientSecret),
-    },
-    cache: "no-store",
-  });
-
-  let body: unknown = null;
-  try {
-    body = await response.json();
-  } catch {
-    body = null;
-  }
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === "object" && "message" in body && typeof body.message === "string"
-        ? body.message
-        : "KYC session result fetch failed";
-    const code =
-      body && typeof body === "object" && "code" in body && typeof body.code === "string"
-        ? body.code
-        : "KYCLINK_RESULT_FETCH_FAILED";
-
-    throw new KycSessionError(message, response.status, code);
-  }
-
-  return kycSessionResultSchema.parse(body);
-}
-
 export async function fetchKycSession(params: {
   cognitoIdToken: string;
   sessionId: string;
@@ -315,11 +272,13 @@ export async function fetchKycSessions(params: {
     sessionId: item.session_id,
     externalId: item.external_id,
     status: item.status,
-    completed: item.completed_at !== null || item.status === "completed",
     completedAt: item.completed_at,
     expiresAt: item.expires_at,
     createdAt: item.created_at,
     workflowStatus: item.workflow_status ?? null,
+    // Servis tels quels par partner-node : la reprenabilite ne se recalcule pas ici.
+    sessionState: item.sessionState,
+    resumeAvailable: item.resumeAvailable,
   }));
 
   const statusCountsScope =

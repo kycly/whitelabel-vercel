@@ -83,7 +83,7 @@ Tunnel KYC:
 
 - `src/components/screens/login-screen.tsx`
 - `src/components/screens/welcome-screen.tsx`
-- `src/components/verify/verification-complete.tsx`
+- `src/components/verify/verification-detail.tsx`
 - `src/components/screens/failure-screen.tsx`
 - `src/components/verify/verification-sessions.tsx`
 

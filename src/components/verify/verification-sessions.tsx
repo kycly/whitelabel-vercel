@@ -8,6 +8,7 @@ import {
   type WorkflowStatus,
   VerificationStatusBadge,
 } from "@/components/verify/workflow-status";
+import type { SessionState } from "@/components/verify/verification-view-state";
 import {
   errorAlertClassName,
   fixedFooterSafeAreaClassName,
@@ -31,11 +32,12 @@ type SessionsResponse = {
     sessionId: string;
     externalId: string | null;
     status: string;
-    completed: boolean;
     completedAt: string | null;
     expiresAt: string | null;
     createdAt: string;
     workflowStatus: SessionWorkflowStatus | null;
+    sessionState: SessionState;
+    resumeAvailable: boolean;
   }>;
   meta: {
     returned: number;
@@ -105,15 +107,6 @@ function formatDate(value: string | null): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function isResumableSession(item: SessionsResponse["data"][number]): boolean {
-  if (item.completed || !item.expiresAt) {
-    return false;
-  }
-
-  const expiresAtMs = Date.parse(item.expiresAt);
-  return !Number.isNaN(expiresAtMs) && expiresAtMs > Date.now();
 }
 
 export function VerificationSessions() {
@@ -408,7 +401,7 @@ export function VerificationSessions() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {isResumableSession(item) ? (
+                  {item.resumeAvailable ? (
                     <Link
                       href={resumeHref}
                       className={inlinePrimaryButtonClassName}
