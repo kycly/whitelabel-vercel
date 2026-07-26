@@ -1,32 +1,45 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronRight, Eye } from "lucide-react";
+import { ArrowRight, ChevronRight, Clock3, Eye, History, Home, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import { type WorkflowStatus, VerificationStatusBadge } from "@/components/verify/workflow-status";
 import { SurfaceCard, SkeletonCard } from "@kycly/ui";
 import {
   errorAlertClassName,
+  fixedFooterSafeAreaClassName,
   infoAlertClassName,
+  primaryIconButtonClassName,
   scrollablePanelBodyClassName,
+  secondaryIconButtonClassName,
+  successIconButtonClassName,
+  warningAlertClassName,
 } from "@/components/ui/fixed-action-layout";
 import { formatOcrLabel } from "@/lib/ocr-format";
 import { ImageLightbox } from "@/components/verify/image-lightbox";
 import { groupImageSides } from "@/components/verify/image-sides";
 import { AppError, errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
+import {
+  MAX_POLL_ATTEMPTS,
+  nextPollDelayMs,
+  pollCountdownMessage,
+  reachedPollingLimit,
+} from "@/lib/verification-poll";
+import {
+  type SessionState,
+  selectVerificationView,
+  shouldPoll,
+} from "@/components/verify/verification-view-state";
 
 type SessionStatus = {
   sessionId: string;
   externalId: string | null;
-  kyclinkUrl: string;
-  status: "pending" | "processing" | "completed";
-  expiresAt: string | null;
   completedAt: string | null;
   workflowStatus: WorkflowStatus | null;
-  sessionState: "ACTIVE" | "COMPLETED" | "EXPIRED";
-  resumeAvailable: boolean;
+  sessionState: SessionState;
 };
 
 type Detail = {
@@ -42,9 +55,54 @@ type ViewState = {
   detail: Detail | null;
   error: string | null;
   isLoading: boolean;
+  isPolling: boolean;
+  attemptCount: number;
+  countdownSeconds: number;
 };
 
-const DETAIL_POLL_INTERVAL_SECONDS = 5;
+const INITIAL_STATE: ViewState = {
+  session: null,
+  detail: null,
+  error: null,
+  isLoading: true,
+  isPolling: false,
+  attemptCount: 0,
+  countdownSeconds: 0,
+};
+
+// Une seule lecture pour les deux propagations backend : la décision (statut canonique, qui
+// réconcilie l'amont côté partner-node) puis le détail OCR/images, qui n'a de sens qu'une fois la
+// décision rendue. Un 404 sur le détail signifie « pas encore propagé », pas une erreur.
+async function fetchSessionAndDetail(sessionId: string): Promise<{
+  session: SessionStatus;
+  detail: Detail | null;
+}> {
+  const session = await requestProtectedJson<SessionStatus>(
+    `/api/kyc/session/${encodeURIComponent(sessionId)}`,
+    { method: "GET", cache: "no-store" },
+    { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_STATUS_FETCH_FAILED", sessionId },
+  );
+
+  if (session.sessionState !== "COMPLETED") {
+    return { session, detail: null };
+  }
+
+  try {
+    const detail = await requestProtectedJson<Detail>(
+      `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
+      { method: "GET", cache: "no-store" },
+      { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
+    );
+
+    return { session, detail };
+  } catch (detailError) {
+    if (detailError instanceof AppError && detailError.status === 404) {
+      return { session, detail: null };
+    }
+
+    throw detailError;
+  }
+}
 
 function OcrFields({ title, fields }: { title: string; fields: Record<string, unknown> }) {
   const entries = Object.entries(fields);
@@ -70,16 +128,45 @@ function OcrFields({ title, fields }: { title: string; fields: Record<string, un
   );
 }
 
-export function VerificationDetail({ sessionId }: { sessionId: string }) {
-  const [state, setState] = useState<ViewState>({
-    session: null,
-    detail: null,
-    error: null,
-    isLoading: true,
-  });
-  const [zoomedSide, setZoomedSide] = useState<string | null>(null);
-  const [pollCountdown, setPollCountdown] = useState<number | null>(null);
+function ScoreGauge({ label, value }: { label: string; value: number }) {
+  const percent = Math.round(value * 100);
 
+  return (
+    <div>
+      <div
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        className="h-3 overflow-hidden rounded-full bg-[var(--surface)]"
+      >
+        <div
+          className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-500"
+          style={{ width: `${Math.min(value * 100, 100)}%` }}
+        />
+      </div>
+      <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
+        <span>{label}</span>
+        <span>{percent} %</span>
+      </div>
+    </div>
+  );
+}
+
+export function VerificationDetail({ sessionId }: { sessionId: string }) {
+  const [state, setState] = useState<ViewState>(INITIAL_STATE);
+  const [pollGeneration, setPollGeneration] = useState(0);
+  const [zoomedSide, setZoomedSide] = useState<string | null>(null);
+
+  // Le rendu ne dépend QUE de l'état de session et de la présence du détail — jamais de la
+  // provenance (soumission fraîche, « Voir le résultat », reprise, URL directe).
+  const view = selectVerificationView({
+    sessionState: state.session?.sessionState ?? null,
+    hasDetail: state.detail !== null,
+  });
+
+  // Premier appel immédiat, sans délai initial : on ouvre aussi cet écran sur des vérifications
+  // déjà terminées depuis l'historique.
   useEffect(() => {
     let cancelled = false;
 
@@ -87,38 +174,15 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
       setState((current) => ({ ...current, isLoading: true, error: null }));
 
       try {
-        const session = await requestProtectedJson<SessionStatus>(
-          `/api/kyc/session/${encodeURIComponent(sessionId)}`,
-          { method: "GET", cache: "no-store" },
-          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_STATUS_FETCH_FAILED", sessionId },
-        );
-
-        let detail: Detail | null = null;
-        try {
-          detail = await requestProtectedJson<Detail>(
-            `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
-            { method: "GET", cache: "no-store" },
-            { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
-          );
-        } catch (detailError) {
-          // Le backend peut renvoyer 404 juste après la fin de vérif : les données
-          // détaillées (OCR/similarité) sont encore en cours de propagation en aval.
-          if (!(detailError instanceof AppError) || detailError.status !== 404) {
-            throw detailError;
-          }
-        }
+        const { session, detail } = await fetchSessionAndDetail(sessionId);
 
         if (cancelled) {
           return;
         }
 
-        setState({ session, detail, error: null, isLoading: false });
+        setState({ ...INITIAL_STATE, session, detail, isLoading: false });
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        if (handleAppError(error)) {
+        if (cancelled || handleAppError(error)) {
           return;
         }
 
@@ -135,99 +199,95 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, pollGeneration]);
 
-  const { session, detail, isLoading } = state;
-  // La decision (status) et le detail (OCR/images) sont deux propagations
-  // distinctes et asynchrones cote backend : la premiere doit etre pollee
-  // tant qu'elle n'est pas rendue, la seconde une fois la decision connue.
-  const isWaitingForDecision = session !== null && session.status !== "completed" && !isLoading;
-  const isWaitingForDetail = session?.status === "completed" && !detail && !isLoading;
-
+  // Boucle de poll unique et bornée, commune aux deux attentes (décision puis détail). Elle ne
+  // tourne que sur les vues d'attente : ni `resumable`, ni `expired`, ni `complete` ne pollent.
   useEffect(() => {
-    if (!isWaitingForDecision && !isWaitingForDetail) {
-      setPollCountdown(null);
+    if (!shouldPoll(view)) {
       return;
     }
 
     let cancelled = false;
-    setPollCountdown(DETAIL_POLL_INTERVAL_SECONDS);
+    let timer: number | null = null;
 
-    async function pollSessionStatus() {
-      try {
-        const polledSession = await requestProtectedJson<SessionStatus>(
-          `/api/kyc/session/${encodeURIComponent(sessionId)}`,
-          { method: "GET", cache: "no-store" },
-          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_STATUS_FETCH_FAILED", sessionId },
-        );
+    // Chaque attente (decision puis detail) est une phase distincte : le compteur repart de zero,
+    // sinon le decompte annoncerait les tentatives restantes de la phase precedente.
+    setState((current) => (current.attemptCount === 0 ? current : { ...current, attemptCount: 0 }));
 
-        if (cancelled) {
-          return;
-        }
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+      });
 
-        setState((current) => ({ ...current, session: polledSession }));
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
+    async function pollLoop() {
+      for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt += 1) {
+        const totalSeconds = Math.ceil(nextPollDelayMs(attempt) / 1_000);
 
-        if (handleAppError(error)) {
-          return;
-        }
-
-        setState((current) => ({ ...current, error: errorMessage(error, "Lecture impossible.") }));
-      }
-    }
-
-    async function pollDetail() {
-      try {
-        const polledDetail = await requestProtectedJson<Detail>(
-          `/api/kyc/session/${encodeURIComponent(sessionId)}/detail`,
-          { method: "GET", cache: "no-store" },
-          { defaultMessage: "Lecture impossible.", defaultFailureCode: "SESSION_DETAIL_FETCH_FAILED", sessionId },
-        );
-
-        if (cancelled) {
-          return;
-        }
-
-        setState((current) => ({ ...current, detail: polledDetail }));
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        if (!(error instanceof AppError) || error.status !== 404) {
-          if (handleAppError(error)) {
+        for (let remaining = totalSeconds; remaining > 0; remaining -= 1) {
+          if (cancelled) {
             return;
           }
 
-          setState((current) => ({ ...current, error: errorMessage(error, "Lecture impossible.") }));
+          setState((current) => ({ ...current, countdownSeconds: remaining }));
+          await sleep(1_000);
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setState((current) => ({ ...current, countdownSeconds: 0, isPolling: true }));
+
+        try {
+          const { session, detail } = await fetchSessionAndDetail(sessionId);
+
+          if (cancelled) {
+            return;
+          }
+
+          setState((current) => ({
+            ...current,
+            session,
+            detail,
+            error: null,
+            isPolling: false,
+            attemptCount: attempt,
+          }));
+        } catch (error) {
+          if (cancelled || handleAppError(error)) {
+            return;
+          }
+
+          setState((current) => ({
+            ...current,
+            error: errorMessage(error, "Lecture impossible."),
+            isPolling: false,
+            attemptCount: attempt,
+          }));
         }
       }
     }
 
-    const timer = setInterval(() => {
-      setPollCountdown((current) => {
-        if (current === null) {
-          return current;
-        }
-
-        if (current <= 1) {
-          void (isWaitingForDecision ? pollSessionStatus() : pollDetail());
-          return DETAIL_POLL_INTERVAL_SECONDS;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
+    void pollLoop();
 
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
     };
-  }, [sessionId, isWaitingForDecision, isWaitingForDetail]);
-  const isCompleted = session?.status === "completed";
+  }, [view, sessionId, pollGeneration]);
+
+  const { session, detail } = state;
+  const isWaiting = view === "awaiting-decision" || view === "awaiting-detail";
+  const pollExhausted = isWaiting && reachedPollingLimit(state.attemptCount);
+  const approvedExitHref = session?.workflowStatus === "APPROVED" ? "/welcome" : null;
+
+  function refresh() {
+    setState(INITIAL_STATE);
+    setPollGeneration((current) => current + 1);
+  }
 
   return (
     <ProtectedScreenShell
@@ -245,11 +305,14 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           !state.isLoading ? "animate-fade-in" : "",
         ].join(" ")}
       >
+        {/* Sur `state.isLoading` et non sur `view === "loading"` : `view` reste « loading » tant
+            que la session est nulle, donc aussi apres un echec de chargement — le squelette
+            resterait alors affiche indefiniment sous le message d'erreur. */}
         {state.isLoading ? <SkeletonCard lines={4} /> : null}
 
         {state.error ? <div className={errorAlertClassName}>{state.error}</div> : null}
 
-        {session ? (
+        {session && view !== "loading" && view !== "resumable" && view !== "expired" ? (
           <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
               Decision backend
@@ -265,77 +328,74 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
                 <p>{session.completedAt ?? "—"}</p>
               </div>
               {detail?.validationScore !== null && detail?.validationScore !== undefined ? (
-                <div>
-                  <div
-                    role="progressbar"
-                    aria-valuenow={Math.round((detail.validationScore ?? 0) * 100)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    className="h-3 overflow-hidden rounded-full bg-[var(--surface)]"
-                  >
-                    <div
-                      className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-500"
-                      style={{ width: `${Math.min((detail.validationScore ?? 0) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
-                    <span>Fiabilité du document</span>
-                    <span>{Math.round((detail.validationScore ?? 0) * 100)} %</span>
-                  </div>
-                </div>
+                <ScoreGauge label="Fiabilité du document" value={detail.validationScore} />
               ) : null}
               {detail?.faceSimilarity !== null && detail?.faceSimilarity !== undefined ? (
-                <div>
-                  <div
-                    role="progressbar"
-                    aria-valuenow={Math.round(detail.faceSimilarity * 100)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    className="h-3 overflow-hidden rounded-full bg-[var(--surface)]"
-                  >
-                    <div
-                      className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-500"
-                      style={{ width: `${Math.min(detail.faceSimilarity * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex justify-between text-xs font-mono opacity-60">
-                    <span>Similarité du visage</span>
-                    <span>{Math.round(detail.faceSimilarity * 100)} %</span>
-                  </div>
-                </div>
+                <ScoreGauge label="Similarité du visage" value={detail.faceSimilarity} />
               ) : null}
             </div>
           </SurfaceCard>
         ) : null}
 
-        {!isCompleted && session ? (
+        {view === "resumable" ? (
           <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
-            <p>
-              Vérification en cours — les données détaillées apparaîtront une fois le traitement terminé.
-            </p>
-            {pollCountdown !== null ? (
-              <p className="mt-2 font-mono text-xs opacity-70">
-                Nouvelle tentative dans {pollCountdown}s
-              </p>
-            ) : null}
+            <div>
+              <p>Cette vérification n&apos;a pas encore été soumise.</p>
+              <Link
+                href={`/verify/session?sessionId=${encodeURIComponent(sessionId)}`}
+                className="mt-3 inline-flex items-center gap-2 font-semibold underline"
+              >
+                Reprendre la vérification
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
           </div>
         ) : null}
 
-        {isCompleted && session && !detail ? (
-          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
-            <p>
-              Décision rendue — les données détaillées (documents, similarité) finalisent leur traitement.
-              Revenez dans un instant.
-            </p>
-            {pollCountdown !== null ? (
-              <p className="mt-2 font-mono text-xs opacity-70">
-                Nouvelle tentative dans {pollCountdown}s
-              </p>
-            ) : null}
+        {view === "expired" ? (
+          <div className={[warningAlertClassName, "rounded-3xl"].join(" ")}>
+            <div>
+              <p>Cette session a expiré sans être soumise.</p>
+              <Link href="/verify" className="mt-3 inline-flex items-center gap-2 font-semibold underline">
+                Nouvelle vérification
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
           </div>
         ) : null}
 
-        {isCompleted && detail && detail.imageSides.length > 0 ? (
+        {isWaiting && !pollExhausted ? (
+          <div className={[infoAlertClassName, "rounded-3xl"].join(" ")}>
+            <Clock3 className="mt-0.5 size-5 shrink-0" />
+            <div>
+              <p>
+                {view === "awaiting-decision"
+                  ? "Vérification en cours — la décision arrive dans un instant."
+                  : "Décision rendue — les données détaillées finalisent leur traitement."}
+              </p>
+              {state.countdownSeconds > 0 ? (
+                <p className="mt-2 font-mono text-xs opacity-70">
+                  {pollCountdownMessage(state.countdownSeconds, state.attemptCount)}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {state.isPolling ? (
+          <SurfaceCard variant="raised" className="flex items-center gap-3">
+            <LoaderCircle className="size-4 animate-spin" />
+            Lecture en cours.
+          </SurfaceCard>
+        ) : null}
+
+        {pollExhausted ? (
+          <div className={warningAlertClassName}>
+            Aucun résultat final n&apos;a encore été confirmé. Utilisez « Actualiser » pour relancer.
+          </div>
+        ) : null}
+
+        {view === "complete" && detail && detail.imageSides.length > 0 ? (
           <SurfaceCard variant="raised" className="shadow-[var(--shadow-soft)]">
             <div className="grid gap-4">
               {(() => {
@@ -388,17 +448,66 @@ export function VerificationDetail({ sessionId }: { sessionId: string }) {
           </SurfaceCard>
         ) : null}
 
-        {isCompleted && detail && Object.keys(detail.ocrFront).length > 0 ? (
+        {view === "complete" && detail && Object.keys(detail.ocrFront).length > 0 ? (
           <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
             <OcrFields title="Recto" fields={detail.ocrFront} />
           </SurfaceCard>
         ) : null}
 
-        {isCompleted && detail && Object.keys(detail.ocrBack).length > 0 ? (
+        {view === "complete" && detail && Object.keys(detail.ocrBack).length > 0 ? (
           <SurfaceCard variant="raised" className="px-5 py-5 text-sm shadow-[var(--shadow-soft)]">
             <OcrFields title="Verso" fields={detail.ocrBack} />
           </SurfaceCard>
         ) : null}
+      </div>
+
+      {/* Footer permanent : jamais conditionné à la provenance — c'est ce qui rend l'écran
+          identique après une soumission et depuis l'historique. */}
+      <div className={fixedFooterSafeAreaClassName}>
+        <div className="flex flex-wrap gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-3">
+          <button
+            type="button"
+            onClick={refresh}
+            aria-label="Actualiser"
+            title="Actualiser"
+            className={secondaryIconButtonClassName}
+          >
+            <RefreshCcw className="size-4" />
+            <span className="sr-only">Actualiser</span>
+          </button>
+
+          <Link
+            href="/sessions"
+            aria-label="Mes vérifications"
+            title="Mes vérifications"
+            className={secondaryIconButtonClassName}
+          >
+            <History className="size-4" />
+            <span className="sr-only">Mes vérifications</span>
+          </Link>
+
+          <Link
+            href="/verify"
+            aria-label="Nouvelle vérification"
+            title="Nouvelle vérification"
+            className={primaryIconButtonClassName}
+          >
+            <Plus className="size-4" />
+            <span className="sr-only">Nouvelle vérification</span>
+          </Link>
+
+          {approvedExitHref ? (
+            <Link
+              href={approvedExitHref}
+              aria-label="Retour accueil"
+              title="Retour accueil"
+              className={successIconButtonClassName}
+            >
+              <Home className="size-4" />
+              <span className="sr-only">Retour accueil</span>
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {zoomedSide ? (

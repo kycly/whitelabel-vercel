@@ -13,7 +13,7 @@ sélectionne la bonne clé.
 
 **Code source analysé** :
 - `app/api/kyc/session/route.ts` — `POST /api/kyc/session`
-- `src/server/kyclink.ts` — `createKycSession`, `fetchKycSessionResult`, liste des sessions
+- `src/server/kyclink.ts` — `createKycSession`, `fetchKycSession`, liste des sessions
 - `src/auth/session.ts` — lecture de la session (JWT Cognito)
 
 ## Séquence
@@ -38,25 +38,30 @@ sequenceDiagram
     LINK-->>UI: COMPLETE | FAILURE (postMessage)
 ```
 
-## Lecture du résultat et repli
+## Lecture du résultat
 
 ```mermaid
 sequenceDiagram
-    participant UI as Complete (client)
-    participant R as GET /api/kyc/session/:id/result
-    participant PN as partner-node /kyclink/:id/result
-    participant L as partner-node /kyclink/sessions
+    participant UI as Écran de résultat (client)
+    participant S as GET /api/kyc/session/:id
+    participant PN as partner-node /kyclink/:id
+    participant KY as API KYCLY
 
-    UI->>R: sessionId
-    R->>PN: GET /kyclink/:id/result (Bearer JWT)
-    alt résultat disponible
-        PN-->>R: résultat détaillé
-    else 404
-        R->>L: GET /kyclink/sessions (Bearer JWT)
-        L-->>R: index → état minimal reconstruit
+    UI->>S: sessionId (premier appel immédiat, puis backoff borné)
+    S->>PN: GET /kyclink/:id (Bearer JWT)
+    alt session non terminée
+        PN->>KY: getAccessResult (réconciliation)
+        KY-->>PN: statut courant
+        Note over PN: persiste status/completed_at
     end
-    R-->>UI: état de vérification
+    PN-->>S: sessionState, workflowStatus, completedAt, resumeAvailable
+    S-->>UI: état de vérification
 ```
+
+Il n'y a **pas** de repli sur `GET /kyclink/sessions` : la lecture canonique réconcilie elle-même
+l'amont tant que la session n'est pas terminée, ce qui fait converger le poll sans dépendre du
+webhook. Le détail OCR/images est un second appel, `GET /api/kyc/session/:id/detail`, décrit dans
+[verification-detail.md](verification-detail.md).
 
 ## Points de contrôle vérifiés
 

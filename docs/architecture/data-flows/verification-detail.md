@@ -6,9 +6,11 @@
 
 ## Vue d'ensemble
 
-Depuis la liste des sessions (`/sessions`), le lien **« Voir le résultat »** ouvre désormais
-`/sessions/:sessionId` — un écran distinct de l'ancien compte à rebours post-soumission
-(`/complete`, inchangé, cf. ADR-08). Cet écran combine deux appels :
+`/sessions/:sessionId` est **l'unique écran de résultat** de l'application. Il est atteint par
+quatre chemins — fin de soumission dans le widget, « Voir le résultat » depuis la liste, reprise
+d'une session déjà soumise via la gate, accès direct par URL — et rend exactement la même chose dans
+tous les cas : le rendu dépend du seul `sessionState`, jamais de la provenance. Cet écran combine
+deux appels :
 
 1. **Statut / décision** — `GET /api/kyc/session/:id` (route existante, réutilisée telle quelle).
 2. **Détail OCR + images** — `GET /api/kyc/session/:id/detail` (nouveau), qui proxifie
@@ -64,12 +66,14 @@ sequenceDiagram
 
 - **Portée démo** : les deux routes partner-node exigent `requiresSandboxDemoScope` — un
   `demoAccountId` scope l'accès, cohérent avec le reste des routes `kyclink-sessions.ts`.
-- **États non terminaux** : tant que `status !== "completed"`, l'écran n'affiche qu'un message
-  d'attente (pas d'appel OCR/images inutile côté UX, mais l'appel `/detail` reste effectué —
-  `imageSides`/`ocrFront`/`ocrBack` vides si la vérification n'est pas terminée).
-- **Écran distinct de `/complete`** : `/complete` (compte à rebours post-soumission) n'est **pas**
-  modifié ; `/sessions/:sessionId` est un point d'entrée séparé, accessible uniquement depuis la
-  liste des sessions.
+- **États non terminaux** : le rendu est choisi par `selectVerificationView`
+  (`src/components/verify/verification-view-state.ts`) à partir de `sessionState` et de la présence
+  du détail. `SUBMITTED` et `COMPLETED`-sans-détail affichent une attente et pollent ; `ACTIVE`
+  (jamais soumise) et `EXPIRED` affichent un message avec CTA et **ne pollent pas**.
+- **Poll unique et borné** : premier appel immédiat, backoff 5→20 s, 12 tentatives
+  (`src/lib/verification-poll.ts`). Le bornage n'est acceptable que parce que
+  `GET /api/kyc/session/:id` réconcilie l'amont côté partner-node à chaque appel : le poll fait
+  converger le cycle de vie au lieu d'attendre passivement un webhook.
 - **Pas de test unitaire de composant** : ce repo n'a pas d'outillage de test unitaire React
   (`@testing-library/react`/jsdom absents) ; le rendu est couvert par les specs Playwright
   (`e2e/*.spec.ts`), la logique de fetch/projection par les tests serveur
@@ -119,6 +123,29 @@ affiché — les deux affichages sont indépendants l'un de l'autre. La jauge à
 partagé `@kycly/ui`, et le badge de statut sur `StatusBadge` (via le wrapper
 `VerificationStatusBadge`). Toujours aucune nouvelle donnée ni nouvel appel réseau au-delà de
 `validationScore`.
+
+## Unification de l'écran de résultat (2026-07-25)
+
+`/complete` (`VerificationComplete`) était l'écran de résultat **unique** de l'application depuis le
+commit initial, avec trois points d'entrée convergents. Le run du 2026-07-21 a créé
+`/sessions/:sessionId` pour le remplacer mais n'a migré qu'**un** point d'entrée sur trois, en
+inscrivant la scission comme décision de design. Une PR ultérieure en a migré un deuxième, ce qui a
+amené sur l'écran détail des sessions sans décision — d'où une série de correctifs qui
+réimplémentaient sur cet écran le polling que `/complete` faisait déjà.
+
+Le dernier point d'entrée est désormais migré (fin de soumission → `/sessions/:sessionId`) et
+`/complete` est **supprimé sans redirection**, avec `verification-complete.tsx` et
+`workflowStatusTone`. Deux modules purs portent la logique : `src/lib/verification-poll.ts`
+(cadence) et `src/components/verify/verification-view-state.ts` (`SessionState`, type unique du
+cycle de vie côté front, et `selectVerificationView`).
+
+Côté partner-node, `resolveKyclinkSessionState` gagne l'état `SUBMITTED` et
+`GET /kyclink/:sessionId` réconcilie l'amont : sans cette réconciliation, l'écran détail pollait une
+vue locale en lecture seule et **ne pouvait pas converger** si le webhook KYCLY était perdu.
+`GET /kyclink/:sessionId/result` — seule route qui réconciliait auparavant — est supprimée, ainsi que
+`/api/kyc/session/:id/result` et `fetchKycSessionResult`. La liste lit `resumeAvailable` au lieu de
+recalculer la reprenabilité : plus aucun fichier de ce dépôt ne dérive « soumise / reprenable /
+terminée ».
 
 ## Voir aussi
 

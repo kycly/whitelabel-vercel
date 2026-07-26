@@ -228,7 +228,7 @@ Appliquer au minimum:
 - `APP_SESSION_SECRET`
 - `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 ### Environment `Production`
@@ -240,7 +240,7 @@ Appliquer au minimum:
 - `APP_SESSION_SECRET`
 - `APP_CANONICAL_ORIGIN` si vous voulez figer `parentOrigin` cote serveur
 - `NODE_AUTH_TOKEN` pour installer `@kycly/link` via GitHub Packages pendant le build Vercel
-- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_BASE_URL` vers `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId`
 - `DEFAULT_KYCLINK_THEME` si necessaire
 
 Invariant obligatoire:

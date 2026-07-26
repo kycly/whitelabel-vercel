@@ -42,7 +42,7 @@ Preparer les informations suivantes:
 - une valeur `APP_SESSION_SECRET` pour `Preview`
 - une valeur `APP_SESSION_SECRET` distincte pour `Production`
 - `APP_CANONICAL_ORIGIN` si vous voulez figer l'origine parent forwardee a KycLink au lieu de la deriver depuis les headers proxy / host
-- `KYCLY_BASE_URL` du runtime `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId/result`
+- `KYCLY_BASE_URL` du runtime `partner-node sandbox` pour `POST /kyclink/create` et `GET /kyclink/:sessionId`
 - le theme par defaut si override necessaire
 
 Ne pas ouvrir Vercel avant d'avoir la liste de variables complete.
