@@ -236,7 +236,13 @@ function fail(message) {
 /**
  * Extrait les couples nom@version des sections `packages:` et `snapshots:` du lockfile.
  *
- * Le format est `  nom@version:` ou `  nom@version(peer)...:`, le nom pouvant etre scope.
+ * Le format est `  nom@version:` ou `  nom@version(peer)...:`. pnpm ENTOURE DE QUOTES les
+ * cles dont le nom est scope : `  '@babel/core@7.29.0':`. Le motif doit donc accepter ce
+ * guillemet, en tete comme avant le deux-points — a defaut, TOUS les paquets scopes sont
+ * ignores en silence. C'etait le cas jusqu'au 2026-07-27 : sur whitelabel-vercel, 350
+ * entrees scopees sur 1103 n'etaient jamais soumises au registre, et l'avis
+ * GHSA-4x5r-pxfx-6jf8 sur @babel/core@7.29.0 n'existait que dans l'interface Dependabot.
+ *
  * Les paquets @kycly/* sont exclus : ils sont publies par nos soins et le registre public
  * n'en sait rien — les soumettre ne produirait que du bruit.
  */
@@ -249,7 +255,7 @@ function readResolvedVersions(lockfilePath) {
   const versionsByName = new Map();
 
   for (const line of lockfile.split("\n")) {
-    const match = /^ {2}(@?[^@\s'"][^@]*)@([0-9][^:(]*)(\(|:)/.exec(line);
+    const match = /^ {2}['"]?(@?[^@\s'"][^@]*)@([0-9][^:('"]*)['"]?(\(|:)/.exec(line);
     if (!match) continue;
 
     const [, name, rawVersion] = match;
