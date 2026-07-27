@@ -1,0 +1,181 @@
+name: Derive des branches de deploiement
+
+# POURQUOI CE WORKFLOW EXISTE
+#
+# Le 2026-07-27, la branche `production` de kyclink-node avait 3 semaines de retard sur `main`.
+# Personne ne l'avait vu : rien ne le disait. La PR de rattrapage (#71) est arrivee en
+# conflit sur 8 fichiers, dont un workflow supprime la veille qui serait revenu en
+# production si le merge avait ete fait sans regarder. Ce depot n'etait pas concerne ce
+# jour-la — sa branche `production` etait a jour — mais rien ne garantissait qu'elle le
+# resterait, et c'est precisement le point.
+#
+# La mesure faite ce jour-la a montre que le probleme n'etait pas isole : sur les 4 autres
+# depots, 3 branches de deploiement sur 6 etaient en retard, dont une gelee depuis avril.
+#
+# C'est le meme motif que celui rencontre partout sur ce codebase : une affirmation vraie
+# le jour ou elle est ecrite (« production est a jour »), fausse ensuite, sans que rien ne
+# le signale. La reponse est toujours la meme — une verification qui tourne toute seule.
+#
+# CE QUE CE WORKFLOW NE FAIT PAS
+#
+# Il ne merge rien et n'ecrit rien. Il n'a que `contents: read`. Le rattrapage reste un
+# geste humain, parce qu'un push sur `production` declenche un deploiement Vercel reel —
+# ce n'est pas automatisable sans decider a la place de l'operateur.
+#
+# LES DEUX MODES
+#
+# `block`  — la branche est activement deployee. Un retard de plus de MAX_AGE_DAYS fait
+#            echouer le job. C'est une notification, pas une panne.
+# `report` — la branche est suivie mais son retard est assume (environnement non actif).
+#            Le retard est affiche, le job reste vert.
+#
+# LE MODE `report` PORTE UNE PRECONDITION, ET ELLE EST VERIFIEE PAR MACHINE
+#
+# Declarer une branche en `report`, c'est affirmer qu'elle est gelee. Cette affirmation
+# est vraie le jour ou on l'ecrit, et peut cesser de l'etre sans que personne ne s'en
+# apercoive — le motif qui a produit ce workflow en premier lieu. Une note dans un runbook
+# ne s'en souviendrait pas a notre place.
+#
+# La precondition est donc reevaluee a chaque execution : si la branche a recu un commit
+# depuis moins de FROZEN_DAYS, la premisse est tombee. L'exemption s'annule, la branche
+# repasse en `block` pour le run en cours, et le job echoue en disant quelle ligne de
+# TRACKED corriger. Le rouge disparait des que la configuration est mise a jour.
+#
+# Meme principe que les scellements a precondition de l'audit de dependances : un
+# scellement qui ne se verifie pas est un mensonge differe.
+#
+# Le seuil en jours, plutot qu'un simple « est-elle en retard ? », evite le voyant rouge
+# permanent : du retard le lendemain d'un merge sur `main` est normal ; du retard qui dure
+# deux semaines est un deploiement oublie.
+
+on:
+  schedule:
+    # Lundi 05:15 UTC — quinze minutes apres l'audit de dependances, pour que les deux
+    # notifications hebdomadaires n'arrivent pas dans la meme minute.
+    - cron: "15 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-drift-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      # Branches suivies, au format `branche:mode`. Voir LES DEUX MODES ci-dessus.
+      #
+      # Le deploiement de ce depot n'est PAS un workflow GitHub : il est natif Vercel.
+      # `main` alimente les deploiements preview, `production` le deploiement de
+      # production. Seule `production` est donc une branche longue duree a surveiller —
+      # `main` est la reference, elle ne peut pas etre en retard sur elle-meme.
+      #
+      # `production` est en `block` et non en `report` : elle est activement deployee
+      # (dernier commit le 2026-07-26) et sa promotion depuis `main` est deja encadree par
+      # la garde « Guard production PR source » de ci.yml.
+      TRACKED: "production:block"
+      REFERENCE: main
+      MAX_AGE_DAYS: "14"
+      # Une branche declaree `report` qui a bouge depuis moins de FROZEN_DAYS n'est plus
+      # gelee : son exemption s'annule. Voir LA PRECONDITION ci-dessus.
+      FROZEN_DAYS: "30"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Indispensable : le calcul compare des historiques complets. Un checkout
+          # superficiel donnerait des comptages faux, pas une erreur.
+          fetch-depth: 0
+
+      - name: Mesurer la derive
+        run: |
+          set -euo pipefail
+          now=$(date +%s)
+          status=0
+
+          git fetch --quiet origin "$REFERENCE"
+
+          {
+            echo "### Derive des branches de deploiement"
+            echo
+            echo "Reference : \`$REFERENCE\` — seuil de blocage : $MAX_AGE_DAYS jours."
+            echo
+            echo "| Branche | Mode | Etat | Retard | Age du plus ancien commit non reporte |"
+            echo "|---|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for entry in $TRACKED; do
+            branch="${entry%%:*}"
+            mode="${entry##*:}"
+
+            if ! git fetch --quiet origin "$branch" 2>/dev/null; then
+              echo "::warning::branche '$branch' absente du remote — suivi impossible"
+              echo "| \`$branch\` | $mode | absente du remote | — | — |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            # Precondition du mode `report` : la branche doit etre gelee. On la mesure,
+            # on ne la suppose pas.
+            if [ "$mode" = "report" ]; then
+              last=$(git log -1 --format=%ct "origin/$branch")
+              frozen_age=$(( (now - last) / 86400 ))
+              if [ "$frozen_age" -lt "$FROZEN_DAYS" ]; then
+                echo "::error::'$branch' est declaree en mode 'report' — retard assume parce que l'environnement n'est pas actif. Or elle a recu un commit il y a $frozen_age jours (seuil : $FROZEN_DAYS). La premisse est tombee : remplacer '$branch:report' par '$branch:block' dans TRACKED."
+                echo "| \`$branch\` | ~~report~~ | **premisse tombee** — commit il y a $frozen_age j | — | — |" >> "$GITHUB_STEP_SUMMARY"
+                status=1
+                mode=block
+              fi
+            fi
+
+            behind=$(git rev-list --count "origin/$branch..origin/$REFERENCE")
+            files=$(git diff --name-only "origin/$REFERENCE" "origin/$branch" | wc -l | tr -d ' ')
+
+            # Le nombre de commits d'ecart ment : une branche de deploiement accumule des
+            # commits de merge dont le contenu est deja dans la reference. Seul le diff de
+            # contenu dit la verite, d'ou la double mesure.
+            if [ "$behind" -eq 0 ] && [ "$files" -eq 0 ]; then
+              echo "| \`$branch\` | $mode | a jour | 0 | — |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            if [ "$behind" -eq 0 ]; then
+              echo "::warning::'$branch' porte $files fichier(s) absent(s) de '$REFERENCE' — contenu jamais remonte"
+              echo "| \`$branch\` | $mode | contenu propre non remonte | 0 | — |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            # `tail -n1` et non `head -n1` : head ferme le tube et ferait echouer git sous
+            # `pipefail` (SIGPIPE, code 141). rev-list sort du plus recent au plus ancien.
+            oldest_sha=$(git rev-list "origin/$branch..origin/$REFERENCE" | tail -n1)
+            oldest=$(git log -1 --format=%ct "$oldest_sha")
+            age=$(( (now - oldest) / 86400 ))
+
+            if [ "$mode" = "block" ] && [ "$age" -ge "$MAX_AGE_DAYS" ]; then
+              echo "::error::'$branch' est en retard de $behind commits ($files fichiers) ; le plus ancien commit non reporte a $age jours (seuil : $MAX_AGE_DAYS)"
+              echo "| \`$branch\` | $mode | **EN RETARD** | $behind commits, $files fichiers | $age j |" >> "$GITHUB_STEP_SUMMARY"
+              status=1
+            else
+              echo "::warning::'$branch' est en retard de $behind commits ($files fichiers) ; plus ancien commit non reporte : $age jours"
+              echo "| \`$branch\` | $mode | retard signale | $behind commits, $files fichiers | $age j |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          if [ "$status" -ne 0 ]; then
+            {
+              echo
+              echo "**Rattrapage** — le merge se fait a la main, il declenche un deploiement reel :"
+              echo '```'
+              echo "git checkout <branche> && git merge --no-commit --no-ff origin/$REFERENCE"
+              echo "git read-tree -u --reset origin/$REFERENCE   # si la branche n'a aucun contenu propre"
+              echo "git diff origin/$REFERENCE HEAD --stat        # doit etre vide avant de commiter"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit $status
