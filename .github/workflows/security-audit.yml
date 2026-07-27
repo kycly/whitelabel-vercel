@@ -1,0 +1,70 @@
+name: Security audit (planifie)
+
+# POURQUOI CE WORKFLOW EXISTE
+#
+# L'audit de dependances tourne dans `ci.yml`, donc uniquement sur push et pull_request.
+# Il n'a aucune horloge. Un avis publie un mardi sur un paquet DEJA installe ne declenche
+# rien : ni le lockfile ni le code n'ont bouge. La faille n'est alors detectee qu'a la
+# prochaine PR — dans plusieurs semaines si le depot est calme, ce qui est le cas ici.
+#
+# Ce workflow ferme ce trou : la barriere s'execute au moins une fois par semaine, quoi
+# qu'il arrive. Un echec ici est une notification.
+#
+# Il compte double sur ce depot : ses deux scellements reposent sur des preconditions
+# reevaluees a chaque execution. Sans passage regulier, une premisse pourrait tomber —
+# amazon-cognito-identity-js qui passe a js-cookie v3, un correctif v1 de brace-expansion
+# qui parait — sans que rien ne le signale avant la prochaine PR.
+#
+# Complementaire, et non redondant, avec les alertes Dependabot : celles-ci previennent
+# vite mais reposent sur l'analyse de GitHub, tandis que celui-ci execute NOTRE barriere,
+# avec son seuil et ses scellements.
+
+on:
+  schedule:
+    # Lundi 05:00 UTC.
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # GH_PACKAGES_TOKEN existe au niveau depot ET dans les deux environnements, avec des
+    # valeurs potentiellement differentes. Declarer l'environnement garantit qu'on lit le
+    # meme secret que le job `quality` de ci.yml sur une PR.
+    environment: vercel-preview
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.27.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com
+
+      # --frozen-lockfile est indispensable : l'interet de cet audit est de mesurer l'arbre
+      # tel qu'il est verrouille, pas un arbre re-resolu au moment du cron.
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Security audit
+        run: node scripts/security/audit-pnpm-tree.mjs

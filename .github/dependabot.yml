@@ -1,0 +1,45 @@
+# Chantier audit 2026-07-27 — whitelabel-vercel etait le dernier des cinq depots sans
+# aucune barriere : ni audit CI, ni cron, ni Dependabot.
+version: 2
+
+# Dependabot ne voit PAS les secrets Actions : les deux magasins sont distincts.
+# `GH_PACKAGES_TOKEN` doit donc exister EN DOUBLE — une copie dans Settings > Secrets and
+# variables > Actions (elle existe deja, la CI s'en sert) et une dans le magasin
+# Dependabot. Le `${{secrets.…}}` ci-dessous resout contre le magasin Dependabot.
+#
+# Sans ce depot de secret, le volet npm echoue : le proxy interroge npm.pkg.github.com
+# pour les @kycly/* sans aucune credential. Constate sur partner-node le 2026-07-26.
+# Le volet github-actions, lui, fonctionne independamment.
+registries:
+  github-packages:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{secrets.GH_PACKAGES_TOKEN}}
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # L'audit CI ne bloque qu'a partir de `high`. Les avis moderes n'ont donc aucune voie
+  # de remontee sans ce volet : ici ils ouvrent une PR.
+  #
+  # A NE PAS ATTENDRE DE LUI : la correction des dependances transitives. Son job declare
+  # `update-subdependencies: false`, et l'option `dependency-type: indirect` n'existe pas
+  # pour l'ecosysteme npm — seulement pour bundler, pip, composer, cargo, gomod et uv.
+  # Aucun reglage ne change cela. Les transitives se corrigent par un plancher dans
+  # `pnpm.overrides`, BORNE sous la majeure suivante.
+  - package-ecosystem: npm
+    directory: /
+    registries:
+      - github-packages
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Les @kycly/* sont publies par nos soins : Dependabot n'a pas a s'en meler.
+    ignore:
+      - dependency-name: "@kycly/*"
+    groups:
+      dev-dependencies:
+        dependency-type: development

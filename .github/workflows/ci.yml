@@ -44,15 +44,15 @@ jobs:
           exit 1
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.27.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -63,6 +63,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: pnpm install --frozen-lockfile
+
+      # Barriere de securite des dependances. Elle lit l'arbre que pnpm a REELLEMENT
+      # resolu, pas un arbre npm reconstruit qui ignorerait pnpm.overrides. Elle bloque
+      # sur high/critical et affiche les avis sous ce seuil.
+      - name: Security audit
+        run: node scripts/security/audit-pnpm-tree.mjs
 
       - name: Check docs drift
         run: pnpm docs:check
