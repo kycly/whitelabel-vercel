@@ -191,6 +191,14 @@ Trois pieges rencontres, tous verifies et non supposes :
 - **Une valeur eprouvee sur un autre depot n'est pas une valeur valide ici.** L'override `js-cookie: ">=3.0.7"`, repris tel quel de dashboard-node, a fait echouer `pnpm build` : `amazon-cognito-identity-js` importe `get`/`set`/`remove` en exports nommes, que js-cookie v3 n'expose plus. Le parent differe, donc la valeur aussi.
 - **`sharp` sort de la plage declaree par `next`** (`^0.34.5`). C'est assume et signale : `next/image` est utilise par cette application, donc l'exposition est reelle et un scellement serait malhonnete. Le build et les smokes Playwright sont la verification.
 
+### L'angle mort des paquets scopes, corrige le 2026-07-27
+
+La premiere version de la barriere n'auditait **que les paquets non scopes**. pnpm entoure de quotes les cles dont le nom est scope dans `pnpm-lock.yaml` (`  '@babel/core@7.29.0':`), et le motif d'extraction refusait ce guillemet. Consequence : sur ce depot, 350 entrees scopees sur 1103 n'etaient jamais soumises au registre — sans qu'aucun message ne le signale, puisque le script lisait bien des paquets.
+
+Detecte par ecart : Dependabot signalait `GHSA-4x5r-pxfx-6jf8` sur `@babel/core@7.29.0` alors que la barriere annoncait « 0 avis sous le seuil ». Ce genre de divergence merite toujours d'etre creuse — c'est la deuxieme fois qu'un avis n'existe que dans l'interface Dependabot, et la premiere fois c'etait aussi un defaut de notre cote.
+
+Apres correction : **507 paquets audites au lieu de 340**. La mesure a ete refaite sur les quatre autres depots, ou la surface double egalement (355 → 727, 437 → 777, 389 → 681, 264 → 522) sans faire apparaitre de nouvel avis — ils portaient deja l'override `@babel/core` pose depuis les alertes Dependabot.
+
 ### Les deux scellements, et leur precondition
 
 Deux avis restent, tous deux `high`, tous deux scelles — **et chaque scellement porte une fonction reevaluee a chaque execution**. Si sa premisse tombe, il s'annule et l'avis redevient bloquant. Un scellement qui ne se verifie pas est un mensonge differe.
