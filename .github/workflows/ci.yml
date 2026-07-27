@@ -64,6 +64,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: pnpm install --frozen-lockfile
 
+      # Barriere de securite des dependances. Elle lit l'arbre que pnpm a REELLEMENT
+      # resolu, pas un arbre npm reconstruit qui ignorerait pnpm.overrides. Elle bloque
+      # sur high/critical et affiche les avis sous ce seuil.
+      - name: Security audit
+        run: node scripts/security/audit-pnpm-tree.mjs
+
       - name: Check docs drift
         run: pnpm docs:check
 

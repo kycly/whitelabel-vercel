@@ -123,21 +123,30 @@ Runtime retenu:
 - Node.js 22
 - pnpm 10.x
 
-Ordre des etapes retenu:
+Ordre des etapes retenu, tel qu'il est reellement code dans `ci.yml`:
 
 1. garde-fou source de promotion (`pull_request` vers `production` refuse toute branche source autre que `main`)
 2. checkout
 3. setup pnpm
 4. setup Node.js
 5. `pnpm install --frozen-lockfile`
-6. `pnpm docs:check`
-7. `pnpm guard:sandbox-only`
-8. `pnpm test`
-9. `pnpm typecheck`
-10. `pnpm lint`
-11. `pnpm build`
-12. `pnpm exec playwright install --with-deps chromium webkit`
-13. `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e`
+6. `node scripts/security/audit-pnpm-tree.mjs` — audit de securite des dependances
+7. `pnpm docs:check`
+8. `pnpm docs:truth`
+9. `pnpm docs:structure`
+10. `pnpm docs:codegen:check`
+11. `pnpm guard:sandbox-only`
+12. `pnpm test`
+13. `pnpm typecheck`
+14. `pnpm lint`
+15. `pnpm build`
+16. `pnpm exec playwright install --with-deps chromium webkit`
+17. `pnpm test:e2e`
+
+> Cette liste ne decrivait pas le workflow reel avant le 2026-07-27 : elle mentionnait un
+> unique `pnpm docs:check` la ou quatre gardes documentaires distinctes tournent, et un
+> `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e` que `ci.yml` n'a jamais porte. Corrigee sur
+> lecture du fichier.
 
 Ordre de severite retenu:
 
@@ -151,6 +160,67 @@ Note locale:
 
 - `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e` est reserve a la CI apres `pnpm build`
 - apres une modification UI locale, relancer au moins une fois `pnpm test:e2e` sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter un `.next` stale
+
+## Audit de securite des dependances
+
+Ce depot a ete le dernier des cinq sans aucune barriere d'audit : ni etape CI, ni cron, ni `dependabot.yml`. La premiere mesure, le 2026-07-27, a trouve **13 avis `high` et 8 `moderate` reels** sur 340 paquets, dont quatre `high` sur `next` lui-meme.
+
+### La barriere — `scripts/security/audit-pnpm-tree.mjs`
+
+Elle lit les versions que **pnpm a reellement resolues** dans `pnpm-lock.yaml`, les soumet a l'endpoint bulk du registre, et decompresse elle-meme le gzip que celui-ci renvoie sans en-tete `content-encoding`. Deux raisons de ne pas se contenter de `npm audit` ou `pnpm audit`, mesurees sur les quatre autres depots :
+
+- npm ignore `pnpm.overrides` et reconstruit un arbre que pnpm ne produit jamais — 16 avis `high` reels y etaient invisibles ;
+- le gzip non declare fait echouer `pnpm audit`, `npm audit` et le `fetch` de Node a l'identique, des que la reponse depasse une certaine taille.
+
+Elle bloque sur `high`/`critical` et **affiche** les avis sous ce seuil sans jamais les jeter. Elle echoue en bloquant sur toute anomalie — reseau, HTTP non-2xx, corps vide, lockfile illisible : l'absence de signal d'erreur n'est jamais interpretee comme un succes.
+
+### Ce qui a ete corrige le 2026-07-27
+
+| Paquet | Avant | Apres | Moyen |
+|---|---|---|---|
+| `next` | 16.2.6 (4 `high`, 5 `moderate`) | 16.2.12 | montee de la dependance directe |
+| `postcss` | 8.4.31 et 8.5.14 (2 `high`) | >=8.5.18 | override global — meme majeure |
+| `sharp` | 0.34.5 (1 `high`) | 0.35.3 | override borne `>=0.35.0 <0.36.0` |
+| `js-yaml` | 4.1.1 (1 `high`) | >=4.3.0 | override borne `<5` |
+| `vite` | 8.0.13 (1 `high`) | 8.1.5 | **declaration explicite en devDependency** |
+| `brace-expansion` | 1.1.14 et 5.0.6 (3 `high`) | 1.1.16 et 5.0.8 | overrides **scopes** par parent |
+
+Trois pieges rencontres, tous verifies et non supposes :
+
+- **Les overrides pnpm ne s'appliquent pas aux peers auto-installes.** `vite` n'est tire que comme peer de `vitest` ; l'override `vite: ">=8.0.16"` restait sans effet, meme apres `pnpm install --force`. La reponse est de declarer `vite` en devDependency — on controle la version de ce qu'on utilise reellement. Accessoirement, `vite@8.0.16` n'existe pas : la ligne 8.0.x s'arrete a 8.0.15 et le correctif est en 8.1.0.
+- **Une valeur eprouvee sur un autre depot n'est pas une valeur valide ici.** L'override `js-cookie: ">=3.0.7"`, repris tel quel de dashboard-node, a fait echouer `pnpm build` : `amazon-cognito-identity-js` importe `get`/`set`/`remove` en exports nommes, que js-cookie v3 n'expose plus. Le parent differe, donc la valeur aussi.
+- **`sharp` sort de la plage declaree par `next`** (`^0.34.5`). C'est assume et signale : `next/image` est utilise par cette application, donc l'exposition est reelle et un scellement serait malhonnete. Le build et les smokes Playwright sont la verification.
+
+### Les deux scellements, et leur precondition
+
+Deux avis restent, tous deux `high`, tous deux scelles — **et chaque scellement porte une fonction reevaluee a chaque execution**. Si sa premisse tombe, il s'annule et l'avis redevient bloquant. Un scellement qui ne se verifie pas est un mensonge differe.
+
+| Avis | Motif | Ce qui l'annule |
+|---|---|---|
+| `GHSA-qjx8-664m-686j` — `js-cookie <=3.0.5` | dans `amazon-cognito-identity-js`, js-cookie n'est importe que par `CookieStorage.js`, que cette application n'utilise jamais : `CognitoUserPool` est construit sans option `Storage`, donc la bibliotheque retombe sur `localStorage` | tout fichier de `src/` ou `app/` qui reference `CookieStorage` ou `js-cookie`, ou qui passe une option `Storage` a Cognito |
+| `GHSA-mh99-v99m-4gvg` — `brace-expansion <=5.0.7` | la branche v5 est forcee en >=5.0.8 ; la branche v1, imposee par `minimatch@3`, s'arrete a 1.1.16 ou cet avis n'a aucun correctif. La forcer en v5 casse `minimatch@3` (`TypeError: expand is not a function`). `minimatch@3` ne vient que de la chaine ESLint, absente de l'artefact deploye | une version v5 retombee sous 5.0.8, ou un consommateur de `minimatch@3` hors chaine ESLint |
+
+Les deux chemins ont ete prouves par execution avant livraison : premisse vraie → sortie verte ; premisse tombee → scellement annule, avis bloquant, code de sortie 1.
+
+### L'audit planifie — `.github/workflows/security-audit.yml`
+
+L'audit de `ci.yml` n'a pas d'horloge : un avis publie sur un paquet **deja installe** ne declenche rien, puisque ni le lockfile ni le code n'ont bouge. `security-audit.yml` rejoue la barriere chaque lundi a 05:00 UTC, et reste declenchable a la main.
+
+Il compte double ici : les deux scellements ci-dessus reposent sur des preconditions. Sans passage regulier, une premisse pourrait tomber sans que rien ne le signale avant la prochaine PR.
+
+Le job declare `environment: vercel-preview` : `GH_PACKAGES_TOKEN` existe au niveau depot **et** dans les deux environnements, avec des valeurs potentiellement differentes.
+
+### Dependabot — `.github/dependabot.yml`
+
+Deux volets, hebdomadaires : `github-actions` et `npm`. Le volet npm passe par le bloc `registries:` pour resoudre les `@kycly/*` sur `npm.pkg.github.com`, et ignore ces memes paquets — ils sont publies par nos soins.
+
+**Ce qu'il ne fera pas** : corriger une dependance transitive. Son job declare `update-subdependencies: false`, et l'option `dependency-type: indirect` n'existe pas pour l'ecosysteme npm — seulement pour bundler, pip, composer, cargo, gomod et uv. Aucun reglage ne change cela. Les transitives se corrigent par un plancher dans `pnpm.overrides`, **borne** sous la majeure suivante.
+
+### Derive de la branche de deploiement — `.github/workflows/branch-drift.yml`
+
+Le deploiement de ce depot n'est pas un workflow GitHub : il est natif Vercel. `main` alimente les previews, `production` le deploiement de production. Seule `production` est donc une branche longue duree a surveiller.
+
+Le workflow mesure chaque lundi a 05:15 UTC l'**ecart de contenu** entre `production` et `main` — et non le nombre de commits, qui ment sur une branche de deploiement pleine de merges dont le contenu est deja dans la reference. Il echoue si le plus ancien commit non reporte depasse 14 jours. Il n'a que `contents: read` et ne merge rien : un push sur `production` declenche un deploiement Vercel reel, le rattrapage reste un geste humain.
 
 ## Hooks locaux retenus
 

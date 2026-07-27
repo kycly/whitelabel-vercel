@@ -11,7 +11,7 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 83 |
+| Fichiers code scannes | 84 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
