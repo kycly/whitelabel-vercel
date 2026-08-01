@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/config/env";
+import { resolveCreatedFrom } from "@/lib/session-period";
 import { buildPartnerAccessHeaders } from "@/config/partner-access";
 import {
   buildSessionMetadata,
@@ -37,6 +38,8 @@ const kycSessionsListQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   status: z.enum(["pending", "processing", "completed"]).optional(),
   workflowStatus: workflowStatusSchema.optional(),
+  q: z.string().min(1).max(120).optional(),
+  period: z.enum(["7d", "30d", "all"]).default("all"),
 });
 
 const upstreamKycSessionSchema = z.object({
@@ -49,6 +52,28 @@ const upstreamKycSessionSchema = z.object({
   created_at: z.string().min(1),
   sessionState: sessionStateSchema,
   resumeAvailable: z.boolean(),
+});
+
+// La meta de l'amont est desormais exigee complete : c'est lui qui compte, plus nous.
+const upstreamMetaSchema = z.object({
+  returned: z.number().int().min(0),
+  limit: z.number().int().positive(),
+  offset: z.number().int().min(0),
+  total: z.number().int().min(0),
+  statusCounts: z.object({
+    all: z.number().int().min(0),
+    pending: z.number().int().min(0),
+    processing: z.number().int().min(0),
+    completed: z.number().int().min(0),
+  }),
+  workflowCounts: z.object({
+    all: z.number().int().min(0),
+    PENDING: z.number().int().min(0),
+    IN_REVIEW: z.number().int().min(0),
+    ESCALATED: z.number().int().min(0),
+    APPROVED: z.number().int().min(0),
+    REJECTED: z.number().int().min(0),
+  }),
 });
 
 const kycSessionsListSchema = z.object({
@@ -109,17 +134,31 @@ export function parseKycSessionsListQuery(input: URLSearchParams): KycSessionsLi
     offset: input.get("offset") ?? undefined,
     status: input.get("status") ?? undefined,
     workflowStatus: input.get("workflowStatus") ?? undefined,
+    q: input.get("q") ?? undefined,
+    period: input.get("period") ?? undefined,
   });
 }
 
-async function fetchUpstreamKycSessionsPage(params: {
+async function fetchUpstreamKycSessions(params: {
   cognitoIdToken: string;
-  limit: number;
-  offset: number;
-}): Promise<z.infer<typeof upstreamKycSessionSchema>[]> {
+  query: KycSessionsListQuery;
+}): Promise<{
+  data: z.infer<typeof upstreamKycSessionSchema>[];
+  meta: z.infer<typeof upstreamMetaSchema>;
+}> {
   const endpoint = new URL("/kyclink/sessions", `${env.server.kyclyBaseUrl}/`);
-  endpoint.searchParams.set("limit", String(params.limit));
-  endpoint.searchParams.set("offset", String(params.offset));
+  endpoint.searchParams.set("limit", String(params.query.limit));
+  endpoint.searchParams.set("offset", String(params.query.offset));
+  if (params.query.status) endpoint.searchParams.set("status", params.query.status);
+  if (params.query.workflowStatus) {
+    endpoint.searchParams.set("workflowStatus", params.query.workflowStatus);
+  }
+  if (params.query.q) endpoint.searchParams.set("q", params.query.q);
+
+  // Le vocabulaire d'interface (« 30 derniers jours ») est traduit ici en borne absolue :
+  // partner-node ne connait que `createdFrom`.
+  const createdFrom = resolveCreatedFrom(params.query.period, new Date());
+  if (createdFrom) endpoint.searchParams.set("createdFrom", createdFrom);
 
   const response = await fetch(endpoint.toString(), {
     method: "GET",
@@ -150,18 +189,9 @@ async function fetchUpstreamKycSessionsPage(params: {
     throw new KycSessionError(message, response.status, code);
   }
 
-  const parsedBody = z
-    .object({
-      data: z.array(upstreamKycSessionSchema),
-      meta: z.object({
-        returned: z.number().int().min(0),
-        limit: z.number().int().positive(),
-        offset: z.number().int().min(0),
-      }),
-    })
+  return z
+    .object({ data: z.array(upstreamKycSessionSchema), meta: upstreamMetaSchema })
     .parse(body);
-
-  return parsedBody.data;
 }
 
 export async function createKycSession(params: {
@@ -251,24 +281,12 @@ export async function fetchKycSessions(params: {
   cognitoIdToken: string;
   query: KycSessionsListQuery;
 }): Promise<KycSessionsList> {
-  const upstreamPageSize = 50;
-  const upstreamRows: z.infer<typeof upstreamKycSessionSchema>[] = [];
+  // Passe-plat. Le filtrage, le tri, la pagination et les compteurs sont faits par l'amont, qui
+  // a la base : rapatrier toute la liste pour la retrier ici ne passait pas a l'echelle et ne
+  // pouvait pas servir la recherche.
+  const upstream = await fetchUpstreamKycSessions(params);
 
-  for (let upstreamOffset = 0; ; upstreamOffset += upstreamPageSize) {
-    const page = await fetchUpstreamKycSessionsPage({
-      cognitoIdToken: params.cognitoIdToken,
-      limit: upstreamPageSize,
-      offset: upstreamOffset,
-    });
-
-    upstreamRows.push(...page);
-
-    if (page.length < upstreamPageSize) {
-      break;
-    }
-  }
-
-  const data = upstreamRows.map((item) => ({
+  const data = upstream.data.map((item) => ({
     sessionId: item.session_id,
     externalId: item.external_id,
     status: item.status,
@@ -281,55 +299,7 @@ export async function fetchKycSessions(params: {
     resumeAvailable: item.resumeAvailable,
   }));
 
-  const statusCountsScope =
-    params.query.workflowStatus === undefined
-      ? data
-      : data.filter((item) => item.workflowStatus === params.query.workflowStatus);
-
-  const workflowCountsScope =
-    params.query.status === undefined
-      ? data
-      : data.filter((item) => item.status === params.query.status);
-
-  const filteredData = data.filter((item) => {
-    if (params.query.status && item.status !== params.query.status) {
-      return false;
-    }
-
-    if (params.query.workflowStatus && item.workflowStatus !== params.query.workflowStatus) {
-      return false;
-    }
-
-    return true;
-  });
-
-  filteredData.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-
-  const pageData = filteredData.slice(params.query.offset, params.query.offset + params.query.limit);
-
-  return kycSessionsListSchema.parse({
-    data: pageData,
-    meta: {
-      returned: pageData.length,
-      limit: params.query.limit,
-      offset: params.query.offset,
-      total: filteredData.length,
-      statusCounts: {
-        all: statusCountsScope.length,
-        pending: statusCountsScope.filter((item) => item.status === "pending").length,
-        processing: statusCountsScope.filter((item) => item.status === "processing").length,
-        completed: statusCountsScope.filter((item) => item.status === "completed").length,
-      },
-      workflowCounts: {
-        all: workflowCountsScope.length,
-        PENDING: workflowCountsScope.filter((item) => item.workflowStatus === "PENDING").length,
-        IN_REVIEW: workflowCountsScope.filter((item) => item.workflowStatus === "IN_REVIEW").length,
-        ESCALATED: workflowCountsScope.filter((item) => item.workflowStatus === "ESCALATED").length,
-        APPROVED: workflowCountsScope.filter((item) => item.workflowStatus === "APPROVED").length,
-        REJECTED: workflowCountsScope.filter((item) => item.workflowStatus === "REJECTED").length,
-      },
-    },
-  });
+  return kycSessionsListSchema.parse({ data, meta: upstream.meta });
 }
 
 export async function fetchKycVerificationDetail(params: {

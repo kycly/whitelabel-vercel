@@ -151,43 +151,32 @@ describe("server/kyclink", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1");
   });
 
-  it("uses workflow_status returned by the sessions endpoint as the canonical history source", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              session_id: "sess_1",
-              external_id: "cust_0042",
-              status: "completed",
-              workflow_status: "APPROVED",
-              expires_at: null,
-              completed_at: "2026-05-17T12:03:00.000Z",
-              created_at: "2026-05-17T12:00:00.000Z",
-              sessionState: "COMPLETED",
-              resumeAvailable: false,
-            },
-            {
-              session_id: "sess_2",
-              external_id: "cust_0043",
-              status: "processing",
-              workflow_status: null,
-              expires_at: null,
-              completed_at: null,
-              created_at: "2026-05-17T12:05:00.000Z",
-              sessionState: "COMPLETED",
-              resumeAvailable: false,
-            },
-          ],
-          meta: {
-            returned: 2,
-            limit: 50,
-            offset: 0,
+  it("relaie workflow_status et delegue le filtrage a l amont", async () => {
+    // Le filtrage n'est plus fait ici : on transmet les criteres et on rend ce que l'amont
+    // renvoie. Ce test verifiait autrefois un tri/filtre en memoire, volontairement supprime.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            session_id: "sess_1",
+            external_id: "cust_0042",
+            status: "completed",
+            workflow_status: "APPROVED",
+            expires_at: null,
+            completed_at: "2026-05-17T12:03:00.000Z",
+            created_at: "2026-05-17T12:00:00.000Z",
+            sessionState: "COMPLETED",
+            resumeAvailable: false,
           },
-        }),
-      });
+        ],
+        meta: {
+          returned: 1, limit: 20, offset: 0, total: 1,
+          statusCounts: { all: 1, pending: 0, processing: 0, completed: 1 },
+          workflowCounts: { all: 1, PENDING: 0, IN_REVIEW: 0, ESCALATED: 0, APPROVED: 1, REJECTED: 0 },
+        },
+      }),
+    });
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -197,60 +186,95 @@ describe("server/kyclink", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Les criteres partent en amont au lieu d'etre appliques ici.
+    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(url.searchParams.get("status")).toBe("completed");
+    expect(url.searchParams.get("workflowStatus")).toBe("APPROVED");
+
     expect(result.data).toHaveLength(1);
     expect(result.data[0]?.sessionId).toBe("sess_1");
+    expect(result.data[0]?.workflowStatus).toBe("APPROVED");
     expect(result.meta.total).toBe(1);
     expect(result.meta.statusCounts.completed).toBe(1);
     expect(result.meta.workflowCounts.APPROVED).toBe(1);
   });
 
-  it("keeps the canonical createdAt DESC order before pagination", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              session_id: "sess_old",
-              external_id: "cust_0040",
-              status: "pending",
-              expires_at: null,
-              completed_at: null,
-              created_at: "2026-05-17T12:00:00.000Z",
-              sessionState: "COMPLETED",
-              resumeAvailable: false,
-            },
-            {
-              session_id: "sess_new",
-              external_id: "cust_0041",
-              status: "pending",
-              expires_at: null,
-              completed_at: null,
-              created_at: "2026-05-17T12:10:00.000Z",
-              sessionState: "COMPLETED",
-              resumeAvailable: false,
-            },
-            {
-              session_id: "sess_mid",
-              external_id: "cust_0042",
-              status: "pending",
-              expires_at: null,
-              completed_at: null,
-              created_at: "2026-05-17T12:05:00.000Z",
-              sessionState: "COMPLETED",
-              resumeAvailable: false,
-            },
-          ],
-          meta: {
-            returned: 3,
-            limit: 50,
-            offset: 0,
-          },
-        }),
-      });
-
+  it("ne fait plus qu UN appel amont par affichage", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [],
+        meta: {
+          returned: 0, limit: 20, offset: 0, total: 0,
+          statusCounts: { all: 0, pending: 0, processing: 0, completed: 0 },
+          workflowCounts: { all: 0, PENDING: 0, IN_REVIEW: 0, ESCALATED: 0, APPROVED: 0, REJECTED: 0 },
+        },
+      }),
+    });
     vi.stubGlobal("fetch", fetchMock);
+
+    await fetchKycSessions({
+      cognitoIdToken: "t",
+      query: parseKycSessionsListQuery(new URLSearchParams("q=kane&period=30d")),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(url.searchParams.get("q")).toBe("kane");
+    expect(url.searchParams.get("createdFrom")).toBeTruthy();
+    expect(url.searchParams.get("limit")).toBe("20");
+  });
+
+  it("renvoie les compteurs de l amont sans les recalculer", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [],
+        meta: {
+          returned: 0, limit: 20, offset: 0, total: 47,
+          statusCounts: { all: 47, pending: 3, processing: 5, completed: 39 },
+          workflowCounts: { all: 47, PENDING: 3, IN_REVIEW: 2, ESCALATED: 1, APPROVED: 38, REJECTED: 3 },
+        },
+      }),
+    }));
+
+    const result = await fetchKycSessions({
+      cognitoIdToken: "t",
+      query: parseKycSessionsListQuery(new URLSearchParams()),
+    });
+
+    expect(result.meta.total).toBe(47);
+    expect(result.meta.statusCounts.completed).toBe(39);
+  });
+
+  it("borne q a 120 caracteres", () => {
+    expect(() => parseKycSessionsListQuery(new URLSearchParams(`q=${"a".repeat(121)}`))).toThrow();
+  });
+
+  it("respecte l ordre de l amont sans le retrier", async () => {
+    // Le tri et le decoupage vivaient ici ; ils sont desormais faits par l'amont, qui a la base.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            session_id: "sess_new", external_id: "cust_0041", status: "pending",
+            expires_at: null, completed_at: null, created_at: "2026-05-17T12:10:00.000Z",
+            sessionState: "COMPLETED", resumeAvailable: false,
+          },
+          {
+            session_id: "sess_mid", external_id: "cust_0042", status: "pending",
+            expires_at: null, completed_at: null, created_at: "2026-05-17T12:05:00.000Z",
+            sessionState: "COMPLETED", resumeAvailable: false,
+          },
+        ],
+        meta: {
+            returned: 2, limit: 20, offset: 0, total: 2,
+            statusCounts: { all: 2, pending: 2, processing: 0, completed: 0 },
+            workflowCounts: { all: 2, PENDING: 0, IN_REVIEW: 0, ESCALATED: 0, APPROVED: 0, REJECTED: 0 },
+          },
+      }),
+    }));
 
     const result = await fetchKycSessions({
       cognitoIdToken: "cognito-id-token",
@@ -258,7 +282,7 @@ describe("server/kyclink", () => {
     });
 
     expect(result.data.map((item) => item.sessionId)).toEqual(["sess_new", "sess_mid"]);
-    expect(result.meta.total).toBe(3);
+    expect(result.meta.total).toBe(2);
   });
 
   it("relaie sessionState et resumeAvailable sans les recalculer", async () => {
@@ -278,7 +302,11 @@ describe("server/kyclink", () => {
             resumeAvailable: false,
           },
         ],
-        meta: { returned: 1, limit: 50, offset: 0 },
+        meta: {
+          returned: 1, limit: 20, offset: 0, total: 1,
+          statusCounts: { all: 1, pending: 0, processing: 0, completed: 1 },
+          workflowCounts: { all: 1, PENDING: 1, IN_REVIEW: 0, ESCALATED: 0, APPROVED: 0, REJECTED: 0 },
+        },
       }),
     });
 
@@ -312,7 +340,11 @@ describe("server/kyclink", () => {
             resumeAvailable: true,
           },
         ],
-        meta: { returned: 1, limit: 50, offset: 0 },
+        meta: {
+          returned: 1, limit: 20, offset: 0, total: 1,
+          statusCounts: { all: 1, pending: 0, processing: 0, completed: 1 },
+          workflowCounts: { all: 1, PENDING: 1, IN_REVIEW: 0, ESCALATED: 0, APPROVED: 0, REJECTED: 0 },
+        },
       }),
     });
 

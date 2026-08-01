@@ -136,6 +136,21 @@ L'ecran `SESSION_CONTEXT` est l'etape la plus minimale du parcours:
 - la microcopy visible doit rester propre en JSX React, y compris pour les apostrophes et textes editoriaux, afin d'eviter tout contournement de lint ou derive de rendu
 - la gestion des erreurs protegees ne doit pas etre reimplementee ecran par ecran si un helper de decision commun existe deja
 
+## Ecran historique — panneau de criteres (2026-08-01)
+
+- Le **champ de recherche est toujours visible**, dans un `<form>` : la touche entree du clavier
+  mobile applique, sans viser un bouton.
+- Les trois menus — statut, statut metier, periode — sont **replies par defaut** derriere un bouton
+  « Filtres ». **La raison est mesurable :** a quatre criteres empiles, la premiere verification
+  passe sous la ligne de flottaison sur un ecran de telephone. L'ecran servirait alors ses filtres
+  avant son contenu.
+- Les menus **n'appliquent pas au changement**. Ils alimentent un brouillon, applique par le bouton
+  « Appliquer » ou par la soumission du formulaire. Le bouton passe en evidence quand le brouillon
+  differe de ce qui est affiche.
+- Pendant un rechargement, **les resultats precedents restent affiches** en opacite reduite. Le
+  message de chargement n'apparait que lorsqu'il n'y a rien a montrer : sinon l'ecran clignote a
+  chaque recherche.
+
 ## Regles d'implementation
 
 - les styles doivent etre redefinis localement dans whitelabel-vercel

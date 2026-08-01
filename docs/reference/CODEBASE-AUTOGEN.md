@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 84 |
+| Fichiers code scannes | 86 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 154 |
-| Fichiers de tests detectes | 13 |
+| Exports detectes | 156 |
+| Fichiers de tests detectes | 14 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -230,6 +230,8 @@ _Aucun hook detecte._
 | const | PARENT_ORIGIN_HANDSHAKE_MESSAGE_TYPE | src/lib/kyclink-embed.ts |
 | function | resolveKyclinkOrigin | src/lib/kyclink-embed.ts |
 | function | formatOcrLabel | src/lib/ocr-format.ts |
+| function | resolveCreatedFrom | src/lib/session-period.ts |
+| type | SessionPeriod | src/lib/session-period.ts |
 | function | clearVerificationDraft | src/lib/verification-draft.ts |
 | function | readVerificationDraft | src/lib/verification-draft.ts |
 | function | saveVerificationDraft | src/lib/verification-draft.ts |
@@ -277,6 +279,7 @@ _Aucun hook detecte._
 - src/lib/app-error.test.ts
 - src/lib/kyclink-embed.test.ts
 - src/lib/ocr-format.test.ts
+- src/lib/session-period.test.ts
 - src/lib/verification-poll.test.ts
 - src/server/kyc-session-route.test.ts
 - src/server/kyclink.test.ts

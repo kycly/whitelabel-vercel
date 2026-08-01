@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, FilterX, History, LoaderCircle, Plus, RefreshCcw, SlidersHorizontal } from "lucide-react";
 import { ProtectedScreenShell } from "@/components/layout/protected-screen-shell";
 import {
   type WorkflowStatus,
@@ -23,8 +23,24 @@ import {
 } from "@/components/ui/fixed-action-layout";
 import { errorMessage } from "@/lib/app-error";
 import { handleAppError, requestProtectedJson } from "@/lib/app-client";
+import type { SessionPeriod } from "@/lib/session-period";
 
 type SessionStatus = "pending" | "processing" | "completed";
+
+type Criteria = {
+  q: string;
+  status: SessionStatus | "all";
+  workflowStatus: SessionWorkflowStatus | "all";
+  period: SessionPeriod;
+};
+
+const EMPTY_CRITERIA: Criteria = { q: "", status: "all", workflowStatus: "all", period: "all" };
+
+const PERIOD_OPTIONS: Array<{ value: SessionPeriod; label: string }> = [
+  { value: "all", label: "Toute la periode" },
+  { value: "30d", label: "30 derniers jours" },
+  { value: "7d", label: "7 derniers jours" },
+];
 type SessionWorkflowStatus = WorkflowStatus;
 
 type SessionsResponse = {
@@ -110,8 +126,11 @@ function formatDate(value: string | null): string {
 }
 
 export function VerificationSessions() {
-  const [status, setStatus] = useState<SessionStatus | "all">("all");
-  const [workflowStatus, setWorkflowStatus] = useState<SessionWorkflowStatus | "all">("all");
+  // `draft` est ce que l'utilisateur compose ; `applied` est ce que l'ecran affiche. La requete
+  // ne depend que de `applied` : une frappe dans le champ ne declenche aucun appel.
+  const [draft, setDraft] = useState<Criteria>(EMPTY_CRITERIA);
+  const [applied, setApplied] = useState<Criteria>(EMPTY_CRITERIA);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [offset, setOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<SessionsState>({
@@ -156,12 +175,20 @@ export function VerificationSessions() {
           offset: String(offset),
         });
 
-        if (status !== "all") {
-          searchParams.set("status", status);
+        if (applied.status !== "all") {
+          searchParams.set("status", applied.status);
         }
 
-        if (workflowStatus !== "all") {
-          searchParams.set("workflowStatus", workflowStatus);
+        if (applied.workflowStatus !== "all") {
+          searchParams.set("workflowStatus", applied.workflowStatus);
+        }
+
+        if (applied.q.trim()) {
+          searchParams.set("q", applied.q.trim());
+        }
+
+        if (applied.period !== "all") {
+          searchParams.set("period", applied.period);
         }
 
         const sessions = await requestProtectedJson<SessionsResponse>(`/api/kyc/sessions?${searchParams.toString()}`, {
@@ -201,17 +228,23 @@ export function VerificationSessions() {
     return () => {
       controller.abort();
     };
-  }, [offset, reloadKey, status, workflowStatus]);
+  }, [applied, offset, reloadKey]);
 
   const canGoBack = offset > 0;
   const canGoNext = state.meta.offset + state.meta.returned < state.meta.total;
-  const hasActiveFilter = status !== "all" || workflowStatus !== "all";
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(applied);
+  const hasActiveFilter = JSON.stringify(applied) !== JSON.stringify(EMPTY_CRITERIA);
   const isFilterEmpty = !state.isLoading && !state.error && state.data.length === 0 && hasActiveFilter;
   const isInitialEmpty = !state.isLoading && !state.error && state.data.length === 0 && !hasActiveFilter;
 
+  function applyCriteria() {
+    setApplied(draft);
+    setOffset(0);
+  }
+
   function resetFilters() {
-    setStatus("all");
-    setWorkflowStatus("all");
+    setDraft(EMPTY_CRITERIA);
+    setApplied(EMPTY_CRITERIA);
     setOffset(0);
   }
 
@@ -301,45 +334,108 @@ export function VerificationSessions() {
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4">
-        <label className="block">
-          <select
-            aria-label="Filtrer par statut"
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as SessionStatus | "all");
-              setOffset(0);
-            }}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          applyCriteria();
+        }}
+        className="grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface-light)] p-4"
+      >
+        <div className="flex gap-2">
+          <input
+            type="search"
+            inputMode="search"
+            aria-label="Rechercher une verification"
+            placeholder="Nom, prenom, reference..."
+            maxLength={120}
+            value={draft.q}
+            onChange={(event) => setDraft((current) => ({ ...current, q: event.target.value }))}
             className={formFieldClassName({ compact: true })}
+          />
+          <button
+            type="button"
+            aria-label="Filtres"
+            title="Filtres"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+            className={secondaryIconButtonClassName}
           >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label} ({state.meta.statusCounts[option.value]})
-              </option>
-            ))}
-          </select>
-        </label>
+            <SlidersHorizontal className="size-4" />
+            <span className="sr-only">Filtres</span>
+          </button>
+        </div>
 
-        <label className="block">
-          <select
-            aria-label="Filtrer par statut metier"
-            value={workflowStatus}
-            onChange={(event) => {
-              setWorkflowStatus(event.target.value as SessionWorkflowStatus | "all");
-              setOffset(0);
-            }}
-            className={formFieldClassName({ compact: true })}
-          >
-            {WORKFLOW_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label} ({state.meta.workflowCounts[option.value]})
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+        {filtersOpen ? (
+          <>
+            <label className="block">
+              <select
+                aria-label="Filtrer par statut"
+                value={draft.status}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    status: event.target.value as SessionStatus | "all",
+                  }))
+                }
+                className={formFieldClassName({ compact: true })}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({state.meta.statusCounts[option.value]})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-      {state.isLoading ? (
+            <label className="block">
+              <select
+                aria-label="Filtrer par statut metier"
+                value={draft.workflowStatus}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    workflowStatus: event.target.value as SessionWorkflowStatus | "all",
+                  }))
+                }
+                className={formFieldClassName({ compact: true })}
+              >
+                {WORKFLOW_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({state.meta.workflowCounts[option.value]})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <select
+                aria-label="Filtrer par periode"
+                value={draft.period}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, period: event.target.value as SessionPeriod }))
+                }
+                className={formFieldClassName({ compact: true })}
+              >
+                {PERIOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* En evidence seulement quand le brouillon differe de ce qui est affiche. */}
+            <button
+              type="submit"
+              className={isDirty ? inlinePrimaryButtonClassName : secondaryButtonClassName}
+            >
+              Appliquer
+            </button>
+          </>
+        ) : null}
+      </form>
+
+      {state.isLoading && state.data.length === 0 ? (
         <div className={[surfaceInfoPanelClassName, "flex items-center gap-3 rounded-3xl"].join(" ")}>
           <LoaderCircle className="size-4 animate-spin" />
           Lecture des verifications en cours.
@@ -379,8 +475,10 @@ export function VerificationSessions() {
         </div>
       ) : null}
 
+      {/* Les resultats precedents restent affiches pendant un rechargement : sinon l'ecran
+          clignote a chaque recherche. */}
       {state.data.length > 0 ? (
-        <div className="grid gap-3">
+        <div className={["grid gap-3", state.isLoading ? "opacity-60 transition-opacity" : ""].join(" ").trim()}>
           {state.data.map((item) => {
             const resumeHref = `/verify/session?sessionId=${encodeURIComponent(item.sessionId)}`;
 
