@@ -94,6 +94,19 @@ Couche PWA:
 - manifest web app
 - aucun service worker tant qu'une politique de cache strictement statique n'est pas validée de bout en bout
 
+## 5 bis. Ecran historique : les criteres ne precedent pas le contenu
+
+Sur l'ecran `/sessions`, seul le champ de recherche est visible en permanence. Les menus statut,
+statut metier et periode sont replies derriere un bouton.
+
+**Contrainte mobile qui l'impose :** quatre criteres empiles occupent la hauteur utile d'un ecran de
+telephone. La premiere verification passerait sous la ligne de flottaison, et l'ecran servirait ses
+filtres avant son contenu.
+
+Corollaire : les criteres s'appliquent en une fois, pas au changement. Un menu qui declenche une
+requete a chaque selection multiplie les allers-retours reseau sur un lien mobile, pour un
+utilisateur qui compose en general plusieurs criteres avant de vouloir un resultat.
+
 ## 6. Politique PWA stricte
 
 Le shell PWA ne doit mettre en cache que le strict nécessaire statique.
