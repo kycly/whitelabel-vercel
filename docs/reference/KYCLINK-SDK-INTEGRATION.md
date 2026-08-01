@@ -178,6 +178,13 @@ Contraintes importantes:
 
 ## 3. Appeler `partner-node` depuis votre backend
 
+> **Depuis 2026-08-01 — la liste des sessions n'est plus rapatriee en entier.**
+> `fetchKycSessions` faisait autrefois une boucle sur toutes les pages amont, puis filtrait,
+> triait, decoupait et comptait en memoire. C'est desormais **un seul appel** par affichage,
+> portant `limit`, `offset`, `status`, `workflowStatus`, `q` et `createdFrom` ; le filtrage, le tri,
+> la pagination et les compteurs sont faits par `partner-node`, qui a la base.
+> Contrat detaille : [KYC-SESSIONS-LIST-CONTRACT.md](KYC-SESSIONS-LIST-CONTRACT.md).
+
 ### 3.1 — Contrat de la route
 
 ```http

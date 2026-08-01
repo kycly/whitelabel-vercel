@@ -57,13 +57,34 @@ GET /api/kyc/sessions?limit=20&offset=0&status=completed&workflowStatus=APPROVED
 | `offset` | `number` | `0` | entier >= `0` |
 | `status` | `string` | — | optionnel, filtre borne aux valeurs UI utiles `pending`, `processing`, `completed` |
 | `workflowStatus` | `string` | — | optionnel, filtre borne a `PENDING`, `IN_REVIEW`, `ESCALATED`, `APPROVED`, `REJECTED` |
+| `q` | `string` | — | optionnel, 1 a 120 caracteres, recherche par identite ou reference metier |
+| `period` | `string` | `all` | optionnel, `7d`, `30d` ou `all` — traduit en borne absolue `createdFrom` avant l'appel amont |
 
 Choix volontaires:
 
 - `limit` est plus strict que le max backend actuel pour garder une pagination simple cote whitelabel
 - aucun tri client expose: l'ordre canonique reste `created_at DESC`
-- aucun filtre par date, `externalId` ou texte libre au premier jet
-- les filtres `status` et `workflowStatus` sont appliques cote API whitelabel avant pagination finale
+- **la limite « aucun filtre par date ni texte libre » est levee** : `q` et `period` existent
+  desormais. Elle est revoquee, pas contournee — la recherche est servie par l'amont, pas simulee ici.
+- **tous les filtres sont appliques par partner-node**, plus par whitelabel. `fetchKycSessions` ne
+  rapatrie plus toute la liste pour la filtrer, la trier et la decouper en memoire : un seul appel
+  amont par affichage, portant `limit`, `offset`, `status`, `workflowStatus`, `q` et `createdFrom`.
+
+### La recherche `q`
+
+- `q` est compare a un texte **normalise** cote amont : casse, accents, apostrophes et traits
+  d'union neutralises. `dupre` trouve `DUPRÉ`, `ndiaye` trouve `N'DIAYE`.
+- La comparaison est **mot a mot** : chaque mot du terme doit etre satisfait, mais chacun peut
+  l'etre par une source differente — la reference metier ou l'identite du porteur. `kane 9001`
+  trouve la session dont l'identite porte `kane` et dont la reference porte `9001`.
+- L'ordre des mots est sans effet : `kane elhadji` et `elhadji kane` donnent le meme resultat.
+- **L'OCR ne figure pas dans la reponse.** Il sert a trouver la ligne, jamais a la decrire : la
+  projection reste inchangee. Le terme recherche n'est jamais journalise.
+
+**Limite connue, a assumer telle quelle :** une verification dont l'OCR n'a pas ete extrait reste
+**introuvable par nom**. Elle ne se retrouve que par sa reference metier, sa date ou ses statuts.
+Le texte cherchable est alimente a l'ecriture depuis ce que la piece a donne ; s'il n'a rien donne,
+il n'y a rien a chercher.
 
 ## Reponse cible
 
