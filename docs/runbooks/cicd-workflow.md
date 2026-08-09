@@ -210,6 +210,32 @@ Deux avis restent, tous deux `high`, tous deux scelles — **et chaque scellemen
 
 Les deux chemins ont ete prouves par execution avant livraison : premisse vraie → sortie verte ; premisse tombee → scellement annule, avis bloquant, code de sortie 1.
 
+> **Depuis le 2026-08-09, le scellement `brace-expansion` ne se declenche plus.** Un correctif est
+> paru sur la branche v1 — 1.1.18 — alors que le motif du scellement affirmait qu'il n'en existait
+> aucun. Le plancher a donc ete remonte et l'avis n'a plus lieu d'etre scelle. La fonction de
+> precondition reste en place : elle ne coute rien et se rearme d'elle-meme si une version v5
+> retombait sous 5.0.9.
+
+### Ce qui a ete corrige le 2026-08-09
+
+Trois avis `high` parus **apres** le dernier passage vert, donc sur des paquets deja installes, sans
+qu'aucun fichier du depot ait bouge. C'est exactement le cas que `security-audit.yml` existe pour
+attraper.
+
+| Paquet | Avis | Avant | Apres | Moyen |
+|---|---|---|---|---|
+| `nanoid` | `GHSA-2v37-7h3g-55p8` (`<3.3.17`) | 3.3.16 | 3.3.18 | override **scope** `postcss>nanoid` |
+| `js-yaml` | `GHSA-5p4m-2wfm-xmqj` (`<4.3.1`) | 4.3.0 | 4.3.1 | plancher remonte d'un cran, borne `<5` |
+| `brace-expansion` | `GHSA-rgw5-rvv9-x895` (`<1.1.18`) | 1.1.16 | 1.1.18 | plancher scope `minimatch@3>brace-expansion` |
+
+Aucun scellement : dans les trois cas une version corrigee existe **dans la plage declaree par le
+parent**, donc le plancher suffit et sceller serait un mensonge. Le plancher `nanoid` est scope a
+`postcss`, son seul consommateur, pour ne pas contraindre un futur `nanoid` 5 ailleurs dans l'arbre.
+Le plancher v5 de `brace-expansion` est passe de 5.0.8 a 5.0.9 au passage, pour aligner les cinq
+depots sur une seule valeur.
+
+Les cinq depots portaient les memes versions resolues et recoivent le meme correctif.
+
 ### L'audit planifie — `.github/workflows/security-audit.yml`
 
 L'audit de `ci.yml` n'a pas d'horloge : un avis publie sur un paquet **deja installe** ne declenche rien, puisque ni le lockfile ni le code n'ont bouge. `security-audit.yml` rejoue la barriere chaque lundi a 05:00 UTC, et reste declenchable a la main.
