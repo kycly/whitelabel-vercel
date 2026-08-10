@@ -29,9 +29,11 @@ jobs:
       NEXT_PUBLIC_COGNITO_APP_CLIENT_ID: ci-cognito-client-id
       NEXT_PUBLIC_COGNITO_USER_POOL_ID: eu-west-1_ci
       APP_SESSION_SECRET: ci-session-secret-not-for-runtime
-      KYCLY_API_BASE_URL: https://sandbox.partner-node.example.com
-      KYCLY_SESSION_BASE_URL: https://sandbox.partner-node.example.com
-      KYCLY_ME_BASE_URL: https://me.partner-node.example.com
+      # ENV-057 — le code ne lit QUE `KYCLY_BASE_URL`. Les trois noms posés ici
+      # auparavant (`KYCLY_API_BASE_URL`, `KYCLY_SESSION_BASE_URL`,
+      # `KYCLY_ME_BASE_URL`) n'étaient lus par personne : le build tournait donc
+      # sur le repli `https://api.kycly.sn`, un domaine qui ne résout pas.
+      KYCLY_BASE_URL: https://sandbox.partner-node.example.com
       DEFAULT_KYCLINK_THEME: kycly-light
 
     steps:

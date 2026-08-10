@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 86 |
+| Fichiers code scannes | 87 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
 | Exports detectes | 156 |
-| Fichiers de tests detectes | 14 |
+| Fichiers de tests detectes | 15 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -275,6 +275,7 @@ _Aucun hook detecte._
 - src/auth/cognito.test.ts
 - src/components/verify/image-sides.test.ts
 - src/components/verify/verification-view-state.test.ts
+- src/config/env.test.ts
 - src/config/partner-access.test.ts
 - src/lib/app-error.test.ts
 - src/lib/kyclink-embed.test.ts

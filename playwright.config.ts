@@ -36,7 +36,7 @@ export default defineConfig({
       PORT: String(PORT),
       NEXT_PUBLIC_APP_ENV: "local",
       APP_SESSION_SECRET: "playwright-session-secret",
-      KYCLY_API_BASE_URL: "https://api.kycly.test",
+      KYCLY_BASE_URL: "https://api.kycly.test",
     },
   },
   timeout: 45_000,
