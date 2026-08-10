@@ -258,7 +258,7 @@ export async function createKycLinkSession(
   input: CreateKycLinkSessionRequest,
   resolvedParentOrigin: string,
   cognitoIdToken: string,
-  baseUrl = process.env.KYCLY_BASE_URL ?? "https://api.kycly.sn",
+  baseUrl = requireKyclyBaseUrl(), // ENV-057 : jamais de repli, une valeur absente doit lever
 ): Promise<CreateKycLinkSessionResponse> {
   const endpoint = new URL("/kyclink/create", `${baseUrl}/`).toString();
   const payload = {

@@ -70,8 +70,10 @@ webhook. Le détail OCR/images est un second appel, `GET /api/kyc/session/:id/de
 - **Aucune clé locale** : `createKycSession` n'envoie **que** `Authorization: Bearer <cognitoIdToken>`
   (`src/server/kyclink.ts` ~l.165). La sélection `demo_account → ck_demo_*` est **entièrement côté
   partner-node** (cf. ADR [003](../decisions/003-ck-demo-selection-partner-node.md)).
-- **Base URL** : `env.server.kyclyApiBaseUrl` (défaut `https://api.kycly.sn`), doit pointer
-  `partner-node sandbox` (invariant sandbox-only).
+- **Base URL** : `env.server.kyclyBaseUrl`, **sans défaut** (ENV-057) — `KYCLY_BASE_URL` doit être
+  posée, sinon l'application lève au démarrage. Elle doit pointer `partner-node sandbox`
+  (invariant sandbox-only). Le repli retiré valait `https://api.kycly.sn`, un domaine qui ne
+  résout pas : une variable absente n'échouait pas, elle appelait une adresse morte.
 - **Cloudflare Access** : partner-node étant protégé par Cloudflare, les appels serveur portent aussi
   les en-têtes de service token `CF-Access-Client-Id` / `CF-Access-Client-Secret`
   (`src/config/partner-access.ts`, env `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`).

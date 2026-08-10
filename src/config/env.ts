@@ -6,9 +6,24 @@ function normalizeBaseUrl(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-function resolveBaseUrl(...values: Array<string | undefined>): string {
-  const selected = values.find((value) => typeof value === "string" && value.trim().length > 0);
-  return normalizeBaseUrl(selected ?? "https://api.kycly.sn");
+/**
+ * ENV-057 — exige l'URL du runtime partner, sans repli.
+ *
+ * Le repli valait `https://api.kycly.sn`, un domaine qui **ne résout pas** :
+ * quand la variable manquait, l'application ne cassait pas au démarrage, elle
+ * partait appeler une adresse morte. Un défaut désigne toujours un
+ * environnement — ici il n'en désignait même plus aucun.
+ *
+ * @throws {Error} Si `KYCLY_BASE_URL` est absente ou vide.
+ */
+function requireBaseUrl(value: string | undefined): string {
+  const raw = value?.trim();
+  if (!raw) {
+    throw new Error(
+      "KYCLY_BASE_URL must be set to the partner-node sandbox runtime. No default: a fallback would name an environment, and get it wrong everywhere else.",
+    );
+  }
+  return normalizeBaseUrl(raw);
 }
 
 function resolveSessionSecret(appEnv: string): string {
@@ -32,7 +47,7 @@ export const env = {
     appCanonicalOrigin: process.env.APP_CANONICAL_ORIGIN?.trim() || null,
     // Hôte unique partner-node : un seul base URL, appelé avec l'endpoint voulu à chaque fois
     // (`/demo/me`, `/kyclink/create`, `/kyclink/{id}`, `/kyclink/{id}/result`, `/kyclink/sessions`).
-    kyclyBaseUrl: resolveBaseUrl(process.env.KYCLY_BASE_URL, "https://api.kycly.sn"),
+    kyclyBaseUrl: requireBaseUrl(process.env.KYCLY_BASE_URL),
     defaultKycLinkTheme: process.env.DEFAULT_KYCLINK_THEME ?? "kycly-light",
     // Service token Cloudflare Access pour débloquer les appels serveur vers partner-node
     // (voir src/config/partner-access.ts). Optionnels : absents = aucun en-tête ajouté.
