@@ -27,8 +27,7 @@ Decrire en une phrase le changement apporte et la raison du lot.
 ## Controle deployment
 
 - [ ] aucune `ck_live_*`
-- [ ] `KYCLY_API_BASE_URL` vise toujours `partner-node sandbox` pour `/kyclink/*`
-- [ ] `KYCLY_ME_BASE_URL` vise l'hote exposant `/demo/me`
+- [ ] `KYCLY_BASE_URL` vise toujours `partner-node sandbox` — un seul hote pour `/kyclink/*` et `/demo/me`
 - [ ] callbacks Cognito inchanges ou explicitement verifies
 - [ ] pas de push direct sur `production`
 
