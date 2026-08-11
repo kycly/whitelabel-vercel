@@ -534,3 +534,5 @@ Le modele cible de `whitelabel-vercel` est donc:
 - aucune `ck_live_*` dans l'application au J1
 
 Cette cible est la reference a suivre pour la suite.
+
+> Documentation Sync: 2026-08-11

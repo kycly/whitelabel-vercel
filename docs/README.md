@@ -29,3 +29,5 @@ Voir [reference/README.md](reference/README.md) (contrats, UX, intégration SDK,
 ## Runbooks
 
 Voir [runbooks/README.md](runbooks/README.md) (CI/CD, variables d'environnement, gouvernance, mise en place, QA PWA).
+
+> Documentation Sync: 2026-08-11

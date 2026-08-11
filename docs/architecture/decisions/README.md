@@ -27,3 +27,5 @@ Voir [TEMPLATE.md](TEMPLATE.md) pour créer un nouvel ADR.
 - ✅ **Accepté** — décision validée et implémentée
 - 📝 **Proposé** — en cours de discussion
 - ⚠️ **Déprécié** — remplacé par une décision plus récente
+
+> Documentation Sync: 2026-08-11

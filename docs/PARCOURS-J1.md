@@ -24,9 +24,9 @@ Le J1 couvre en revanche une reprise bornee d'une session KYC existante quand:
 
 ## Principe general
 
-Le parcours doit rester plus simple que integration-node.
+Le parcours doit rester plus simple que kyclink-node.
 
-integration-node orchestre un flux KYC complet ecran par ecran.
+kyclink-node orchestre un flux KYC complet ecran par ecran.
 whitelabel-vercel, au J1, orchestre surtout:
 
 - l'acces utilisateur
@@ -46,9 +46,11 @@ Le parcours cible contient 10 etats d'ecran.
 5. `SESSION_CONTEXT`
 6. `SESSION_PREPARE`
 7. `KYC_LINK`
-8. `COMPLETE`
+8. `SESSIONS/:sessionId` (ecran de resultat unique)
 9. `FAILURE`
 10. `SESSIONS`
+
+Note: `/complete` a ete supprime sans redirection (unification de l'ecran resultat, 2026-07-25). Le seul ecran de resultat est desormais `SESSIONS/:sessionId`, atteint depuis les quatre chemins d'entree decrits ci-dessous (fin d'iframe, "voir le resultat" depuis l'historique, reprise d'une session soumise, acces direct par URL).
 
 ## Vue d'ensemble
 
@@ -74,14 +76,14 @@ SESSION_PREPARE
   -> FAILURE          si la creation echoue
 
 KYC_LINK
-  -> COMPLETE         quand onComplete est emis par le SDK
-  -> FAILURE          si erreur bloquante ou si la session relue n'est plus reprenable
+  -> SESSIONS/:sessionId  quand onComplete est emis par le SDK
+  -> FAILURE              si erreur bloquante ou si la session relue n'est plus reprenable
 
 FAILURE
   -> SESSION_PREPARE  si retry possible
   -> WELCOME          si on veut relancer depuis le debut
 
-COMPLETE
+SESSIONS/:sessionId
   -> SESSIONS         via l'icone retour harmonisee vers la liste des sessions verifiees
   -> WELCOME          via la sortie positive explicite quand elle est disponible
 
@@ -334,7 +336,7 @@ Ecran principal du produit au J1.
 ### Contenu
 
 - le composant `KycLink`
-- un cadre visuel cohérent avec le langage integration-node
+- un cadre visuel cohérent avec le langage kyclink-node
 - un espace d'aide tres leger si la camera ou le navigateur bloquent le flux
 
 ### Regles UX
@@ -357,11 +359,11 @@ Ecran principal du produit au J1.
 
 `onComplete` veut dire fin du parcours UX dans le Link, pas decision metier finale detaillee.
 
-## 8. COMPLETE
+## 8. SESSIONS/:sessionId (ecran de resultat unique)
 
 ### Role
 
-Ecran de resultat et de sortie positive du parcours iframe.
+Ecran de resultat et de sortie positive du parcours iframe. C'est le seul ecran de resultat de l'app : il est atteint depuis la fin d'iframe (`onComplete`), depuis "voir le resultat" dans l'historique `SESSIONS`, depuis la reprise d'une session soumise et par acces direct a l'URL. `/complete` a ete supprime sans redirection le 2026-07-25.
 
 ### Objectif UX
 
@@ -381,7 +383,7 @@ Ecran de resultat et de sortie positive du parcours iframe.
 
 Au J1, `onComplete` du SDK signifie que l'utilisateur a termine le parcours KycLink, pas que la decision backend est deja disponible.
 
-L'ecran `COMPLETE` doit donc:
+L'ecran `SESSIONS/:sessionId` doit donc:
 
 - confirmer la fin du parcours iframe
 - attendre au moins 10 secondes avant le premier poll backend
@@ -439,7 +441,7 @@ Ecran d'erreur simple, unique et reutilisable.
 | `SESSION_CONTEXT` | scenario, reference client, metadata derivees |
 | `SESSION_PREPARE` | aucune donnee supplementaire visible |
 | `KYC_LINK` | `sessionId`, `kyclinkUrl`, `expiresAt` |
-| `COMPLETE` | `sessionId` optionnel |
+| `SESSIONS/:sessionId` | `sessionId` optionnel |
 | `FAILURE` | code erreur simplifie + message affichable |
 
 ## Composants d'orchestration a prevoir
@@ -474,7 +476,7 @@ Ces points doivent etre figes juste avant le frontend:
 
 1. route unique de parcours ou plusieurs pages dediees
 2. quelle donnee utilisateur afficher sur `WELCOME`
-3. faut-il afficher le `sessionId` sur `COMPLETE`
+3. faut-il afficher le `sessionId` sur `SESSIONS/:sessionId`
 4. niveau exact de detail des erreurs utilisateur
 5. faut-il autoriser un `retry` direct depuis `FAILURE`
 
@@ -489,3 +491,5 @@ Avant de coder les composants, figer au minimum:
 5. les cas d'erreur qui redirigent vers `FAILURE`
 
 Une fois ce document valide, le frontend peut etre implemente sans ambiguite structurelle.
+
+> Documentation Sync: 2026-08-11

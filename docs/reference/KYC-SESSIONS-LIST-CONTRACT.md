@@ -97,11 +97,12 @@ il n'y a rien a chercher.
       "sessionId": "sess_abc123",
       "externalId": "client-order-12345",
       "status": "completed",
-      "completed": true,
       "completedAt": "2026-04-08T10:05:00Z",
       "expiresAt": "2026-04-08T14:00:00Z",
       "createdAt": "2026-04-08T10:00:00Z",
-      "workflowStatus": "APPROVED"
+      "workflowStatus": "APPROVED",
+      "sessionState": "COMPLETED",
+      "resumeAvailable": false
     }
   ],
   "meta": {
@@ -134,11 +135,12 @@ il n'y a rien a chercher.
 | `sessionId` | `string` | `session_id` | identifiant technique de session |
 | `externalId` | `string \| null` | `external_id` | identifiant metier derive lors de la creation |
 | `status` | `string` | `status` | projection brute du statut de session connu localement par `partner-node` |
-| `completed` | `boolean` | derive | `true` si `completed_at` est present ou si `status = completed` |
 | `completedAt` | `string \| null` | `completed_at` | horodatage de completion connu localement |
 | `expiresAt` | `string \| null` | `expires_at` | expiration de l'URL KycLink |
 | `createdAt` | `string` | `created_at` | ordre de tri canonique |
 | `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflow_status` | projection brute du statut metier local issu de `partner-node verifications_local.status` |
+| `sessionState` | `"ACTIVE" \| "SUBMITTED" \| "COMPLETED" \| "EXPIRED"` | `sessionState` | verdict de reprise canonique, servi tel quel par `partner-node` |
+| `resumeAvailable` | `boolean` | `resumeAvailable` | `true` uniquement si `sessionState = ACTIVE`, servi tel quel par `partner-node` sans recalcul local |
 
 ### Meta
 
@@ -193,10 +195,8 @@ Consequences:
 
 L'ecran `Mes verifications` applique la regle suivante:
 
-1. afficher `Reprendre` si `completed = false`
-2. exiger `expiresAt` non nul
-3. exiger `expiresAt > now`
-4. pointer vers `/verify/session?sessionId=...`
+1. afficher `Reprendre` si `resumeAvailable = true` (servi tel quel par `partner-node`, sans recalcul local)
+2. pointer vers `/verify/session?sessionId=...`
 
 Regle de navigation associee:
 
@@ -215,7 +215,7 @@ Decision commune retenue:
 2. `403 ACCESS_DENIED` -> redirection vers `/access-denied`
 3. indisponibilite de lecture qualifiee -> redirection vers `/failure` avec le code canonique `SESSIONS_FETCH_FAILED`
 
-Cette meme politique s'applique aussi aux autres ecrans KYC proteges (`SESSION_PREPARE`, `SESSION_GATE`, `COMPLETE`).
+Cette meme politique s'applique aussi aux autres ecrans KYC proteges (`SESSION_PREPARE`, `SESSION_GATE`, `SESSIONS/:sessionId`).
 
 ## Erreurs cibles
 
@@ -264,3 +264,5 @@ Elle ne doit pas:
 - appeler `partner-node` production
 - fusionner plusieurs `demo_account_id`
 - persister localement une copie des sessions par defaut
+
+> Documentation Sync: 2026-08-11

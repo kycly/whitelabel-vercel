@@ -236,3 +236,5 @@ Les seuls sujets encore ouverts, non bloquants pour demarrer, sont:
 - politique fine de TTL de session cote app
 
 Ces points relevent surtout de l'implementation et non plus du cadrage structurel.
+
+> Documentation Sync: 2026-08-11

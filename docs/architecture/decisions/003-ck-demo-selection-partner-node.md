@@ -56,3 +56,5 @@ a été retirée du code au #2 (voir la note de retrait dans
 **Statut** : Accepté
 **Date** : 2026-07-21
 **Décideur** : Team KYCLY
+
+> Documentation Sync: 2026-08-11

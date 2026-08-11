@@ -406,3 +406,5 @@ La mise en place distante doit etre executee exactement dans cet ordre:
 7. verification PR puis promotion
 
 Ce document est le mode operatoire a suivre ecran par ecran.
+
+> Documentation Sync: 2026-08-11

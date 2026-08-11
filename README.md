@@ -13,7 +13,7 @@ Le scope retenu a ce stade est volontairement simple:
 - creation de sessions uniquement cote serveur avec des cles ck_demo_*
 - aucun acces direct a la base ou au backend runtime de partner-node
 - aucune base dediee au J1
-- meme langage esthetique UI/UX que integration-node, mais redefini localement dans ce projet
+- meme langage esthetique UI/UX que kyclink-node, mais redefini localement dans ce projet
 
 Documentation de cadrage:
 
@@ -51,8 +51,9 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 
 - app Next.js App Router
 - login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
-- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId`, `GET /api/kyc/sessions`
-- pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `COMPLETE`, `FAILURE`, `SESSIONS`
+- routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId`, `GET /api/kyc/session/:sessionId/detail`, `GET /api/kyc/session/:sessionId/images/:side`, `GET /api/kyc/sessions`
+- pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `SESSIONS/:sessionId` (ecran de resultat unique), `FAILURE`, `SESSIONS`
+- **`/complete` a ete supprime sans redirection** (unification de l'ecran resultat, 2026-07-25) : le seul ecran de resultat est desormais `/sessions/:sessionId`, atteint depuis les quatre chemins d'entree (fin d'iframe, "voir le resultat", reprise, acces direct)
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
 - proxy serveur de creation, de lecture resultat et de liste des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
 - ecran de resultat unique `/sessions/:sessionId`: `GET /kyclink/:sessionId` reconcilie l'amont tant que la session n'est pas terminee, ce qui fait converger le poll sans repli sur l'index
@@ -120,3 +121,5 @@ Le scaffold consomme maintenant `@kycly/link` depuis GitHub Packages et utilise 
 - `whitelabel-vercel` ne doit utiliser que des `ck_demo_*`, jamais des `ck_live_*`
 - la liste canonique future des verifications d'un utilisateur doit venir de `partner-node` sandbox, scopee par `demo_account_id`
 - si une page `mes verifications` est ajoutee plus tard, elle doit passer par un proxy serveur de type `GET /api/kyc/sessions` vers `partner-node /kyclink/sessions`, sans persistance locale dediee par defaut
+
+> Documentation Sync: 2026-08-11

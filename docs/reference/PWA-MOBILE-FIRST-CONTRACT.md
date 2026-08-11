@@ -52,7 +52,7 @@ Il doit:
 - supprimer tout header, titre éditorial, bouton retour ou action de déconnexion concurrente pendant l'affichage réel de l'iframe
 - conserver le même contrat de tunnel sur tous les breakpoints, sans variante desktop dédiée du parcours
 
-Les écrans `WELCOME`, `SESSION_CONTEXT`, `SESSIONS` et `COMPLETE` suivent le même principe: header fixe, body interne scrollable, footer ou actions séparés du contenu principal.
+Les écrans `WELCOME`, `SESSION_CONTEXT`, `SESSIONS` et `SESSIONS/:sessionId` (écran de résultat unique) suivent le même principe: header fixe, body interne scrollable, footer ou actions séparés du contenu principal.
 
 `SESSION_PREPARE` et `SESSION_GATE` restent courts, centrés et sans bruit éditorial. `SESSION_GATE` ne doit pas réintroduire le titre de parcours quand il prépare l'ouverture de l'iframe.
 
@@ -152,3 +152,5 @@ Refuser la livraison si l'un des symptômes suivants apparaît:
 
 - [UI-ESTHETIC-CANON.md](./UI-ESTHETIC-CANON.md)
 - [KYCLINK-SDK-INTEGRATION.md](./KYCLINK-SDK-INTEGRATION.md)
+
+> Documentation Sync: 2026-08-11

@@ -10,3 +10,5 @@
 | [repository-governance-setup.md](repository-governance-setup.md) | Gouvernance GitHub et configuration Vercel |
 | [remote-setup-clickpath.md](remote-setup-clickpath.md) | Procédure écran par écran GitHub / Vercel |
 | [mobile-pwa-qa-checklist.md](mobile-pwa-qa-checklist.md) | Checklist QA mobile / PWA |
+
+> Documentation Sync: 2026-08-11
