@@ -38,11 +38,15 @@ sequenceDiagram
     LINK-->>UI: COMPLETE | FAILURE (postMessage)
 ```
 
-## Lecture du résultat
+## Lecture du statut
+
+`onComplete` (SDK `@kycly/link`) redirige vers `/sessions/:sessionId` — l'écran détail **unique**,
+le même qu'on atteint depuis l'historique (pas d'écran « post-soumission » distinct depuis la
+migration du 2026-07-25, cf. [verification-detail.md](verification-detail.md)).
 
 ```mermaid
 sequenceDiagram
-    participant UI as Écran de résultat (client)
+    participant UI as Écran détail (/sessions/:sessionId)
     participant S as GET /api/kyc/session/:id
     participant PN as partner-node /kyclink/:id
     participant KY as API KYCLY
@@ -65,10 +69,11 @@ webhook. Le détail OCR/images est un second appel, `GET /api/kyc/session/:id/de
 
 ## Points de contrôle vérifiés
 
-- **`externalId`** est dérivé de la référence client (`normalizeExternalId`, `src/server/kyclink.ts`) ;
-  `metadata` provient du formulaire (`buildSessionMetadata`).
+- **`externalId`** est dérivé de la référence client (`normalizeExternalId`, définie dans
+  `src/lib/verification.ts`, importée par `src/server/kyclink.ts`) ; `metadata` provient du
+  formulaire (`buildSessionMetadata`, même fichier).
 - **Aucune clé locale** : `createKycSession` n'envoie **que** `Authorization: Bearer <cognitoIdToken>`
-  (`src/server/kyclink.ts` ~l.165). La sélection `demo_account → ck_demo_*` est **entièrement côté
+  (`src/server/kyclink.ts`). La sélection `demo_account → ck_demo_*` est **entièrement côté
   partner-node** (cf. ADR [003](../decisions/003-ck-demo-selection-partner-node.md)).
 - **Base URL** : `env.server.kyclyBaseUrl`, **sans défaut** (ENV-057) — `KYCLY_BASE_URL` doit être
   posée, sinon l'application lève au démarrage. Elle doit pointer `partner-node sandbox`
@@ -77,10 +82,14 @@ webhook. Le détail OCR/images est un second appel, `GET /api/kyc/session/:id/de
 - **Cloudflare Access** : partner-node étant protégé par Cloudflare, les appels serveur portent aussi
   les en-têtes de service token `CF-Access-Client-Id` / `CF-Access-Client-Secret`
   (`src/config/partner-access.ts`, env `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`).
-- **Repli résultat** : un `404` sur `/kyclink/:id/result` déclenche une reconstruction depuis
-  `GET /kyclink/sessions` (fallback serveur, pas de persistance locale).
+- **Pas de repli résultat** : `fetchKycSession` (`src/server/kyclink.ts`) appelle uniquement
+  `GET /kyclink/:id` ; il n'y a plus de route `/kyclink/:id/result` ni de reconstruction depuis
+  `GET /kyclink/sessions` en cas d'échec (ces chemins ont été supprimés lors de l'unification de
+  l'écran de résultat, 2026-07-25).
 
 ## Voir aussi
 
 - ADR [002](../decisions/002-sandbox-only-ck-demo.md), [003](../decisions/003-ck-demo-selection-partner-node.md).
 - Référence : [KYC-SESSIONS-LIST-CONTRACT](../../reference/KYC-SESSIONS-LIST-CONTRACT.md), [KYCLINK-SDK-INTEGRATION](../../reference/KYCLINK-SDK-INTEGRATION.md).
+
+> Documentation Sync: 2026-08-11

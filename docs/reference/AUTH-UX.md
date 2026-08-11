@@ -84,7 +84,7 @@ La page reste volontairement legere.
 - pas d'informations de compte tant que l'utilisateur n'est pas authentifie
 - conserver le meme langage visuel que le reste du scaffold
 - mobile-first, carte de connexion centree, contenu simple
-- reprendre le meme frame mobile et le meme hero que integration-node, mais dans une version plus compacte et moins demonstrative
+- reprendre le meme frame mobile et le meme hero que kyclink-node, mais dans une version plus compacte et moins demonstrative
 - afficher une icone retour uniquement sur les sous-etapes du formulaire quand elle sert a revenir dans le flux local
 - la deconnexion reste reservee aux ecrans proteges, pas a `LOGIN`
 - conserver un header court avec separateur discret et ne jamais laisser le hero pousser le formulaire sous la ligne de flottaison mobile
@@ -192,7 +192,7 @@ Le detail du contrat est ferme dans [../DECISIONS-J1.md](../DECISIONS-J1.md).
 
 ```text
 LOGIN PAGE
-  Frame mobile integration-node
+  Frame mobile kyclink-node
   Hero de confiance centre
   Carte de connexion surface-light
   CTA plein bleu en pied
@@ -200,7 +200,7 @@ LOGIN PAGE
 
 ## Canon visuel
 
-- meme frame mobile que integration-node
+- meme frame mobile que kyclink-node
 - meme hero centre avec icone principale et accent securite
 - meme vocabulaire de controles: champs hauts, arrondis, fond blanc, carte `surface-light`
 - meme CTA principal bleu plein, largeur totale, ombre legere
@@ -225,3 +225,5 @@ Ne pas afficher:
 La page de connexion du J1 est une page simple, rassurante et orientee action, avec un formulaire Cognito direct et des flux annexes limites a `NEW_PASSWORD_REQUIRED` et `FORGOT_PASSWORD`. Elle existe comme surface produit a part entiere, distincte de `AUTH_LOADING`.
 
 Apres verification serveur de l'id token, l'app resout le scope demo via partner-node avant d'ouvrir l'espace protege.
+
+> Documentation Sync: 2026-08-11

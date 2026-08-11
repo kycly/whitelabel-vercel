@@ -415,3 +415,5 @@ La gestion des variables de `whitelabel-vercel` repose donc sur:
 - une CI GitHub avec placeholders non sensibles et secret GitHub Packages dedie
 
 Ce document est la reference ops a suivre pour la suite.
+
+> Documentation Sync: 2026-08-11

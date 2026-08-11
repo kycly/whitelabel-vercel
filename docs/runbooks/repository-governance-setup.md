@@ -316,3 +316,5 @@ L'etat cible de gouvernance est donc:
 - application toujours `sandbox-only` au J1
 
 Ce runbook est la checklist operative a suivre pour finir la mise en place distante.
+
+> Documentation Sync: 2026-08-11

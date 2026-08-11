@@ -24,7 +24,7 @@ Ecrans critiques:
 - `SESSION_CONTEXT`
 - `SESSION_PREPARE`
 - `KYC_LINK`
-- `COMPLETE`
+- `SESSIONS/:sessionId` (ecran de resultat unique)
 - `SESSIONS`
 - `FAILURE`
 
@@ -88,8 +88,8 @@ Executer au minimum:
 
 ## Checklist resultat et historique
 
-- `COMPLETE` reste lisible en mobile sans ressembler a un dashboard technique
-- les actions rapides de `COMPLETE` gardent un format compact et stable
+- `SESSIONS/:sessionId` reste lisible en mobile sans ressembler a un dashboard technique
+- les actions rapides de `SESSIONS/:sessionId` gardent un format compact et stable
 - `SESSIONS` conserve ses 3 cartes metriques sur la meme ligne
 - les filtres et les actions rapides restent manipulables sur petit viewport
 - `Reprendre` et `Voir le resultat` restent distincts et lisibles
@@ -124,3 +124,5 @@ La configuration PWA retenue dans `whitelabel-vercel` comprend:
 - aucun service worker
 
 Toute extension future du perimetre PWA doit repasser par [../reference/PWA-MOBILE-FIRST-CONTRACT.md](../reference/PWA-MOBILE-FIRST-CONTRACT.md).
+
+> Documentation Sync: 2026-08-11
