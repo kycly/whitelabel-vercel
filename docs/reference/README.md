@@ -15,3 +15,5 @@
 | [CODEBASE-AUTOGEN.md](CODEBASE-AUTOGEN.md) | Index de code généré (routes, exports, env, tests) — `pnpm docs:codegen` |
 
 > `CODEBASE-AUTOGEN.md` est **auto-généré** (analyse statique) : ne pas l'éditer à la main ; le régénérer via `pnpm docs:codegen`.
+
+> Documentation Sync: 2026-08-11

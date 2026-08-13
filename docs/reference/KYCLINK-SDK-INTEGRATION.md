@@ -22,7 +22,7 @@ Frontend React
   -> appelle votre backend applicatif
 
 Backend applicatif
-  -> POST https://api.kycly.sn/kyclink/create
+  -> POST {KYCLY_BASE_URL}/kyclink/create
   -> Authorization: Bearer <cognito-id-token>
   -> recoit { sessionId, kyclinkUrl, expiresAt }
 
@@ -36,7 +36,7 @@ Frontend React
 Pour `whitelabel-vercel`, la reprise et le refresh ne doivent plus dependre d'un stockage navigateur comme source de verite. L'entree `/verify/session?sessionId=...` relit toujours `GET /api/kyc/session/:sessionId`, puis:
 
 - ouvre KycLink si la session est `ACTIVE`
-- redirige vers `COMPLETE` si la session est `COMPLETED`
+- redirige vers `SESSIONS/:sessionId` (ecran de resultat unique) si la session est `SUBMITTED` ou `COMPLETED`
 - redirige vers `FAILURE` si la session est `EXPIRED` ou introuvable
 - ne depend jamais d'une session KYC active prealablement sauvegardee en `sessionStorage`
 
@@ -146,16 +146,15 @@ La resolution du scope demo via `/demo/me` utilise le meme `KYCLY_BASE_URL`.
 
 Si vous voulez figer strictement l'origine parent transmise a KycLink, configurez aussi `APP_CANONICAL_ORIGIN`. Sinon, `whitelabel-vercel` derive `parentOrigin` cote serveur depuis `x-forwarded-host` / `x-forwarded-proto`, puis `host`. Le header navigateur `Origin` n'est plus la source de verite.
 
-Pour l'usage interne actuel, l'instance de reference est:
-
-```text
-https://api.kycly.sn
-```
+L'instance de reference est la valeur configuree dans `KYCLY_BASE_URL` (aucun defaut : une valeur
+absente ou vide fait echouer le build, cf. [env-vars-lifecycle.md](../runbooks/env-vars-lifecycle.md)).
+En Preview et Production, `KYCLY_BASE_URL` pointe actuellement sur l'IP publique directe de
+`partner-node`, en contournement de Cloudflare (cf. [ADR-005](../architecture/decisions/005-partner-node-direct-ip-cloudflare-bypass.md)) — pas sur un hostname public stable.
 
 La route d'integration a utiliser est:
 
 ```text
-POST https://api.kycly.sn/kyclink/create
+POST {KYCLY_BASE_URL}/kyclink/create
 ```
 
 ### 2.3 — Credential serveur a utiliser
@@ -295,7 +294,7 @@ Le flux retenu est le suivant:
 
 ### 3.3 — Route a exposer dans votre propre backend
 
-Votre frontend React ne doit pas appeler `https://api.kycly.sn/kyclink/create` directement.
+Votre frontend React ne doit pas appeler `{KYCLY_BASE_URL}/kyclink/create` directement.
 
 Pattern recommande:
 
@@ -494,8 +493,8 @@ Le host React doit maintenant emettre ce handshake `kyclink:parent-origin:init` 
 
 Pattern J1 retenu dans `whitelabel-vercel`:
 
-1. `onComplete` redirige vers l'ecran `COMPLETE`
-2. l'ecran `COMPLETE` attend au moins 10 secondes
+1. `onComplete` redirige vers l'ecran `SESSIONS/:sessionId` (ecran de resultat unique ; `/complete` a ete supprime sans redirection le 2026-07-25)
+2. l'ecran `SESSIONS/:sessionId` attend au moins 10 secondes
 3. le frontend appelle ensuite `/api/kyc/session/:sessionId`
 4. le backend applicatif appelle `partner-node /kyclink/:sessionId`
 5. si cette route detail repond `404`, le backend replie sur `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat
@@ -504,12 +503,13 @@ Pattern J1 retenu dans `whitelabel-vercel`:
 
 Autrement dit, `onComplete` clot le parcours iframe, puis un polling backend controle prend le relais pour recuperer la decision metier observable.
 
-### 4.4 — Ecran detail (OCR + images), distinct de `COMPLETE`
+### 4.4 — Detail OCR + images sur l'ecran de resultat
 
-En plus du compte a rebours `COMPLETE`, `whitelabel-vercel` expose un ecran detail
-`/sessions/:sessionId` (lien "Voir le resultat" depuis la liste des sessions) qui affiche l'OCR
-complet et les images capturees, pas seulement la decision. Deux routes backend supplementaires,
-en scope demo (`sandbox_operator`), servent cet ecran:
+`/sessions/:sessionId` est le seul ecran de resultat (`/complete` a ete supprime sans redirection le
+2026-07-25) : c'est a la fois l'aboutissement du compte a rebours post-`onComplete` et l'ecran
+detail atteint via "Voir le resultat" depuis la liste des sessions. Il affiche l'OCR complet et les
+images capturees, pas seulement la decision. Deux routes backend supplementaires, en scope demo
+(`sandbox_operator`), servent cet ecran:
 
 - `GET /api/kyc/session/:sessionId/detail` -> proxifie `partner-node GET
   /kyclink/:sessionId/verification-detail` -> `{ ocrFront, ocrBack, faceSimilarity, imageSides }`.
@@ -666,7 +666,9 @@ export interface KycLinkErrorPayload {
 - [ ] mon backend peut relire l'id token Cognito depuis une session HTTP-only signee
 - [ ] le token reste cote serveur, jamais cote frontend
 - [ ] mon backend applicatif expose une route type `/api/kyc/session`
-- [ ] cette route appelle `https://api.kycly.sn/kyclink/create`
+- [ ] cette route appelle `{KYCLY_BASE_URL}/kyclink/create`
 - [ ] mon frontend React recupere `kyclinkUrl` depuis **mon** backend
 - [ ] mon frontend rend `<KycLink kyclinkUrl={...} />`
 - [ ] mes `metadata` respectent `metadataVersion: 1` et les limites de validation
+
+> Documentation Sync: 2026-08-11

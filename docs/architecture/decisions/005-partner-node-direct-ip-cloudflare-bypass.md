@@ -80,3 +80,5 @@ d'envoi des en-têtes est **conservé** (`src/config/partner-access.ts`) pour un
 **Statut** : Accepté (interim)
 **Date** : 2026-07-21
 **Décideur** : Team KYCLY
+
+> Documentation Sync: 2026-08-11

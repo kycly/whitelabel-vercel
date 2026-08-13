@@ -30,7 +30,7 @@ Ordre de lecture recommande:
 - dependance de service a partner-node au J1 pour creer les sessions KYC
 - aucun secret expose au navigateur
 - pas de base dediee au J1
-- garder le meme langage esthetique UI/UX que integration-node, mais recopier et definir les tokens, animations, layouts et composants dans whitelabel-vercel
+- garder le meme langage esthetique UI/UX que kyclink-node, mais recopier et definir les tokens, animations, layouts et composants dans whitelabel-vercel
 
 ## Role du projet
 
@@ -47,15 +47,15 @@ Le projet fournit une application simple permettant a un utilisateur deja provis
 - partner-node sandbox reste le service KYC canonique utilise au J1 pour la creation et la lecture des sessions
 - whitelabel-vercel reste responsable de son runtime, de son deploiement, de son UX et de sa logique d'orchestration
 - Cognito est la seule ressource partagee retenue au J1
-- integration-node peut servir de reference de depart pour l'esthetique, mais aucun style, composant ou token ne doit etre consomme depuis ce projet au runtime
+- kyclink-node peut servir de reference de depart pour l'esthetique, mais aucun style, composant ou token ne doit etre consomme depuis ce projet au runtime
 
 ## Canon UI/UX
 
 - definir les tokens visuels directement dans le projet
 - garder une base Tailwind v4 avec theme CSS local
-- reprendre le meme ton visuel que integration-node: trust blue, surfaces claires, cartes blanches, bordures slate, animations sobres
+- reprendre le meme ton visuel que kyclink-node: trust blue, surfaces claires, cartes blanches, bordures slate, animations sobres
 - conserver une architecture ecrans + layout wrappers + composants UI presentationnels
-- si un composant ou un style est repris de integration-node, le copier puis le maintenir localement ici
+- si un composant ou un style est repris de kyclink-node, le copier puis le maintenir localement ici
 
 ## Deploiement cible
 
@@ -77,4 +77,6 @@ Le projet fournit une application simple permettant a un utilisateur deja provis
 - refuser toute introduction de `ck_live_*` dans cette app tant que le cadrage reste demo / sandbox-only
 - pour une future liste utilisateur des verifications, preferer un proxy serveur vers `partner-node /kyclink/sessions` plutot qu'une persistance locale dediee
 - documenter toute evolution qui ajoute de la persistance ou une dependance externe nouvelle
-- refuser tout import cross-project de styles, composants ou tokens depuis integration-node
+- refuser tout import cross-project de styles, composants ou tokens depuis kyclink-node
+
+> Documentation Sync: 2026-08-11

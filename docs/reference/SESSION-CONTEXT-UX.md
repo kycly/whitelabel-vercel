@@ -32,14 +32,14 @@ Flux retenu:
 2. `SESSION_CONTEXT`
 3. `SESSION_PREPARE`
 4. `KYC_LINK`
-5. `COMPLETE`
+5. `SESSIONS/:sessionId` (ecran de resultat unique)
 
 Regles:
 
 - `SESSION_CONTEXT` collecte uniquement les informations utiles
 - `SESSION_PREPARE` cree la session cote serveur dans une page intermediaire dediee
 - `KYC_LINK` affiche uniquement l'iframe et les actions minimales associees
-- `COMPLETE` relit le backend pour recuperer le resultat final sans recharger le formulaire
+- `SESSIONS/:sessionId` relit le backend pour recuperer le resultat final sans recharger le formulaire
 - `WELCOME` n'expose pas d'icone retour
 - `SESSION_CONTEXT` expose une icone retour avec repli explicite vers `WELCOME`
 - `SESSION_CONTEXT` force ce retour vers `WELCOME`, sans dependre de l'historique navigateur
@@ -87,7 +87,7 @@ Contraintes de densite:
 - l'activation passe par une checklist `Besoins optionnels`, pas par un lien ou un accordeon editorial
 - les champs additionnels apparaissent inline dans le meme bloc, uniquement apres activation d'un groupe
 - chaque groupe ouvert peut etre retire via une action de suppression discrete
-- le vocabulaire visuel reprend integration-node: hero centre compact, carte `surface-light`, champs hauts et CTA plein bleu
+- le vocabulaire visuel reprend kyclink-node: hero centre compact, carte `surface-light`, champs hauts et CTA plein bleu
 - l'icone retour de `SESSION_CONTEXT` renvoie directement vers `WELCOME`
 - le document global ne doit pas scroller: la lecture reste dans un body interne dedie au formulaire
 - le CTA principal reste isole dans un footer bas distinct, toujours atteignable en mobile avec clavier ouvert
@@ -195,7 +195,7 @@ Regle produit:
 
 #### Pays
 
-Le select `Pays` reprend une liste courte, issue des pays deja supportes dans integration-node pour la saisie telephone, afin de garder un referentiel simple et coherent.
+Le select `Pays` reprend une liste courte, issue des pays deja supportes dans kyclink-node pour la saisie telephone, afin de garder un referentiel simple et coherent.
 
 | Libelle UX | Valeur stockee |
 |---|---|
@@ -510,3 +510,5 @@ La bonne approche pour whitelabel-vercel est:
 - des presets de scenario
 - une extension avancee discrete
 - un mapping automatique vers les contexts backend
+
+> Documentation Sync: 2026-08-11

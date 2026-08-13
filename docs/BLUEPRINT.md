@@ -18,7 +18,7 @@ Construire une application web de demonstration / whitelabel pour @kycly/link, i
 - dependance de service au backend partner-node sandbox pour creer et lire les sessions: oui
 - creation de session avec JWT Cognito cote serveur: oui
 - une app multi-tenant pour plusieurs demo testeurs: oui
-- meme canon esthetique UI/UX que integration-node, mais implemente localement dans whitelabel-vercel: oui
+- meme canon esthetique UI/UX que kyclink-node, mais implemente localement dans whitelabel-vercel: oui
 
 ## Architecture J1
 
@@ -45,9 +45,11 @@ Utilisateur
 10. Le backend resout aussi `parentOrigin` cote serveur depuis une origine canonique configuree, sinon depuis les headers forwardes / le host de la requete, puis appelle `partner-node` pour creer la session.
 11. Le backend renvoie sessionId, kyclinkUrl et les metadonnees minimales utiles au frontend.
 12. Le frontend affiche @kycly/link.
-13. A la fin du parcours iframe, le frontend va vers `COMPLETE`, attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
+13. A la fin du parcours iframe, le frontend va vers `SESSIONS/:sessionId` (ecran de resultat unique), attend au moins 10 secondes puis interroge son backend pour lire le resultat courant de la session.
 14. Le backend de whitelabel-vercel appelle `partner-node sandbox /kyclink/:sessionId` et remonte `externalId`, `status`, `completedAt`, `workflowStatus`, `sessionState` et `resumeAvailable`. Cette lecture reconcilie l'amont cote partner-node tant que la session n'est pas terminee : c'est ce qui fait converger le poll de l'ecran de resultat.
-15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `COMPLETE`.
+15. Si cette lecture detaillee remonte `404`, l'app replie sur l'index `GET /kyclink/sessions` pour reconstruire un etat minimal de resultat au lieu de casser la page `SESSIONS/:sessionId`.
+
+`/complete` a ete supprime sans redirection (unification de l'ecran resultat, 2026-07-25) : le seul ecran de resultat est desormais `/sessions/:sessionId`, atteint depuis les quatre chemins d'entree (fin d'iframe, "voir le resultat", reprise, acces direct).
 
 ## Contrat d'autorisation minimal
 
@@ -70,12 +72,12 @@ Claims minimum attendus:
 
 ## Canon UI/UX local
 
-Le scaffold doit conserver le meme langage esthetique que integration-node, sans dependance technique vers lui.
+Le scaffold doit conserver le meme langage esthetique que kyclink-node, sans dependance technique vers lui.
 
 Contraintes:
 
 - les tokens, animations, layouts et composants doivent etre definis dans whitelabel-vercel
-- aucun import cross-project depuis integration-node
+- aucun import cross-project depuis kyclink-node
 - toute divergence visuelle volontaire doit etre explicite et documentee localement
 
 Le canon local a maintenir se trouve dans [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md).
@@ -137,7 +139,6 @@ whitelabel-vercel/
   app/
     access-denied/
     auth-loading/
-    complete/
     failure/
     login/
     sessions/
@@ -164,6 +165,8 @@ whitelabel-vercel/
 - GET /api/me
 - POST /api/kyc/session
 - GET /api/kyc/session/:sessionId
+- GET /api/kyc/session/:sessionId/detail
+- GET /api/kyc/session/:sessionId/images/:side
 - GET /api/kyc/sessions
 
 Responsabilites:
@@ -172,8 +175,9 @@ Responsabilites:
 - GET /auth/logout et POST /auth/logout terminent la session applicative locale
 - GET /api/me lit la session applicative et expose l'identite autorisee minimale
 - POST /api/kyc/session valide la session, determine le compte demo, derive `externalId`, resout l'origin parent cote serveur a partir d'une origine canonique configuree ou des headers proxy / host, reutilise l'id token Cognito serveur, cree la session via partner-node et renvoie la charge utile necessaire au frontend
-- GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour relire la session canonique et decide si la reprise reste autorisee
-- GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour lire l'etat canonique et le resultat courant, et renvoie l'etat KYC consolide au frontend
+- GET /api/kyc/session/:sessionId valide la session utilisateur, appelle partner-node pour lire l'etat canonique et le resultat courant, et decide si la reprise reste autorisee
+- GET /api/kyc/session/:sessionId/detail valide la session utilisateur et expose le detail complet de la verification pour l'ecran de resultat
+- GET /api/kyc/session/:sessionId/images/:side valide la session utilisateur et proxy les images de piece d'identite depuis partner-node sans les exposer directement au frontend
 - GET /api/kyc/sessions valide la session utilisateur, appelle `partner-node sandbox /kyclink/sessions` et expose uniquement la liste du `demo_account_id` courant sans persistance locale supplementaire
 
 Les contrats de ces routes sont detailles dans [reference/KYC-SESSION-CONTRACT.md](reference/KYC-SESSION-CONTRACT.md) et [reference/KYC-SESSIONS-LIST-CONTRACT.md](reference/KYC-SESSIONS-LIST-CONTRACT.md).
@@ -206,7 +210,7 @@ Avant toute persistance locale, l'evolution deja retenue est:
 Le projet couvre maintenant ce socle executable:
 
 1. login Cognito direct et session applicative HTTP-only
-2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> COMPLETE`
+2. tunnel protege complet `WELCOME -> SESSION_CONTEXT -> SESSION_PREPARE -> KYC_LINK -> SESSIONS/:sessionId` (ecran de resultat unique ; `/complete` a ete supprime sans redirection le 2026-07-25)
 3. historique `SESSIONS` scope au `demo_account_id` courant
 4. reprise canonique robuste via `GET /api/kyc/session/:sessionId`
 5. lecture resultat robuste sans dependre du stockage navigateur
@@ -224,3 +228,5 @@ Le projet couvre maintenant ce socle executable:
 - guide d'integration React du SDK: [reference/KYCLINK-SDK-INTEGRATION.md](reference/KYCLINK-SDK-INTEGRATION.md)
 - canon UI/UX local: [reference/UI-ESTHETIC-CANON.md](reference/UI-ESTHETIC-CANON.md)
 - reference du contrat PWA mobile-first: [reference/PWA-MOBILE-FIRST-CONTRACT.md](reference/PWA-MOBILE-FIRST-CONTRACT.md)
+
+> Documentation Sync: 2026-08-11

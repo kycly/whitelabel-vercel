@@ -64,7 +64,7 @@ GET /api/kyc/session/sess_abc123
 | `expiresAt` | `string \| null` | `expiresAt` | expiration de l'URL KycLink |
 | `completedAt` | `string \| null` | `completedAt` | horodatage de completion connu |
 | `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflowStatus` | projection du statut metier courant |
-| `sessionState` | `"ACTIVE" \| "COMPLETED" \| "EXPIRED"` | derive de `partner-node` | verdict de reprise canonique |
+| `sessionState` | `"ACTIVE" \| "SUBMITTED" \| "COMPLETED" \| "EXPIRED"` | derive de `partner-node` | verdict de reprise canonique |
 | `resumeAvailable` | `boolean` | derive de `partner-node` | `true` uniquement si `sessionState = ACTIVE` |
 
 ## Regles de pilotage UI
@@ -144,3 +144,5 @@ Elle ne doit pas:
 - appeler `partner-node` production
 - fusionner plusieurs `demo_account_id`
 - reconstruire `kyclinkUrl` depuis une source locale navigateur
+
+> Documentation Sync: 2026-08-11

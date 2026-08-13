@@ -53,3 +53,5 @@ fuite de données réelles depuis une application de démonstration.
 **Statut** : Accepté
 **Date** : 2026-07-21
 **Décideur** : Team KYCLY
+
+> Documentation Sync: 2026-08-11

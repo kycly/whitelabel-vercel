@@ -11,6 +11,33 @@ Ce document fige la facon de gerer les variables dans le projet pour la suite re
 
 ---
 
+## Aucun repli fige (ADR-038)
+
+Une variable qui designe un environnement **n'a pas de valeur par defaut**. Son absence doit faire
+lever l'application, jamais la faire retomber sur une valeur ecrite en dur.
+
+`src/config/env.ts` portait `?? "https://api.kycly.sn"`. Ce domaine ne resout pas : une variable
+absente ne cassait pas le demarrage, elle faisait appeler une adresse morte. Le repli masquait aussi
+une derive de nommage complete — la CI posait `KYCLY_API_BASE_URL`, `KYCLY_SESSION_BASE_URL` et
+`KYCLY_ME_BASE_URL`, qu'aucun code ne lit, et jamais `KYCLY_BASE_URL`, la seule lue. Le build
+tournait donc depuis des mois sur le domaine mort.
+
+Regles a appliquer ici:
+
+- **`KYCLY_BASE_URL` est requise.** `requireBaseUrl` leve si elle est absente ou vide. `pnpm build`
+  echoue alors, ce qui est voulu: la faute doit tomber au build, pas chez l'utilisateur.
+- **Ne jamais remplacer un repli par un autre defaut**, meme pointant le sandbox: un defaut designe
+  un environnement et se trompe dans les autres.
+- **Ne pas ecrire de valeur en dur dans un hook ou un workflow** pour contourner le garde. Le hook
+  `pre-push` charge `.env.local` et refuse de pousser avec un message explicite si la variable
+  manque.
+- **Verifier qu'un nom est reellement lu** avant de le poser dans un environnement: une variable que
+  personne ne lit ne protege de rien et masque celle qui manque.
+
+Raisonnement complet et autres occurrences: `infrastructure-node/docs/architecture/decisions/038-why-no-frozen-fallback.md`.
+
+---
+
 ## Regle generale
 
 La source de verite runtime de l'application est Vercel.
@@ -388,3 +415,5 @@ La gestion des variables de `whitelabel-vercel` repose donc sur:
 - une CI GitHub avec placeholders non sensibles et secret GitHub Packages dedie
 
 Ce document est la reference ops a suivre pour la suite.
+
+> Documentation Sync: 2026-08-11

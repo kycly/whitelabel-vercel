@@ -55,3 +55,5 @@ secret exposé au navigateur ».
 **Statut** : Accepté
 **Date** : 2026-07-21
 **Décideur** : Team KYCLY
+
+> Documentation Sync: 2026-08-11

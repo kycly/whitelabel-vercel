@@ -11,3 +11,5 @@
 
 Ces documents sont **vérifiés contre le code** ; toute évolution des surfaces citées doit les mettre à jour
 (garde-fou `check-doc-drift`, cf. [../../runbooks/cicd-workflow.md](../../runbooks/cicd-workflow.md)).
+
+> Documentation Sync: 2026-08-11

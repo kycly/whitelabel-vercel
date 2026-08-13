@@ -1,0 +1,56 @@
+name: Doc freshness (planifie)
+
+# POURQUOI CE WORKFLOW EXISTE
+#
+# scripts/check-doc-freshness.mjs est concu pour etre "lance periodiquement, pas en CI"
+# (cf. son propre en-tete) : c'est un signal advisory (exit 0 systematique), pas un garde
+# bloquant comme doc-truth/doc-structure. Mais rien ne le declenchait nulle part -- ni
+# pre-push, ni pre-commit, ni CI -- sur aucun des 5 depots KYCLY. Un signal jamais emis
+# equivaut a ne pas exister.
+#
+# Ce workflow honore la promesse du script : execution hebdomadaire, resultat publie dans
+# le step summary du run. Pas de PR bloquee, pas d'echec de job -- conforme a son design
+# advisory.
+
+on:
+  schedule:
+    # Lundi 06:00 UTC, une heure apres l'audit de securite du meme jour.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doc-freshness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Necessaire : le script fait `git log -1 -- <fichier>` par fichier cite dans
+          # les docs sous contrat. Un checkout superficiel (profondeur par defaut) ferait
+          # echouer silencieusement cette lecture -- le signal paraitrait toujours vert
+          # sans jamais avoir ete vraiment evalue.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Doc freshness (signal advisory, non bloquant)
+        run: |
+          {
+            echo "## Doc freshness -- $(date -u +%F)"
+            echo
+            echo '```'
+            node scripts/check-doc-freshness.mjs
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

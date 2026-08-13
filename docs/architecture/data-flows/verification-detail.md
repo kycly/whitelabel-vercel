@@ -151,3 +151,5 @@ terminée ».
 
 - [kyc-session-create.md](kyc-session-create.md) — création de session et lecture du statut.
 - Référence : [KYCLINK-SDK-INTEGRATION](../../reference/KYCLINK-SDK-INTEGRATION.md).
+
+> Documentation Sync: 2026-08-11
