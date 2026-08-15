@@ -46,7 +46,10 @@ const upstreamKycSessionSchema = z.object({
   session_id: z.string().min(1),
   external_id: z.string().nullable(),
   status: z.string().min(1),
-  workflow_status: workflowStatusSchema.nullable().optional(),
+  // Exige, comme `sessionState` et `resumeAvailable` : ce sont les trois champs calcules
+  // par l'amont, ils arrivent ensemble. `.optional()` rendait l'absence indetectable —
+  // le statut serait tombe a `null` pour chaque session, sans erreur ni alerte.
+  workflowStatus: workflowStatusSchema.nullable(),
   expires_at: z.string().nullable(),
   completed_at: z.string().nullable(),
   created_at: z.string().min(1),
@@ -293,8 +296,9 @@ export async function fetchKycSessions(params: {
     completedAt: item.completed_at,
     expiresAt: item.expires_at,
     createdAt: item.created_at,
-    workflowStatus: item.workflow_status ?? null,
-    // Servis tels quels par partner-node : la reprenabilite ne se recalcule pas ici.
+    // Servis tels quels par partner-node : ni le statut metier ni la reprenabilite
+    // ne se recalculent ici.
+    workflowStatus: item.workflowStatus,
     sessionState: item.sessionState,
     resumeAvailable: item.resumeAvailable,
   }));
