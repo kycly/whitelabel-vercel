@@ -138,7 +138,7 @@ il n'y a rien a chercher.
 | `completedAt` | `string \| null` | `completed_at` | horodatage de completion connu localement |
 | `expiresAt` | `string \| null` | `expires_at` | expiration de l'URL KycLink |
 | `createdAt` | `string` | `created_at` | ordre de tri canonique |
-| `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflow_status` | projection brute du statut metier local issu de `partner-node verifications_local.status` |
+| `workflowStatus` | `"PENDING" \| "IN_REVIEW" \| "ESCALATED" \| "APPROVED" \| "REJECTED" \| null` | `workflowStatus` | projection brute du statut metier local issu de `partner-node verifications_local.status` |
 | `sessionState` | `"ACTIVE" \| "SUBMITTED" \| "COMPLETED" \| "EXPIRED"` | `sessionState` | verdict de reprise canonique, servi tel quel par `partner-node` |
 | `resumeAvailable` | `boolean` | `resumeAvailable` | `true` uniquement si `sessionState = ACTIVE`, servi tel quel par `partner-node` sans recalcul local |
 
@@ -182,7 +182,14 @@ Raison:
 
 ## Limites fonctionnelles assumees
 
-`workflowStatus` est porte directement par `partner-node /kyclink/sessions` sous le nom `workflow_status`.
+`workflowStatus` est porte directement par `partner-node /kyclink/sessions` sous le meme nom, comme
+`sessionState` et `resumeAvailable` : ce sont les trois champs **calcules** par l'amont, et ils
+arrivent ensemble.
+
+Le schema amont les exige tous les trois. `workflowStatus` etait auparavant lu sous le nom
+`workflow_status` et declare `.optional()` : son absence serait passee inapercue et aurait fait
+tomber le statut a `null` pour chaque session, sans erreur ni alerte. Ne pas le rendre optionnel a
+nouveau.
 
 La route whitelabel ne synthétise plus de statut metier et ne derive plus de decision depuis une lecture detaillee secondaire.
 

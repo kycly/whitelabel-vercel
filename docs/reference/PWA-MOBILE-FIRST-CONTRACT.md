@@ -153,4 +153,4 @@ Refuser la livraison si l'un des symptômes suivants apparaît:
 - [UI-ESTHETIC-CANON.md](./UI-ESTHETIC-CANON.md)
 - [KYCLINK-SDK-INTEGRATION.md](./KYCLINK-SDK-INTEGRATION.md)
 
-> Documentation Sync: 2026-08-11
+> Documentation Sync: 2026-08-15

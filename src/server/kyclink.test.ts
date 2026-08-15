@@ -151,7 +151,7 @@ describe("server/kyclink", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.kycly.test/kyclink/sess_1");
   });
 
-  it("relaie workflow_status et delegue le filtrage a l amont", async () => {
+  it("relaie workflowStatus et delegue le filtrage a l amont", async () => {
     // Le filtrage n'est plus fait ici : on transmet les criteres et on rend ce que l'amont
     // renvoie. Ce test verifiait autrefois un tri/filtre en memoire, volontairement supprime.
     const fetchMock = vi.fn().mockResolvedValue({
@@ -162,7 +162,7 @@ describe("server/kyclink", () => {
             session_id: "sess_1",
             external_id: "cust_0042",
             status: "completed",
-            workflow_status: "APPROVED",
+            workflowStatus: "APPROVED",
             expires_at: null,
             completed_at: "2026-05-17T12:03:00.000Z",
             created_at: "2026-05-17T12:00:00.000Z",
@@ -260,12 +260,12 @@ describe("server/kyclink", () => {
           {
             session_id: "sess_new", external_id: "cust_0041", status: "pending",
             expires_at: null, completed_at: null, created_at: "2026-05-17T12:10:00.000Z",
-            sessionState: "COMPLETED", resumeAvailable: false,
+            workflowStatus: null, sessionState: "COMPLETED", resumeAvailable: false,
           },
           {
             session_id: "sess_mid", external_id: "cust_0042", status: "pending",
             expires_at: null, completed_at: null, created_at: "2026-05-17T12:05:00.000Z",
-            sessionState: "COMPLETED", resumeAvailable: false,
+            workflowStatus: null, sessionState: "COMPLETED", resumeAvailable: false,
           },
         ],
         meta: {
@@ -294,7 +294,7 @@ describe("server/kyclink", () => {
             session_id: "sess_1",
             external_id: "cust_0042",
             status: "processing",
-            workflow_status: "PENDING",
+            workflowStatus: "PENDING",
             expires_at: new Date(Date.now() + 3_600_000).toISOString(),
             completed_at: null,
             created_at: "2026-05-17T12:00:00.000Z",
@@ -332,7 +332,7 @@ describe("server/kyclink", () => {
             session_id: "sess_1",
             external_id: null,
             status: "pending",
-            workflow_status: null,
+            workflowStatus: null,
             expires_at: null,
             completed_at: null,
             created_at: "2026-05-17T12:00:00.000Z",
