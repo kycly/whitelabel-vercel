@@ -15,7 +15,17 @@
 # Verdict complet et preuves : work-final/2026-08-24-dette-codacy/04-L1-VERDICT.md
 # Décision : DEC-40 (owner, 2026-08-24).
 #
+# Les tests suivent le même raisonnement (DEC-43) : ils ne tournent pas en
+# production, et le travail d'un test est de fabriquer ses propres entrées.
+# 40 occurrences supplémentaires, toutes vérifiées : lectures dans des objets
+# construits par le test lui-même, URL écrites par le test.
+#
 # Portée volontairement limitée à `scripts/**` — PAS `**/scripts/**`, qui
 # emporterait aussi les scripts internes aux paquets publiés.
 exclude_paths:
   - 'scripts/**'
+  - '**/__tests__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
