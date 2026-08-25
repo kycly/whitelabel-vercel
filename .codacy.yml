@@ -1,0 +1,31 @@
+---
+# Configuration d'analyse Codacy.
+#
+# `scripts/` porte l'outillage de dépôt : gouvernance documentaire, audit de
+# dépendances, installation des hooks git. Ces scripts ne tournent ni en
+# production ni dans un chemin exposé — ils s'exécutent à la main, par un hook,
+# ou dans la CI, sous l'identité du développeur.
+#
+# Leur travail même est de parcourir l'arborescence du dépôt, ce que la règle
+# `detect-non-literal-fs-filename` signale à chaque appel : 69 occurrences sur
+# les quatre dépôts, toutes vérifiées, toutes des faux positifs. Les chemins
+# proviennent d'une liste littérale, d'un `readdirSync` enraciné sur une racine
+# dérivée de `import.meta.url`, ou de `git diff` — jamais d'une entrée externe.
+#
+# Verdict complet et preuves : work-final/2026-08-24-dette-codacy/04-L1-VERDICT.md
+# Décision : DEC-40 (owner, 2026-08-24).
+#
+# Les tests suivent le même raisonnement (DEC-43) : ils ne tournent pas en
+# production, et le travail d'un test est de fabriquer ses propres entrées.
+# 40 occurrences supplémentaires, toutes vérifiées : lectures dans des objets
+# construits par le test lui-même, URL écrites par le test.
+#
+# Portée volontairement limitée à `scripts/**` — PAS `**/scripts/**`, qui
+# emporterait aussi les scripts internes aux paquets publiés.
+exclude_paths:
+  - 'scripts/**'
+  - '**/__tests__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
