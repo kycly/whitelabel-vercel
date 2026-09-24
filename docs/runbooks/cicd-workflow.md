@@ -236,6 +236,45 @@ depots sur une seule valeur.
 
 Les cinq depots portaient les memes versions resolues et recoivent le meme correctif.
 
+### Ce qui a ete corrige le 2026-09-22 — et les trois semaines d'aveuglement qui l'ont precede
+
+**La barriere n'a rien mesure entre le 2026-08-31 et le 2026-09-22.** Pas parce qu'elle etait verte :
+parce qu'elle n'atteignait plus l'etape d'audit.
+
+| Date | Etape en echec | Ce que ca voulait dire |
+|---|---|---|
+| 09-07 | `Security audit` | un vrai avis (`browserslist`), jamais traite |
+| 09-14 | `Install dependencies` | `ERR_PNPM_FETCH_401` sur `@kycly/link@1.0.0` |
+| 09-21 | `Install dependencies` | idem |
+
+`GH_PACKAGES_TOKEN` avait expire. Un install rouge ne retarde pas l'audit : il le **supprime**, et le
+rouge du 09-07 — le seul qui portait une information de securite — est devenu indiscernable des deux
+suivants. Le jeton a ete renouvele le 2026-09-22, cote Actions **et** cote Dependabot (deux magasins
+de secrets distincts, meme nom).
+
+Une fois la mesure rouverte, cinq avis bloquants, dont deux `critical` :
+
+| Paquet | Avis | Avant | Apres | Moyen |
+|---|---|---|---|---|
+| `next` | `GHSA-p293-qw3h-jr36`, `GHSA-2xp9-vwfh-vxw4` (`>=16.0.0 <16.3.3`) | 16.2.12 | 16.3.6 | **montee de version** — dependance directe, pas un override |
+| `browserslist` | `<=4.28.6` | 4.28.2 | 4.29.0 | plancher `>=4.28.7 <5`, **nouveau** |
+| `js-yaml` | `>=4.0.0 <4.3.2` | 4.3.1 | 4.3.2 | plancher remonte d'un cran, borne `<5` conservee |
+| `sharp` | `<0.35.4` | 0.35.3 | 0.35.4 | plancher remonte, borne `<0.36.0` conservee |
+| `@humanfs/node` | `<0.16.8` | — | — | plancher `>=0.16.8 <0.17`, **nouveau** (preventif) |
+
+`eslint-config-next` suit `next` a la meme version, comme le veut la convention du framework.
+
+**Deux constats a retenir.**
+
+1. **`browserslist` avait ete corrige le 2026-09-06 sur les quatre autres depots, pas ici.** Ce depot
+   ne portait aucun ticket dans le lot de ce jour-la, il est donc reste en dehors du geste. Une
+   correction transverse n'est acquise que sur les depots ou on l'a posee.
+2. **Un override deja present n'est pas un paquet traite.** `js-yaml >=4.3.1 <5` et
+   `sharp >=0.35.0 <0.36.0` existaient tous deux, et leur **plancher tombait a l'interieur de la
+   nouvelle plage affectee**. Leur presence dans le manifeste rassurait a tort. En lisant un rapport
+   d'audit, comparer la plage affectee au plancher de l'override existant, pas seulement a la version
+   resolue.
+
 ### L'audit planifie — `.github/workflows/security-audit.yml`
 
 L'audit de `ci.yml` n'a pas d'horloge : un avis publie sur un paquet **deja installe** ne declenche rien, puisque ni le lockfile ni le code n'ont bouge. `security-audit.yml` rejoue la barriere chaque lundi a 05:00 UTC, et reste declenchable a la main.
