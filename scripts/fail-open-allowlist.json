@@ -1,0 +1,9 @@
+{
+  "_lisez_moi": [
+    "Fail-open ASSUMES. Chaque entree porte sa raison et sa date.",
+    "Appariement par (fichier, extrait) : le CONTENU de la ligne, pas son numero.",
+    "Si la ligne change de contenu, l exemption cesse de s appliquer.",
+    "`occurrences` (1 par defaut) borne le nombre de lignes identiques couvertes."
+  ],
+  "exemptions": []
+}
