@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 87 |
+| Fichiers code scannes | 90 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 156 |
-| Fichiers de tests detectes | 15 |
+| Exports detectes | 158 |
+| Fichiers de tests detectes | 16 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -38,6 +38,7 @@
 | docs:truth | node scripts/check-doc-truth.mjs |
 | docs:structure | node scripts/check-doc-structure.mjs |
 | docs:freshness | node scripts/check-doc-freshness.mjs |
+| ci:check-fail-open | node scripts/check-fail-open.mjs |
 
 ## Variables d'environnement (detectees dans le code)
 
@@ -139,6 +140,8 @@ _Aucun hook detecte._
 | default | default | app/welcome/page.tsx |
 | function | evaluateDocDrift | scripts/check-doc-drift.mjs |
 | function | evaluateDocDriftForFiles | scripts/check-doc-drift.mjs |
+| function | analyser | scripts/fail-open.mjs |
+| function | analyserDepot | scripts/fail-open.mjs |
 | type | CognitoAuthResult | src/auth/cognito-client.ts |
 | type | CognitoCodeDelivery | src/auth/cognito-client.ts |
 | function | cognitoCompleteNewPassword | src/auth/cognito-client.ts |
@@ -272,6 +275,7 @@ _Aucun hook detecte._
 
 - app/api/kyc/session/[sessionId]/detail/route.test.ts
 - app/api/kyc/session/[sessionId]/images/[side]/route.test.ts
+- scripts/__tests__/fail-open.test.ts
 - src/auth/cognito.test.ts
 - src/components/verify/image-sides.test.ts
 - src/components/verify/verification-view-state.test.ts

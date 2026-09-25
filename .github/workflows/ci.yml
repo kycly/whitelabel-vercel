@@ -75,6 +75,12 @@ jobs:
       - name: Check docs drift
         run: pnpm docs:check
 
+      # Les gardes qui echouent EN VERT (lot D du plan parc-et-gardes). Dix occurrences
+      # recensees sur le parc, dont les deux smokes de ce depot qui sortaient en SUCCES
+      # quand APP_URL manquait.
+      - name: Gardes fail-open (check-fail-open)
+        run: pnpm ci:check-fail-open
+
       - name: Check docs truth
         run: pnpm docs:truth
 
