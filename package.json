@@ -20,7 +20,8 @@
     "docs:truth": "node scripts/check-doc-truth.mjs",
     "docs:structure": "node scripts/check-doc-structure.mjs",
     "docs:freshness": "node scripts/check-doc-freshness.mjs",
-    "ci:check-fail-open": "node scripts/check-fail-open.mjs"
+    "ci:check-fail-open": "node scripts/check-fail-open.mjs",
+    "ci:classify-drift": "node scripts/classify-branch-drift.mjs"
   },
   "dependencies": {
     "@kycly/link": "^1.0.0",
