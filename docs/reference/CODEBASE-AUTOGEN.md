@@ -11,12 +11,12 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 90 |
+| Fichiers code scannes | 93 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
-| Exports detectes | 158 |
-| Fichiers de tests detectes | 16 |
+| Exports detectes | 161 |
+| Fichiers de tests detectes | 17 |
 | Variables d'environnement detectees | 10 |
 
 ## Scripts npm/pnpm (package.json)
@@ -39,6 +39,7 @@
 | docs:structure | node scripts/check-doc-structure.mjs |
 | docs:freshness | node scripts/check-doc-freshness.mjs |
 | ci:check-fail-open | node scripts/check-fail-open.mjs |
+| ci:classify-drift | node scripts/classify-branch-drift.mjs |
 
 ## Variables d'environnement (detectees dans le code)
 
@@ -140,6 +141,9 @@ _Aucun hook detecte._
 | default | default | app/welcome/page.tsx |
 | function | evaluateDocDrift | scripts/check-doc-drift.mjs |
 | function | evaluateDocDriftForFiles | scripts/check-doc-drift.mjs |
+| function | classerDerive | scripts/drift-classification.mjs |
+| function | natureDuChemin | scripts/drift-classification.mjs |
+| function | natureDuManifeste | scripts/drift-classification.mjs |
 | function | analyser | scripts/fail-open.mjs |
 | function | analyserDepot | scripts/fail-open.mjs |
 | type | CognitoAuthResult | src/auth/cognito-client.ts |
@@ -275,6 +279,7 @@ _Aucun hook detecte._
 
 - app/api/kyc/session/[sessionId]/detail/route.test.ts
 - app/api/kyc/session/[sessionId]/images/[side]/route.test.ts
+- scripts/__tests__/drift-classification.test.ts
 - scripts/__tests__/fail-open.test.ts
 - src/auth/cognito.test.ts
 - src/components/verify/image-sides.test.ts
