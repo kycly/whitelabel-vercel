@@ -368,7 +368,7 @@ function buildMarkdown(data) {
 }
 
 function escapeCell(value) {
-  return value.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 }
 
 function normalizePath(value) {
