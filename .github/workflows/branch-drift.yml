@@ -48,6 +48,21 @@ name: Derive des branches de deploiement
 # permanent : du retard le lendemain d'un merge sur `main` est normal ; du retard qui dure
 # deux semaines est un deploiement oublie.
 
+# LE CLASSEMENT PAR NATURE (lot E du plan parc-et-gardes, 2026-09-25)
+#
+# Le seuil en jours dit COMBIEN de temps un retard dure. Il ne dit pas ce qu'il contient.
+# Le 2026-09-22, la branche `production` de whitelabel-vercel a porte 2 avis critiques et
+# 3 hauts pendant deux jours, affiches au meme niveau qu'un retard de `vitest` -- un paquet
+# de test qui ne tourne jamais en production.
+#
+# `scripts/classify-branch-drift.mjs` lit le contenu du retard et tranche : du code
+# d'execution, des `dependencies` ou un `pnpm.overrides` font ESCALADER ; des
+# `devDependencies`, des workflows, des tests et de la documentation sont SIGNALES.
+#
+# Le classement porte sur le RISQUE DU CONTENU, pas sur ce que le workflow de deploiement
+# fait : `deploy-dashboard-app.yml` et `deploy-kyclink-app.yml` n'ont aucun filtre `paths:`
+# et se declenchent de toute facon. Les deux questions sont distinctes.
+
 on:
   schedule:
     # Lundi 05:15 UTC — quinze minutes apres l'audit de dependances, pour que les deux
@@ -166,16 +181,54 @@ jobs:
             fi
           done
 
-          if [ "$status" -ne 0 ]; then
+          # Le seuil en jours tranche ici. La NATURE du retard est jugee au pas suivant,
+          # qui tourne meme si celui-ci passe : un retard d'un jour peut deja contenir un
+          # correctif de securite non deploye.
+          exit "$status"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      # Le classement par nature. Sortie non nulle des qu'une branche porte du code
+      # d'execution non deploye -- pas de `|| true` : c'est le signal.
+      #
+      # `if: always()` : le pas precedent echoue sur l'AGE du retard, celui-ci sur sa
+      # NATURE. Un retard de deux jours qui porte un correctif critique doit etre nomme
+      # meme quand le seuil de 14 jours n'est pas atteint -- c'est exactement le cas
+      # whitelabel du 2026-09-22.
+      - name: Classer le retard par nature
+        if: always()
+        run: |
+          set -uo pipefail
+          statut=0
+          for entry in $TRACKED; do
+            branch="${entry%%:*}"
+            git rev-parse --verify -q "origin/$branch" >/dev/null || continue
             {
               echo
-              echo "**Rattrapage** — le merge se fait a la main, il declenche un deploiement reel :"
-              echo '```'
-              echo "git checkout <branche> && git merge --no-commit --no-ff origin/$REFERENCE"
-              echo "git read-tree -u --reset origin/$REFERENCE   # si la branche n'a aucun contenu propre"
-              echo "git diff origin/$REFERENCE HEAD --stat        # doit etre vide avant de commiter"
+              echo "#### Nature du retard — \`$branch\`"
+              echo
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-          fi
+            node scripts/classify-branch-drift.mjs "origin/$REFERENCE" "origin/$branch" \
+              2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || statut=1
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit "$statut"
 
-          exit $status
+      # Ne s'affiche que si l'age OU la nature a fait echouer un pas. Le merge reste un
+      # geste humain : un push sur une branche de deploiement declenche un deploiement reel.
+      - name: Rattrapage
+        if: failure()
+        run: |
+          {
+            echo
+            echo "**Rattrapage** — le merge se fait a la main, il declenche un deploiement reel :"
+            echo '```'
+            echo "git checkout <branche> && git merge --no-commit --no-ff origin/$REFERENCE"
+            echo "git read-tree -u --reset origin/$REFERENCE   # si la branche n'a aucun contenu propre"
+            echo "git diff origin/$REFERENCE HEAD --stat        # doit etre vide avant de commiter"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

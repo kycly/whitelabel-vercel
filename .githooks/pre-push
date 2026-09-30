@@ -2,7 +2,10 @@
 set -eu
 
 echo "[pre-push] Checking canonical docs drift..."
-pnpm -s docs:check
+# Contre origin/main et non l'arbre de travail : au moment du push tout est commite, et
+# l'arbre propre faisait passer ce controle a vide (corrige le 2026-09-30).
+git fetch -q origin main
+pnpm -s docs:check --base-ref "$(git merge-base origin/main HEAD)" --head-ref HEAD
 
 echo "[pre-push] Checking docs truth..."
 pnpm -s docs:truth
