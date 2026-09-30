@@ -15,6 +15,14 @@ registries:
     type: npm-registry
     url: https://npm.pkg.github.com
     token: ${{secrets.GH_PACKAGES_TOKEN}}
+    # `scope` (2026-09-30, propagé depuis infrastructure-node #307, où il a réparé le
+    # routage) : la méthode DOCUMENTÉE (changelog GitHub du 2026-06-30 « Dependabot no
+    # longer infers .npmrc »). Dependabot génère lui-même le `.npmrc` — `@kycly` → ce
+    # registre, le reste → npmjs — et ignore celui du dépôt. Sans lui, le proxy interroge
+    # npm.pkg.github.com pour TOUS les paquets, et un miroir périmé y répond parfois en 200
+    # (ERR_PNPM_NO_MATCHING_VERSION). L'URL reste SANS chemin : `/@kycly` est refusé par le
+    # validateur (« Basic auth credentials should not be included in the URL », infra #305).
+    scope: "@kycly"
 
 updates:
   - package-ecosystem: github-actions
@@ -40,6 +48,12 @@ updates:
     # Les @kycly/* sont publies par nos soins : Dependabot n'a pas a s'en meler.
     ignore:
       - dependency-name: "@kycly/*"
+      # Majeures exclues des version updates (décision owner du 2026-09-29, prise sur
+      # infrastructure-node) : TypeScript 7, ESLint 10, vitest 5… touchent les 5 dépôts à la
+      # fois et les peers des @kycly/* publiés — ce sont des chantiers planifiés. La doc :
+      # « update-types only affects version updates, not security updates ».
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
