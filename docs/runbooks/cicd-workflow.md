@@ -131,17 +131,19 @@ Ordre des etapes retenu, tel qu'il est reellement code dans `ci.yml`:
 4. setup Node.js
 5. `pnpm install --frozen-lockfile`
 6. `node scripts/security/audit-pnpm-tree.mjs` — audit de securite des dependances
-7. `pnpm docs:check`
-8. `pnpm docs:truth`
-9. `pnpm docs:structure`
-10. `pnpm docs:codegen:check`
-11. `pnpm guard:sandbox-only`
-12. `pnpm test`
-13. `pnpm typecheck`
-14. `pnpm lint`
-15. `pnpm build`
-16. `pnpm exec playwright install --with-deps chromium webkit`
-17. `pnpm test:e2e`
+7. `pnpm docs:check` — **attention** : ne lit que l'arbre de travail et l'index (`git diff`, `git diff --cached`) ; sur le checkout propre de la CI il se déclare toujours « skipped ». Il ne garde que le poste local (pre-push). Relevé le 2026-09-30, non corrigé
+8. `pnpm ci:check-fail-open` — aucun garde qui échoue en vert (lot D, 2026-09-25)
+9. `pnpm ci:check-workflow-urls` — aucun domaine `*.kycly.io` propre à un stage écrit dans un workflow qui n'est pas propre à ce stage (lot A, 2026-09-30) ; aujourd'hui 0 littéral : le domaine vit dans les variables Vercel/GitHub
+10. `pnpm docs:truth`
+11. `pnpm docs:structure`
+12. `pnpm docs:codegen:check`
+13. `pnpm guard:sandbox-only`
+14. `pnpm test`
+15. `pnpm typecheck`
+16. `pnpm lint`
+17. `pnpm build`
+18. `pnpm exec playwright install --with-deps chromium webkit`
+19. `pnpm test:e2e`
 
 > Cette liste ne decrivait pas le workflow reel avant le 2026-07-27 : elle mentionnait un
 > unique `pnpm docs:check` la ou quatre gardes documentaires distinctes tournent, et un
