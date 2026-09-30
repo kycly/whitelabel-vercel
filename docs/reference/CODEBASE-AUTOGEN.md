@@ -11,7 +11,7 @@
 
 | Metrique | Valeur |
 |---|---:|
-| Fichiers code scannes | 93 |
+| Fichiers code scannes | 94 |
 | Routes detectees | 21 |
 | Hooks detectes | 0 |
 | Composants detectes | 22 |
@@ -39,6 +39,7 @@
 | docs:structure | node scripts/check-doc-structure.mjs |
 | docs:freshness | node scripts/check-doc-freshness.mjs |
 | ci:check-fail-open | node scripts/check-fail-open.mjs |
+| ci:check-workflow-urls | node scripts/check-workflow-env-values.mjs |
 | ci:classify-drift | node scripts/classify-branch-drift.mjs |
 
 ## Variables d'environnement (detectees dans le code)
