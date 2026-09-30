@@ -5,5 +5,12 @@
     "Si la ligne change de contenu, l exemption cesse de s appliquer.",
     "`occurrences` (1 par defaut) borne le nombre de lignes identiques couvertes."
   ],
-  "exemptions": []
+  "exemptions": [
+    {
+      "fichier": "ci.yml",
+      "extrait": "if [[ -z \"$base_sha\" || \"$base_sha\" == \"0000000000000000000000000000000000000000\" ]]; then",
+      "raison": "Ce n'est pas un repli silencieux mais une SUBSTITUTION correcte : au premier push d'une branche, github.event.before vaut 40 zeros et ne designe aucun commit. Le repli prend le commit racine, donc doc-drift compare bien quelque chose au lieu d'echouer sur une reference vide. Rien n'est saute (meme exemption que dashboard-node et partner-node).",
+      "date": "2026-09-30"
+    }
+  ]
 }

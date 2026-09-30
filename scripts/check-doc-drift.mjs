@@ -81,8 +81,9 @@ const facetRules = [
       /^\.github\/.+/,
       /^\.githooks\/.+/,
       /^scripts\/(check-doc-drift|check-sandbox-only|install-githooks)\.mjs$/,
-      /^package\.json$/,
-      /^pnpm-lock\.yaml$/,
+      // `package.json` et `pnpm-lock.yaml` retirés le 2026-09-30 (comme dans partner-node) :
+      // tant que ce garde était inerte en CI, les coupler ne coûtait rien ; actif, il
+      // aurait exigé le runbook CI pour chaque montée de dépendance.
       /^\.lintstagedrc\.json$/,
     ],
     primaryDocPatterns: [
@@ -106,6 +107,19 @@ function runGit(args) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Fichiers changés entre deux références. STRICT : une référence absente (checkout
+ * superficiel, SHA inconnu) lève au lieu de rendre une liste vide — une liste vide se
+ * lirait « rien à vérifier » et le garde passerait sans avoir rien mesuré.
+ */
+export function getChangedFilesBetweenRefs(baseRef, headRef) {
+  const out = execFileSync("git", ["diff", "--name-only", baseRef, headRef, "--", "."], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return [...new Set(out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean))];
 }
 
 function getChangedFiles() {
@@ -146,7 +160,7 @@ export function evaluateDocDriftForFiles(changedFiles) {
     return {
       ok: true,
       kind: "skip",
-      message: "Doc-drift check skipped: no doc-coupled file changed in the working tree.",
+      message: "Doc-drift check skipped: no doc-coupled file changed.",
     };
   }
 
@@ -180,8 +194,24 @@ export function evaluateDocDriftForFiles(changedFiles) {
   };
 }
 
-export function evaluateDocDrift() {
+export function evaluateDocDrift({ baseRef = null, headRef = null } = {}) {
+  if (baseRef || headRef) {
+    if (!baseRef || !headRef) {
+      throw new Error("--base-ref et --head-ref vont ensemble.");
+    }
+    return evaluateDocDriftForFiles(getChangedFilesBetweenRefs(baseRef, headRef));
+  }
   return evaluateDocDriftForFiles(getChangedFiles());
+}
+
+function parseCliArgs(argv) {
+  const parsed = { jsonMode: false, baseRef: null, headRef: null };
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === "--json") parsed.jsonMode = true;
+    else if (argv[i] === "--base-ref") { parsed.baseRef = argv[i + 1] ?? null; i += 1; }
+    else if (argv[i] === "--head-ref") { parsed.headRef = argv[i + 1] ?? null; i += 1; }
+  }
+  return parsed;
 }
 
 const isDirectExecution = process.argv[1]
@@ -189,8 +219,18 @@ const isDirectExecution = process.argv[1]
   : false;
 
 if (isDirectExecution) {
-  const result = evaluateDocDrift();
-  const jsonMode = process.argv.includes("--json");
+  const args = parseCliArgs(process.argv.slice(2));
+  let result;
+  try {
+    result = evaluateDocDrift(args);
+  } catch (error) {
+    // Échec FERMÉ : une comparaison impossible n'est pas une comparaison vide.
+    process.stderr.write(
+      `Doc-drift check failed: comparaison impossible (${error instanceof Error ? error.message.split("\n")[0] : String(error)}).\n`,
+    );
+    process.exit(1);
+  }
+  const jsonMode = args.jsonMode;
 
   if (jsonMode) {
     process.stdout.write(`${JSON.stringify(result)}\n`);
