@@ -81,6 +81,13 @@ jobs:
       - name: Gardes fail-open (check-fail-open)
         run: pnpm ci:check-fail-open
 
+      # Domaines *.kycly.io ecrits en dur dans les workflows (lot A du plan parc-et-gardes,
+      # porte le 2026-09-30) : un domaine propre a un stage ne peut vivre que dans un
+      # workflow propre a ce stage — sinon passer par vars.APP_URL. Le defaut d'origine :
+      # un smoke « staging » pointe sur l'API de production pendant 7 semaines.
+      - name: Domaines des workflows (check-workflow-urls)
+        run: pnpm ci:check-workflow-urls
+
       - name: Check docs truth
         run: pnpm docs:truth
 
