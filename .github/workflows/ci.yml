@@ -47,6 +47,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Historique complet : le garde doc-drift compare deux SHA (base et tete de la PR
+          # ou du push). Sur un checkout superficiel la base est absente et le garde echoue
+          # FERME — c'est voulu.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
@@ -72,8 +77,32 @@ jobs:
       - name: Security audit
         run: node scripts/security/audit-pnpm-tree.mjs
 
+      # Jusqu'au 2026-09-30 ce pas lancait `pnpm docs:check` SANS reference : le script ne
+      # lisait que l'arbre de travail et l'index, vides sur le checkout de la CI — il se
+      # declarait toujours « skipped ». Il compare desormais la base et la tete du changement.
+      #
+      # Exemption portee par l'ETAPE (comme dans partner-node) : Dependabot n'ecrit jamais de
+      # doc, et ses bumps d'actions touchent .github/workflows/ — aucune de ses PR ne pourrait
+      # passer. Les autres gardes s'appliquent normalement a ses PR.
       - name: Check docs drift
-        run: pnpm docs:check
+        if: github.actor != 'dependabot[bot]'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"; head_sha="$PR_HEAD_SHA"
+          else
+            base_sha="$PUSH_BEFORE"; head_sha="$PUSH_AFTER"
+          fi
+          if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+            base_sha="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
+          fi
+          node scripts/check-doc-drift.mjs --base-ref "$base_sha" --head-ref "$head_sha"
 
       # Les gardes qui echouent EN VERT (lot D du plan parc-et-gardes). Dix occurrences
       # recensees sur le parc, dont les deux smokes de ce depot qui sortaient en SUCCES

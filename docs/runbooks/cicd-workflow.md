@@ -131,7 +131,7 @@ Ordre des etapes retenu, tel qu'il est reellement code dans `ci.yml`:
 4. setup Node.js
 5. `pnpm install --frozen-lockfile`
 6. `node scripts/security/audit-pnpm-tree.mjs` — audit de securite des dependances
-7. `pnpm docs:check` — **attention** : ne lit que l'arbre de travail et l'index (`git diff`, `git diff --cached`) ; sur le checkout propre de la CI il se déclare toujours « skipped ». Il ne garde que le poste local (pre-push). Relevé le 2026-09-30, non corrigé
+7. doc-drift — `node scripts/check-doc-drift.mjs --base-ref <base> --head-ref <tête>` : compare la base et la tête de la PR (ou du push) et exige le document primaire de chaque facette touchée. Sauté pour `dependabot[bot]` (au niveau de l'étape). Checkout en `fetch-depth: 0` : une base introuvable fait **échouer** le garde, elle ne le fait pas passer. Voir « Garde doc-drift » ci-dessous
 8. `pnpm ci:check-fail-open` — aucun garde qui échoue en vert (lot D, 2026-09-25)
 9. `pnpm ci:check-workflow-urls` — aucun domaine `*.kycly.io` propre à un stage écrit dans un workflow qui n'est pas propre à ce stage (lot A, 2026-09-30) ; aujourd'hui 0 littéral : le domaine vit dans les variables Vercel/GitHub
 10. `pnpm docs:truth`
@@ -162,6 +162,31 @@ Note locale:
 
 - `PLAYWRIGHT_SKIP_BUILD=1 pnpm test:e2e` est reserve a la CI apres `pnpm build`
 - apres une modification UI locale, relancer au moins une fois `pnpm test:e2e` sans `PLAYWRIGHT_SKIP_BUILD=1` pour eviter un `.next` stale
+
+## Garde doc-drift — actif en CI depuis le 2026-09-30
+
+**Jusqu'au 2026-09-30 il ne gardait rien.** La CI lançait `pnpm docs:check` sans référence :
+le script ne lisait que l'arbre de travail et l'index (`git diff`, `git diff --cached`), vides
+sur le checkout propre de la CI — il se déclarait toujours « skipped ». Le hook pre-push
+tournait après le commit, sur un arbre propre lui aussi. Rejoué sur l'historique, il aurait
+arrêté #87 et #93 (`.github/dependabot.yml` modifié sans runbook).
+
+**Aujourd'hui** :
+- en CI, il compare `base` et `tête` du changement (`--base-ref` / `--head-ref`) ;
+- au pre-push, il compare la tête à `git merge-base origin/main HEAD` ;
+- sans référence (`pnpm docs:check` à la main), il lit l'arbre de travail, comme avant ;
+- une référence introuvable (checkout superficiel, SHA inconnu) le fait **échouer** : une
+  comparaison impossible n'est pas une comparaison vide.
+
+**Facette « CI, hooks Git et gouvernance »** : `.github/**`, `.githooks/**`, les scripts de
+gouvernance, `.lintstagedrc.json` → exige `docs/runbooks/cicd-workflow.md` ou
+`docs/runbooks/repository-governance-setup.md`. `package.json` et `pnpm-lock.yaml` en ont été
+**retirés** le 2026-09-30, comme dans partner-node : une montée de dépendance n'est pas un
+changement de gouvernance, et le garde actif aurait exigé le runbook pour chacune.
+
+**Dependabot** est exempté au niveau de l'ÉTAPE (`if: github.actor != 'dependabot[bot]'`) : il
+n'écrit jamais de doc et ses bumps d'actions touchent `.github/workflows/`. Les autres gardes
+s'appliquent normalement à ses PR.
 
 ## Audit de securite des dependances
 
