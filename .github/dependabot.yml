@@ -55,5 +55,16 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     groups:
+      # `react` et `react-dom` doivent être à la MÊME version exacte : React refuse le
+      # mélange au premier rendu (« Incompatible React versions »). Seul, Dependabot montait
+      # `react` en 19.3.0 en laissant `react-dom` en 19.2.x (2026-09-30 : dashboard #162,
+      # kyclink #133 rouges ; whitelabel #90 VERT à tort — aucun test n'y rend de composant).
+      # Avant `dev-dependencies` : un paquet va dans le premier groupe qui le capte.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       dev-dependencies:
         dependency-type: development
