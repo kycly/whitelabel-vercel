@@ -28,7 +28,7 @@
     "@kycly/link": "^1.0.0",
     "@kycly/ui": "^0.2.0",
     "@vercel/analytics": "^2.0.1",
-    "amazon-cognito-identity-js": "^6.3.20",
+    "amazon-cognito-identity-js": "^6.3.22",
     "clsx": "^2.1.1",
     "jose": "^6.2.12",
     "lucide-react": "^0.577.0",
