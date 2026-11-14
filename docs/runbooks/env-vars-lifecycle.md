@@ -171,7 +171,10 @@ Valeurs retenues:
 
 Role:
 
-- etiquetage applicatif et debug leger
+- étiquetage applicatif et sélection de la politique de secret de session dans `src/config/env.ts`
+- valeur explicite obligatoire dans la configuration de déploiement : sans variable, `src/config/public-env.ts` choisit `local`, même si Vercel héberge la cible en production
+- `local` autorise un secret de développement de repli ; ne jamais utiliser ce mode sur un déploiement accessible aux utilisateurs
+- vérifier ensemble `NEXT_PUBLIC_APP_ENV` et `APP_SESSION_SECRET` avant le build ; le nom de l’environnement Vercel ne suffit pas à activer cette protection
 
 ### Variables Cognito publiques
 
