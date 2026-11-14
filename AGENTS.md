@@ -25,7 +25,7 @@ Ordre de lecture recommande:
 - app client Cognito dedie a whitelabel-vercel
 - portee metier sandbox-only au J1, y compris quand l'app est deployee sur Vercel preview ou Vercel production
 - JWT Cognito pour l'auth utilisateur
-- ck_demo_* uniquement cote serveur pour creer les sessions
+- création et lecture des sessions côté serveur via JWT Cognito utilisateur ; aucune map locale de clés ck_demo_*
 - aucun acces direct a la base de partner-node
 - dependance de service a partner-node au J1 pour creer les sessions KYC
 - aucun secret expose au navigateur
@@ -74,8 +74,8 @@ Le projet fournit une application simple permettant a un utilisateur deja provis
 - garder le runtime autonome
 - refuser toute introduction d'acces direct a la base partner-node
 - refuser toute creation de session cote client
-- refuser toute introduction de `ck_live_*` dans cette app tant que le cadrage reste demo / sandbox-only
-- pour une future liste utilisateur des verifications, preferer un proxy serveur vers `partner-node /kyclink/sessions` plutot qu'une persistance locale dediee
+- ne pas introduire de clés machine dans l’app pour remplacer le JWT Cognito des appels actuels ; conserver la portée sandbox
+- la liste utilisateur existante passe par le proxy serveur `GET /api/kyc/sessions` vers `partner-node /kyclink/sessions`, sans persistance locale dédiée
 - documenter toute evolution qui ajoute de la persistance ou une dependance externe nouvelle
 - refuser tout import cross-project de styles, composants ou tokens depuis kyclink-node
 

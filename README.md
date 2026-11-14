@@ -1,6 +1,6 @@
 # whitelabel-vercel
 
-Scaffold cible pour une application web de demonstration / whitelabel autour de @kycly/link.
+Application web de démonstration / whitelabel autour de `@kycly/link`.
 
 Le scope retenu a ce stade est volontairement simple:
 
@@ -10,8 +10,8 @@ Le scope retenu a ce stade est volontairement simple:
 - frontend et backend deploiement separes de partner-node
 - meme user pool Cognito que partner-node
 - client Cognito dedie a cette application
-- creation de sessions uniquement cote serveur avec des cles ck_demo_*
-- aucun acces direct a la base ou au backend runtime de partner-node
+- création et lecture des sessions côté serveur via le JWT Cognito utilisateur transmis à partner-node
+- aucun accès direct à la base de partner-node ; les appels au service passent par son API HTTP
 - aucune base dediee au J1
 - meme langage esthetique UI/UX que kyclink-node, mais redefini localement dans ce projet
 
@@ -41,11 +41,11 @@ Le J1 vise un flux minimal:
 2. verification serveur du JWT
 3. resolution du tenant demo via partner-node a partir du JWT Cognito
 4. derivation de `externalId` a partir de la reference client
-5. selection de la bonne ck_demo_* cote serveur
+5. transmission du JWT Cognito utilisateur par le serveur whitelabel
 6. creation de session KYC via partner-node
 7. affichage de @kycly/link
 
-## Etat actuel du scaffold
+## Fonctionnement actuel
 
 Le socle applicatif minimal est maintenant present dans ce dossier:
 
@@ -53,7 +53,7 @@ Le socle applicatif minimal est maintenant present dans ce dossier:
 - login Cognito direct via formulaire, verification serveur du JWT et cookie HTTP-only
 - routes `POST /api/auth/session`, `GET /auth/logout`, `POST /auth/logout`, `GET /api/me`, `POST /api/kyc/session`, `GET /api/kyc/session/:sessionId`, `GET /api/kyc/session/:sessionId/detail`, `GET /api/kyc/session/:sessionId/images/:side`, `GET /api/kyc/sessions`
 - pages `LOGIN`, `AUTH_LOADING`, `ACCESS_DENIED`, `WELCOME`, `VERIFY`, `VERIFY/PREPARE`, `VERIFY/SESSION`, `SESSIONS/:sessionId` (ecran de resultat unique), `FAILURE`, `SESSIONS`
-- **`/complete` a ete supprime sans redirection** (unification de l'ecran resultat, 2026-07-25) : le seul ecran de resultat est desormais `/sessions/:sessionId`, atteint depuis les quatre chemins d'entree (fin d'iframe, "voir le resultat", reprise, acces direct)
+- le seul écran de résultat est `/sessions/:sessionId`, atteint depuis la fin d’iframe, « voir le résultat », la reprise ou un accès direct
 - formulaire `SESSION_CONTEXT` conforme aux decisions J1
 - proxy serveur de creation, de lecture resultat et de liste des sessions KYC avec reutilisation du JWT Cognito stocke dans la session HTTP-only
 - ecran de resultat unique `/sessions/:sessionId`: `GET /kyclink/:sessionId` reconcilie l'amont tant que la session n'est pas terminee, ce qui fait converger le poll sans repli sur l'index
@@ -90,6 +90,7 @@ Apres un changement UI, lancer au moins une validation e2e sans `PLAYWRIGHT_SKIP
 
 Variables publiques:
 
+- `NEXT_PUBLIC_APP_ENV` : explicite sur chaque déploiement, `preview` ou `production` selon la cible Vercel
 - `NEXT_PUBLIC_COGNITO_APP_CLIENT_ID`
 - `NEXT_PUBLIC_AWS_REGION`
 - `NEXT_PUBLIC_COGNITO_USER_POOL_ID`
@@ -118,8 +119,9 @@ Le scaffold consomme maintenant `@kycly/link` depuis GitHub Packages et utilise 
 
 ## Cadrage separation sandbox
 
-- `whitelabel-vercel` ne doit utiliser que des `ck_demo_*`, jamais des `ck_live_*`
-- la liste canonique future des verifications d'un utilisateur doit venir de `partner-node` sandbox, scopee par `demo_account_id`
-- si une page `mes verifications` est ajoutee plus tard, elle doit passer par un proxy serveur de type `GET /api/kyc/sessions` vers `partner-node /kyclink/sessions`, sans persistance locale dediee par defaut
+- l’application ne stocke pas de map de clés `ck_demo_*` : les appels création/liste/détail réutilisent le JWT Cognito côté serveur
+- `partner-node` résout le compte démo et applique son scope `demo_account_id`
+- la liste existe : `GET /api/kyc/sessions` relaie `partner-node /kyclink/sessions`, sans base locale dédiée
+- les environnements Vercel preview/production ne changent pas cette portée métier sandbox
 
-> Documentation Sync: 2026-08-11
+> Documentation Sync: 2026-11-14
